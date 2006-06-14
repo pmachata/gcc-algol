@@ -1,0 +1,3667 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage{a4wide}
+\usepackage[latin2]{inputenc}
+\usepackage[
+  bookmarks=true,
+  bookmarksopen=true,
+  colorlinks=false,
+  urlbordercolor={0 0 0},
+  pdfhighlight=/I,
+  pdftitle=Revised\ Report\ on\ the\ Algorithmic\ Language\ Algol\ 60,
+  pdfauthor=Petr\ Machata,
+  pdfstartview=FitH,
+  bookmarksopenlevel=2
+  ]{hyperref}
+\pagestyle{empty}
+\topmargin 0in
+\begin{document}
+\setcounter{secnumdepth}{5}
+
+\title{Revised Report on the Algorithmic Language Algol 60}
+
+\author{J.W. Backus, F.L. Bauer, J.Green, C. Katz, J. McCarthy\\
+   P. Naur, A.J. Perlis, H. Rutishauser, K. Samuelson, B. Vauquois\\
+   J.H. Wegstein, A. van Wijngaarden, M. Woodger; \\
+   Edited by Peter Naur\\
+   Dedicated to the memory of William Turanski}
+
+\footnotetext{This copy of the ``Revised Report on the Algorithmic
+Language Algol 60'' was typed to texi source by Erik Schoenfelder at
+October 1990, and retyped to \LaTeX \space by Petr Machata at February
+2006.}
+
+\date{January 1963}
+
+\maketitle
+
+\def\keyw#1{{\tt \bf \underline{#1}}}
+\def\blankchar{\leavevmode\hbox{\tt\char`\ }}
+
+\def\mleqv{$\equiv$}
+\def\mlnot{$\neg$}
+\def\mland{$\wedge$}
+\def\mlor{$\vee$}
+\def\mlimp{$\Rightarrow$}
+\def\mlt{$<$}
+\def\mle{$\leq$}
+\def\mgt{$>$}
+\def\mge{$\geq$}
+\def\meq{$=$}
+\def\mne{$\neq$}
+\def\mpow{$\uparrow$}
+\def\mtim{$\times$}
+\def\mdiv{$\div$}
+\def\ten{$_{10}$}
+
+\def\mychapter#1{{\Huge \bf \vspace{1em}#1}\vspace{1.0em}}
+\def\mysection#1{{\Large \bf \vspace{1em}#1}\vspace{1.0em}}
+\def\mysubsection#1{{\large \bf \vspace{1em}#1}\vspace{1.0em}}
+
+
+
+\mychapter{Summary}
+
+The report gives a complete defining description of the international
+algorithmic language Algol 60. This is a language suitable for
+expressing a large class of numerical processes in a form sufficiently
+concise for direct automatic translation into the language of
+programmed automatic computers.
+
+The introduction contains an account of the preparatory work leading
+up to the final conference, where the language was defined. In
+addition the notions reference language, publication language, and
+hardware representations are explained.
+
+In the first chapter a survey of the basic constituents and features
+of the language is given, and the formal notation, by which the
+syntactic structure is defined, is explained.
+
+The second chapter lists all the basic symbols, and the syntactic
+units known as identifiers, numbers, and strings are defined. Further
+some important notions such as quantity and value are defined.
+
+The third chapter explains the rules for forming expressions and the
+meaning of these expressions. Three different types of expressions
+exist: arithmetic, Boolean (logical), and designational.
+
+The fourth chapter describes the operational units of the language,
+known as statements. The basic statements are: assignment statements
+(evaluation of a formula), go to statements (explicit break of the
+sequence of execution of statements), dummy statements, and procedure
+statements (call for execution of a closed process, defined by a
+procedure declaration). The formation of more complex structures,
+having statement character, is explained. These include: conditional
+statements, for statements, compound statements, and blocks.
+
+In the fifth chapter the units known as declarations, serving for
+defining permanent properties of the units entering into a process
+described in the language, are defined.
+
+The report ends with two detailed examples of the use of the language
+and an alphabetic index of definitions.
+
+
+\mychapter{Introduction}
+
+
+\mysection{Background}
+
+
+After the publication \footnote{Preliminary report - International
+Algebraic Language, Comm.  Assoc. Comp. Mach. 1, No. 12 (1958), 8.}
+\footnote{Report on the Algorithmic Language Algol by the ACM
+Committee on Programming Languages and the GAMM Committee on
+Programming, edited by A. J. Perlis and K. Samuelson, Numerische
+Mathematik Bd. 1, S. 41-60 (1959).} of a preliminary report on the
+algorithmic language Algol, as prepares at the conference in Zuerich
+in 1958, much interest in the Algol language developed.
+
+
+As a result of an informal meeting held at Mainz in November 1958, about
+forty interested persons from several European countries held an Algol
+implementation conference in Copenhagen in February 1959.  A ``hardware
+group'' was formed for working cooperatively right down to the level of
+the paper tape code.  This conference also led to the publication by
+Regnecentralen, Copenhagen, of an `Algol Bulletin', edited by Peter
+Naur, which served as a forum for further discussion.  During the June
+1959 ICIP Conference in Paris several meetings, both formal and informal
+ones, were held.  These meetings revealed some misunderstandings as to
+the intent of the group which was primarily responsible for the
+formulation of the language, but at the same time made it clear that
+there exists a wide appreciation of the effort involved.  As a result of
+the discussions it was decided to hold an international meeting in
+January 1959 for improving the Algol language and preparing a final
+report.  At a European Algol Conference in Paris in November 1959 which
+was attended by about fifty people, seven European representatives were
+selected at attend the January 1960 Conference, and they represent the
+following organisations: Association Fran\c caise de Calcul, British
+Computer Society, Gesellschaft f\"ur Angewandte Mathematik und
+Mechanik, and the Nederlands Rekenmachine Genootschap.  The seven
+representatives held a final preparatory meeting at Mainz in December
+1959.
+
+Meanwhile, in the United States, anyone who wished to suggest changes or
+corrections to Algol was requested to send his comments to the
+`Communications of the ACM', where they were published.  These comments
+then became the basis of consideration for changes in the Algol
+language.  Both the SHARE and USE organisations established Algol
+working groups, and both organisations were represented on the ACM
+Committee on Programming Languages.  The ACM Committee met in Washington
+in November 1959 and considered all comments on Algol that had been sent
+to the ACM `Communications'.  Also, seven representatives were selected
+to attend the January 1960 international conference.  The seven
+representatives held a final preparatory meeting in Boston in December
+1959. 
+
+
+
+\mysection{January 1960 Conference}
+
+
+The thirteen representatives \footnote{William Turanski of the
+American group was killed by an automobile just prior to the January
+1960 Conference.}, from Denmark, England, France, Germany, Holland,
+Switzerland, and the United States, conferred in Paris from January 11
+to 16, 1960.
+
+Prior to this meeting a completely new draft report was worked out from
+the preliminary report and the recommendations of the preparatory
+meetings by Peter Naur and the Conference adopted this new form as the
+basis for its report. The Conference then proceeded to work for
+agreement on each item of the report. The present report represents the
+union of the Committee's concepts and the intersection of its agreements.
+
+
+
+\mysection{April 1962 Conference [Edited by M. Woodger]}
+
+A meeting of some of the authors of Algol 60 was held on 2nd - 3rd April
+in Rome, Italy, through the facilities and courtesy of the International
+Computation Centre.  The following were present:
+
+\vspace{1em}
+\begin{tabular*}{15.0cm}{lll}
+Authors             & Advisers          & Observer \\
+F. L. Bauer         & M. Paul           & W. L. van der Poel\\
+J. Green            & R. Franciotti     & (Chairman, IFIP TC 2.1 \\
+C. Katz             & P. Z. Ingerman    & Working Group Algol) \\
+R. Kogon\\(representing J.W. Backus)   &&\\
+P. Naur                                &&\\
+K. Samuelson        & G. Seegem\"uller  &\\
+J. H. Wegstein      & R.E. Utman        &\\
+A. van Wijngaarden                     &&\\
+M. Woodger          & P. Landin         &\\
+\end{tabular*}
+\vspace{1em}
+
+The purpose of the meeting was to correct known errors in, attempt to
+eliminate apparent ambiguities in, and otherwise clarify the Algol 60
+Report.  Extensions to the language were not considered at the meeting. 
+Various proposals for correction and clarification that were submitted
+by interested parties in response to the Questionnaire in Algol Bulletin
+No. 14 were used as a guide. 
+
+This report constitutes a supplement to the Algol 60 Report which should
+resolve a number of difficulties therein.  Not all of the questions
+raised concerning the original report could be resolved.  Rather than
+risk of hastily drawn conclusions on a number of subtle points, which
+might create new ambiguities, the committee decided to report only those
+points which they unanimously felt could be stated in clear and
+unambiguous fashion. 
+
+Questions concerned with the following areas left for further consideration by
+Working Group 2.1 of IFIP, in the expectation that current
+work on advanced programming languages will lead to
+better resolution:
+
+\begin{enumerate}
+
+\item Side effects of functions.
+
+\item The call by name concept.
+
+\item \keyw{own}: static or dynamic.
+
+\item For statement: static or dynamic.
+
+\item Conflict between specification and declaration.
+
+\end{enumerate}
+
+The authors of the Algol 60 Report present at the Rome Conference,
+being aware of the formation of a Working Group on Algol by IFIP,
+accepted that any collective responsibility which they might have with respect to the development, specification, and refinement of the Algol language
+will from now on be transferred to that body.
+
+This report has been reviewed by IFIP TC 2 on Programming Languages in August 1962 and
+has been approved by the Council of the International Federation for
+Information Processing.
+
+As with the preliminary Algol report, three different levels of language
+are recognized, namely a Reference Language, a Publication Language, and
+several Hardware Representations. 
+
+
+\mysubsection{Reference Language}
+
+\begin{enumerate}
+
+\item It is the working language of the committee.
+
+\item It is the defining language.
+
+\item The characters are determined by ease of mutual understanding and
+      not by any computer limitations, coders notation, or pure
+      mathematical notation.
+
+\item It is the basic reference and guide for compiler builders.
+
+\item It is the guide for all hardware representations.
+
+\item It is the guide for transliterating from publication language to
+      any locally appropriate hardware representations.
+
+\item The main publications of the Algol language itself will use the
+      reference representation.
+\end{enumerate}
+
+
+\mysubsection{Publication Language}
+
+\begin{enumerate}
+\item The publication language admits variations of the reference
+      language according to usage of printing and handwriting (e.g.
+      subscripts, spaces, exponents, Greek letters).
+
+\item It is used for stating and communicating process.
+
+\item The characters used may be different in different countries, but
+      univocal correspondence with reference representation must be
+      secured.
+\end{enumerate}
+
+
+\mysubsection{Hardware Representations}
+
+\begin{enumerate}
+\item Each of these is a condensation of the reference language enforced
+      by the limited number of characters on the standard input
+      equipment.
+
+\item Each one of these uses the character set of a particular computer
+      and is the language accepted by a translator for that computer.
+
+\item Each of these must by accompanied by a special set of rules for
+      transliterating from publication or reference language.
+\end{enumerate}
+
+For transliteration between the reference language and a language
+suitable for publications, among others, the following rules are
+recommended.
+
+
+\begin{tabular*}{15.0cm}{lp{10.0cm}}
+\\
+Reference Language            & Publication Language \\ \\
+
+
+Subscript brackets [ ]        & Lowering of the line between the
+                                brackets and removal of the brackets. \\
+
+Exponentiation $\uparrow$     & Raising the exponent. \\
+
+Parentheses ()                & Any form of parentheses, brackets,
+                                braces. \\
+
+Basis of ten $_{10}$           &      Raising of the ten and of the following
+                                integral number, inserting of the
+                                intended multiplication sign. \\
+\end{tabular*}
+
+
+
+\mychapter{Description of the reference language}
+
+\hspace*{7cm} Was sich \"u{}berhaupt sagen l\"a{}\ss{}t, l\"a{}\ss{}t sich\\
+\hspace*{7cm} klar sagen; und wovon man nicht reden\\
+\hspace*{7cm} kann, dar\"u{}ber mu\ss{} man schweigen.\\
+\hspace*{9cm} \textsc{Ludwig Wittgenstein}
+
+\section{Structure of the language}
+\label{LblStructureOfTheLanguage}
+
+
+As stated in the introduction, the algorithmic language has three
+different kinds of representations -- reference, hardware, and
+publication -- and the development described in the sequel is in terms
+of the language are represented by a given set of symbols -- and it is
+only in the choice of symbols that the other two representations may
+differ. Structure and content must be the same for all
+representations.
+
+The purpose of the algorithmic language is to describe computational
+processes. The basic concept used for the description of calculating
+rules is the well known arithmetic expression containing as constituents
+numbers, variables, and functions. From such expressions are compounded,
+by applying rules of arithmetic composition, self-contained units of the
+language -- explicit formulae -- called assignment statements.
+
+To show the flow of computational processes, certain non-arithmetic
+statements and statement clauses are added which may describe e.g.,
+alternatives, or iterative repetitions of computing statements. Since it
+is necessary for the function of the statements that one statement
+refers to another, statements may be provided with labels. A sequence of
+statements may be enclosed between the statement brackets \keyw{begin}
+and \keyw{end} to form a compound statement.
+
+Statements are supported by declarations which are not themselves
+computing instructions, but inform the translator of the existence and
+certain properties of objects appearing in statements, such as the class
+of numbers taken on as values by a variable, the dimension of an array
+of numbers, or even the set of rules defining a function. A sequence of
+declarations followed by a sequence of statements and enclosed between
+\keyw{begin} and \keyw{end} constitutes a block. Every declaration
+appears in a block in this way and is valid only for that block.
+
+A program is a block or compound statement which is not contained within
+another statement and which makes no use of other statements not
+contained within it.
+
+In the sequel the syntax and semantics of the language will be given
+\footnote{Whenever the precision of arithmetic is stated as being in
+general not specified, or the outcome of a certain process is left
+undefined or said to be undefined, this is to be interpreted in the
+sense that a program only fully defines a computational process if the
+accompanying information specifies the precision assumed, the kind of
+arithmetic assumed, and the course of action to be taken in all such
+cases as may occur during the execution of the computation.}.
+
+
+
+\subsection{Formalism for syntactic description.}
+\label{FormalismForSyntacticDescription}
+
+
+The syntax will be described with the aid of metalinguistic formulae
+\footnote{Cf. J. W. Backus, The syntax and semantics of the proposed
+    international algebraic language of the Zuerich ACM-GRAMM
+    conference. ICIP Paris, June 1959.}.
+
+Their interpretation is best explained by an example:
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<ab> ::= $($ | $[$ | <ab> $($ | <ab> <d>}\\
+\end{flushleft}
+
+Sequences of characters enclosed in the bracket \texttt{<>} represent
+metalinguistic variables whose values are sequences of symbols. The
+marks \texttt{::=} and \texttt{|} (the latter with the meaning of
+\b{or}) are metalinguistic connectives. Any mark in a formula, which
+is not a variable or a connective, denotes itself (or the class of
+marks which are similar to it). Juxtaposition of marks and/or
+variables in a formula signifies juxtaposition of the sequences
+denoted. Thus the formula above gives a recursive rule for the
+formation of values of the variable \texttt{<ab>}. It indicates that
+\texttt{<ab>} may have the value \texttt{(} or \texttt{[} or that
+given some legitimate value of \texttt{<ab>}, another may be formed by
+following it with the character \texttt{(} or by following it with
+some value of the variable \texttt{<d>}. If the values of \texttt{<d>}
+are the decimal digits, some values of \texttt{<ab>} are:
+
+\begin{verbatim}
+[(((1(37(
+(12345(
+(((
+[86
+\end{verbatim}
+
+
+In order to facilitate the study, the symbols used for distinguishing
+the metalinguistic variables (i.e. the sequence of characters
+appearing within the brackets \texttt{<>} as \texttt{ab} in the above
+example) have been chosen to be words describing approximately the
+nature of the corresponding variable. Where words which have appeared
+in this manner are used elsewhere in the text they will refer to the
+corresponding syntactic definition. In addition some formulae have
+been given in more than one place.
+
+    Definition:
+\begin{flushleft}
+\vspace{0.2em}\texttt{<empty> ::=}\\
+\end{flushleft}
+
+(i.e. the null string of symbols).
+
+
+
+\section[Basic symbols, identifiers, numbers, and strings]{Basic symbols, identifiers, numbers, and strings.\\
+  Basic concepts}
+\label{LblBasicSymbols}
+
+
+
+The reference language is built up from the following basic symbols:
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<basic symbol> ::= <letter> | <digit> | <logical value> | <delimiter>}\\
+\end{flushleft}
+
+
+
+\subsection{Letters}
+\label{LblBasicSymbolsLetters}
+
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<letter> ::= a | b | c | d | e | f | g | h | i | j | k | l |\\
+  \hspace{1cm}m | n | o | p | q | r | s | t | u | v | w | x | y | z |\\
+  \hspace{1cm}A | B | C | D | E | F | G | H | I | J | K | L | M | N |\\
+  \hspace{1cm}O | P | Q | R | S | T | U | V | W | X | Y | Z}\\
+\end{flushleft}
+
+
+This alphabet may be arbitrarily restricted, or extended with any other
+distinctive character (i.e. character not coinciding with any digit,
+logical value or delimiter).
+
+Letters do not have individual meaning. They are used for forming
+identifiers and strings \footnote{It should be particularly noted that
+throughout the reference language underlining is used for defining
+independent basic symbols (see sections \ref{LblBasicSymbolsLogical}
+and \ref{LblBasicSymbolsDelimiters}). These are understood to have no
+relation to the individual letters of which they are composed. Within
+the present report underlining will be used for no other purposes.}
+(cf. sections \ref{LblBasicSymbolsIdentifiers} Identifiers,
+\ref{LblBasicSymbolsStrings} Strings).
+
+\subsection{Digits and logical values}
+
+\subsubsection{Digits}
+\label{LblBasicSymbolsDigits}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<digit> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}\\
+\end{flushleft}
+
+Digits are used for forming numbers, identifiers, and strings.
+
+
+\subsubsection{Logical values}
+\label{LblBasicSymbolsLogical}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<logical value> ::= \keyw{true} | \keyw{false}}\\
+\end{flushleft}
+
+The logical values have a fixed obvious meaning.
+
+
+
+\subsection{Delimiters}
+\label{LblBasicSymbolsDelimiters}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<delimiter> ::= <operator> | <separator> | <bracket> |\\
+  \hspace{1cm}<declarator> | <specificator>}\\
+
+\vspace{0.2em}\texttt{<operator> ::= <arithmetic operator> | <relational operator> |\\
+  \hspace{1cm}<logical operator> | <sequential operator>}\\
+
+\vspace{0.2em}\texttt{<arithmetic operator> ::= $+$ | $-$ | $\times$ | $/$ | $\div$ | $\uparrow$}\\
+
+\vspace{0.2em}\texttt{<relational operator> ::= $<$ | $\leq$ | $=$ | $\geq$ | $>$ | $\neq$}\\
+
+\vspace{0.2em}\texttt{<logical operator> ::= $\equiv$ | $\Rightarrow$ | $\vee$ | $\wedge$ | $\neg$}\\
+
+\vspace{0.2em}\texttt{<sequential operator> ::= \keyw{goto} | \keyw{if} | \keyw{then} |
+  \keyw{else} | \keyw{for} | \keyw{do}\footnotemark}\\
+
+\vspace{0.2em}\texttt{<separator> ::= $,$ | $.$ | $_{10}$ | $:$ | $;$ | $:=$ | \blankchar{} | \keyw{step} |\\
+  \hspace{1cm}\keyw{until} | \keyw{while} | \keyw{comment}}\\
+
+\vspace{0.2em}\texttt{<bracket> ::= $($ | $)$ | $[$ | $]$ | $`$ | $'$ | \keyw{begin} | \keyw{end}}\\
+
+\vspace{0.2em}\texttt{<declarator> ::= \keyw{own} | \keyw{Boolean} | \keyw{integer} |\\
+  \hspace{1cm}\keyw{real} | \keyw{array} | \keyw{switch} | \keyw{procedure}}\\
+
+\vspace{0.2em}\texttt{<specificator> ::= \keyw{string} | \keyw{label} | \keyw{value}}\\
+
+\end{flushleft}
+
+\footnotetext{\keyw{do} is used in for statements. It has no relation
+    to the \i{do} of the preliminary report, which is not included in
+    Algol60.}
+
+
+Delimiters have a fixed meaning which for the most part is obvious or
+else will be given at the appropriate place in the sequel.
+
+Typographical features such as blank space or change to a new line
+have no significance in the reference language. They, however, be used
+freely for facilitating reading.
+
+For the purpose of including text among the symbols of a program the
+following "comment" conventions hold:
+
+\begin{flushleft}
+\begin{tabular*}{15.0cm}{p{11.0cm}l}
+The sequence of basic symbols:          &is equivalent to\\
+
+\texttt{; \keyw{comment} <any sequence not containing ;>;}                & ;\\
+\texttt{\keyw{begin} \keyw{comment} <any sequence not containing ;>;}     & \keyw{begin}\\
+\texttt{\keyw{end} <any sequence not containing \keyw{end} or ; or \keyw{else}>;} & \keyw{end}\\
+\end{tabular*}
+\end{flushleft}
+
+By equivalence is here meant that any of the three structures shown in
+the left hand column may be replaced, in any occurrence outside of
+strings, by the symbol shown in the same line in the right hand
+column without any effect on the action of the program. It is further
+understood that the comment structure encountered first in the text
+when reading from left to right has precedence in being replaced over
+later structures contained in the sequence.
+
+
+
+\subsection{Identifiers}
+\label{LblBasicSymbolsIdentifiers}
+
+
+\subsubsection{Syntax}
+\label{LblBasicSymbolsIdentifiersSyntax}
+
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<identifier> ::= <letter> | <identifier> <letter> | <identifier> <digit>}\\
+\end{flushleft}
+
+
+
+\subsubsection{Examples}
+
+\begin{verbatim}
+q
+Soup
+V17a
+a34kTMNs
+MARILYN
+\end{verbatim}
+
+
+\subsubsection{Semantics}
+\label{LblBasicSymbolsIdentifiersSemantics}
+
+Identifiers have no inherent meaning, but serve for the identification
+of simple variables, arrays, labels, switches, and procedures. They
+may be chosen freely (cf. however section \ref{LblStandardFunctions}
+Standard functions).
+
+The same identifiers cannot be used to denote two different quantities
+except when these quantities have disjoint scopes as defined by the
+declarations of the program (cf section \ref{LblQuantitiesKindsAndScopes}
+Quantities, kinds and scopes and section \ref{LblDeclarations}
+Declarations).
+
+
+
+\subsection{Numbers}
+\label{LblBasicSymbolsNumbers}
+
+
+\subsubsection{Syntax}
+\label{LblBasicSymbolsNumbersSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<unsigned integer> ::= <digit> | <unsigned integer> <digit>}\\
+
+\vspace{0.2em}\texttt{<integer> ::= <unsigned integer> | $+$ <unsigned integer> |\\
+  \hspace{1.0cm}$-$ <unsigned integer>}\\
+
+\vspace{0.2em}\texttt{<decimal fraction> ::= $.$ <unsigned integer>}\\
+
+\vspace{0.2em}\texttt{<exponential part> ::= $_{10}$ <integer>}\\
+
+\vspace{0.2em}\texttt{<decimal number> ::= <unsigned integer> | <decimal fraction> | \\
+  \hspace{1.0cm}<unsigned integer> <decimal fraction>}\\
+
+\vspace{0.2em}\texttt{<unsigned number> ::= <decimal number> | <exponential part> |\\
+  \hspace{1.0cm}<decimal number> <exponential part>}\\
+
+\vspace{0.2em}\texttt{<number> ::= <unsigned number> | $+$ <unsigned number> |\\
+  \hspace{1.0cm}$-$ <unsigned number>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{tabular*}{16.0cm}{lll}
+\texttt{0}       &\texttt{-200.084}       &\texttt{-.083$_{10}$-02} \\
+\texttt{177}     &\texttt{+07.43$_{10}$8} &\texttt{-$_{10}$7}       \\
+\texttt{.5384}   &\texttt{9.34$_{10}$+10} &\texttt{$_{10}$-4}       \\
+\texttt{+0.7300} &\texttt{2$_{10}$-4}     &\texttt{+$_{10}$+5}      \\
+\end{tabular*}
+
+\subsubsection{Semantics}
+\label{LblBasicSymbolsNumbersSemantics}
+
+Decimal numbers have their conventional meaning.  The exponent part is
+scale factor expressed as an integral power of 10.
+
+\subsubsection{Types}
+\label{LblBasicSymbolsNumbersTypes}
+
+Integers are of the type \keyw{integer}. All other numbers are of type
+\keyw{real} (cf. section 5.1 Type declarations).
+
+
+
+\subsection{Strings}
+\label{LblBasicSymbolsStrings}
+
+
+\subsubsection{Syntax}
+\label{LblBasicSymbolsStringsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<proper string> ::= \\
+  \hspace{1.0em}<any sequence of symbols not containing ` or ' >\\
+  \hspace{1.0em}| <empty>}\\
+
+\vspace{0.2em}\texttt{<open string> ::= <proper string> `<open string>' |\\
+  \hspace{1.0em}<open string><open string>}\\
+
+\vspace{0.2em}\texttt{<string> ::= `<open string>'}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{`5k,,-`[[[`$\vee$=/:'Tt''\\
+`This\blankchar{}is\blankchar{}a\blankchar{}`string''\\
+}\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblBasicSymbolsStringsSemantics}
+
+In order to enable the language to handle arbitrary sequences of basic
+symbols the string quotes \texttt{`} and \texttt{'} are introduced.
+The Symbol \blankchar denotes a space. It has no significance outside
+strings.  Strings are used as actual parameters of procedures
+(cf. sections \ref{LblFunctionDesignators} Function designators and
+\ref{LblProcedureStatements} Procedure Statements).
+
+
+\subsection{Quantities, kinds and scopes}
+\label{LblQuantitiesKindsAndScopes}
+
+
+
+The following kinds of quantities are distinguished: simple variables,
+arrays, labels, switches, and procedures.
+
+The scope of a quantity is the set of statements and expressions in
+which the declaration of the identifier associated with that quantity
+is valid.  For labels see section \ref{LblCompoundStatementsSemantics}.
+
+
+
+\subsection{Values and types}
+\label{LblValuesAndTypes}
+
+A value is an ordered set of numbers (special case: a single number),
+an ordered set of logical values (special case: a single logical
+value), or a label.
+
+Certain of the syntactic units are said to possess values.  These
+values will in general change during the execution of the program The
+values of expressions and their constituents are defined in section 3.
+The value of an array identifier is the ordered set of values of the
+corresponding array of subscripted variables (cf. section
+\ref{LblVariableSubscriptsP1}).
+
+The various ``types'' (\keyw{integer}, \keyw{real}, \keyw{Boolean})
+basically denote properties of values.  The types associated with
+syntactic units refer to the values of these units.
+
+
+
+\section{Expressions}
+\label{LblExpressions}
+
+
+In the language the primary constituents of the programs describing
+algorithmic processes are arithmetic, Boolean, and designational
+expressions.  Constituents of the expressions, except for certain
+delimiters, are logical values, numbers, variables, function designators,
+and elementary arithmetic, relational, logical, and sequential
+operators.  Since the syntactic definition of both variables and
+function designators contains expressions, the definition of
+expressions, and their constituents, is necessarily recursive.
+
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<expression> ::= <arithmetic expression> |\\
+  \hspace{1.0cm}<Boolean expression> | <designational expression>}\\
+\end{flushleft}
+
+
+
+\subsection{Variables}
+\label{LblVariables}
+
+
+\subsubsection{Syntax}
+\label{LblVariablesSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<variable identifier> ::= <identifier>}\\
+
+\vspace{0.2em}\texttt{<simple variable> ::= <variable identifier>}\\
+
+\vspace{0.2em}\texttt{<subscript expression> ::= <arithmetic expression>}\\
+
+\vspace{0.2em}\texttt{<subscript list> ::= <subscript expression> |\\
+  \hspace{1.0cm}<subscript list> , <subscript expression>}\\
+
+\vspace{0.2em}\texttt{<array identifier> ::= <identifier>}\\
+
+\vspace{0.2em}\texttt{<subscripted value> ::= <array identifier> [ <subscripted list> ]}\\
+
+\vspace{0.2em}\texttt{<variable> ::= <simple variable> | <subscripted variable>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{epsilon\\
+detA\\
+a17\\
+Q[7,2]\\
+x[sin(n$\times$pi/2),Q[3,n,4]]\\
+}\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblVariablesSemantics}
+
+A variable is a designation given to a single value.  This value may
+be used in expressions for forming other values and may be changed at
+will by means of assignment statements (section 4.2).  The type of the
+value of a particular variable is defined in the declaration for the
+variable itself (cf. section \ref{LblTypeDeclarations} Type
+declarations) or for the corresponding array identifier (cf. section
+\ref{LblArrayDeclarations} Array declarations),
+
+\subsubsection{Subscripts}
+\label{LblVariableSubscripts}
+
+\paragraph{} \label{LblVariableSubscriptsP1}
+Subscripted variables designate values which are components of
+multidimensional arrays (cf. section \ref{LblArrayDeclarations} Array
+declarations).  Each arithmetic expression of the subscript list
+occupies one subscript position of the subscripted variable and is
+called a subscript.  The complete list of subscripts is enclosed in
+the subscript brackets [ ].  The array component referred to by a
+subscripted variable is specified by the actual numerical value of its
+subscripts (cf. section \ref{LblArithmeticExpressions} Arithmetic
+expressions).
+
+\paragraph{} \label{LblVariableSubscriptsP2}
+Each subscript position acts like a variable of type \keyw{integer}
+and the evaluation of the subscript is understood to be equivalent to
+an assignment to this fictitious variable (cf. section
+\ref{LblAssignmentTypes}).  The value of the subscripted variable is
+defined only if the value of the subscript expression is within the
+subscript bounds of the array (cf. section \ref{LblArrayDeclarations}
+Array declarations).
+
+
+
+\subsection{Function designators}
+\label{LblFunctionDesignators}
+
+
+\subsubsection{Syntax}
+\label{LblFunctionDesignatorsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<procedure identifier> ::= <identifier>}\\
+
+\vspace{0.2em}\texttt{<actual parameter> ::= <string> | <expression> |\\
+  \hspace{1.0cm}<array identifier> | <switch identifier> |\\
+  \hspace{1.0cm}<procedure identifier>}\\
+
+\vspace{0.2em}\texttt{<letter string> ::= <letter> | <letter string> <letter>}\\
+
+\vspace{0.2em}\texttt{<parameter delimiter> ::= , | ) <letter string> : (}\\
+
+\vspace{0.2em}\texttt{<actual parameter list> ::= <actual parameter> |\\
+  \hspace{1.0cm}<actual parameter list> <parameter delimiter>\\
+  \hspace{1.0cm}<actual parameter>}\\
+
+\vspace{0.2em}\texttt{<actual parameter part> ::= <empty> |\\
+  \hspace{1.0cm}( <actual parameter list> )}\\
+
+\vspace{0.2em}\texttt{<function designator> ::= <procedure identifier>\\
+  \hspace{1.0cm}<actual parameter part>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{sin(a-b)\\
+J(v+s,n)\\
+R\\
+S(s-5) Temperature: (T) Pressure: (P)\\
+Compile (`:=') Stack: (Q)}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblFunctionDesignatorsSemantics}
+
+Function designators define single numerical or logical values which
+result through the application of given sets of rules defined by a
+procedure declaration (cf. section \ref{LblProcedureDeclarations}
+Procedure declarations) to fixed sets of actual parameters.  The rules
+governing specification of actual parameters are given in section
+\ref{LblProcedureStatements} Procedure statements.  Not every
+procedure declaration defines the value of a function designator.
+
+\subsubsection{Standard functions}
+\label{LblStandardFunctions}
+
+Certain identifiers should be reserved for the standard functions of
+analysis, which will be expressed as procedures.  It is recommended
+that this reserved list should contain:
+
+
+\begin{description}
+
+\item[abs (E)] for the modulus (absolute value) of the value of the
+        expression E
+
+\item[sign (E)] for the sign of the value of E (+1 for E$>$0, 0 for E$=$0,
+        -1 for E$<$0)
+
+\item[sqrt (E)] for the square root of the value of E
+
+\item[sin (E)] for the sine of the value of E
+
+\item[cos (E)] for the cosine of the value of E
+
+\item[arctan (E)] for the principal value of the arctangent of the value
+        of E
+
+\item[ln (E)] for the natural logarithm of the value of E
+
+\item[exp (E)] for the exponential function of the value
+        of E (e $\uparrow$ E)
+\end{description}
+
+These functions are all understood to operate indifferently on
+arguments both of type \keyw{real} and \keyw{integer}.  They will all
+yield values of type \keyw{real}, except for sign (E) which will have
+values of type \keyw{integer}.  In a particular representation these
+function may be available without explicit declarations (cf. section
+5.  Declarations).
+
+\subsubsection{Transfer functions}
+\label{LblTransferFunctions}
+
+It is understood that transfer functions between any pair of
+quantities and expressions my be defined.  Among the standard
+functions it is recommended that there be one, namely
+
+\begin{flushleft}\texttt{
+    entier (E),\\
+}\end{flushleft}
+
+which ``transfers'' an expression of real type to one of integer type,
+and assigns to it the value which is the largest integer not greater
+than the value of E.
+
+
+\subsection{Arithmetic expressions}
+\label{LblArithmeticExpressions}
+
+\subsubsection{Syntax}
+\label{LblArithmeticExpressionsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<adding operator> ::= $+$ | $-$}\\
+
+\vspace{0.2em}\texttt{<multiplying operator> ::= $\times$ | $/$ | $\div$}\\
+
+\vspace{0.2em}\texttt{<primary> ::= <unsigned number> | <variable> |\\
+  \hspace{1.0cm}<function designator> | $($ <arithmetic expression> $)$}\\
+
+\vspace{0.2em}\texttt{<factor> ::= <primary> | <factor> |\\
+  \hspace{1.0cm}<factor> $\uparrow$ <primary>}\\
+
+\vspace{0.2em}\texttt{<term> ::= <factor> | <term> <multiplying operator> <factor>}\\
+
+\vspace{0.2em}\texttt{<simple arithmetic expression> ::= <term> |\\
+  \hspace{1.0cm}<adding operator> <term> |\\
+  \hspace{1.0cm}<simple arithmetic expression> <adding operator> <term>}\\
+
+\vspace{0.2em}\texttt{<if clause> ::= \keyw{if} <Boolean expression> \keyw{then}}\\
+
+\vspace{0.2em}\texttt{<arithmetic expression> ::= <simple arithmetic expression> |\\
+  \hspace{1.0cm}<if clause> <simple arithmetic expression> \keyw{else} <arithmetic expression>}\\
+
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+Primaries:
+
+\begin{flushleft}
+\texttt{7.394$_{10}$-8\\
+sum\\
+w[i+2,8]\\
+cos(y+z$\times$3)\\
+(a-3/y+vu$\uparrow$8)\\
+}\end{flushleft}
+
+Factors:
+
+\begin{flushleft}
+\texttt{omega\\
+sum$\uparrow$cos(y+z$\times$3)\\
+7.394$_{10}$-8$\uparrow$w[i+2,8]$\uparrow$(a-3/y+vu$\uparrow$8)
+}\end{flushleft}
+
+Terms:
+
+\begin{flushleft}
+\texttt{U\\
+omega$\times$sum$\uparrow$cos(y+z$\times${}3)/7.394$_{10}$-8$\uparrow$w[i+2,8]$\uparrow$(a-3/y+vu$\uparrow$8)\\
+}\end{flushleft}
+
+Simple arithmetic expressions:
+
+\begin{flushleft}
+\texttt{U-Yu+omega$\times$sum$\uparrow$cos(y+z$\times$3)/7.394$_{10}$-8$\uparrow$w[i+2,8]$\uparrow$(a-3/y+vu$\uparrow$8)\\
+}\end{flushleft}
+
+Arithmetic expressions:
+
+\begin{flushleft}
+\texttt{w$\times$u-Q(S+Cu)$\uparrow$2\\
+\keyw{if} q$>$0 \keyw{then} S+3$\times$Q/A \keyw{else} 2$\times$S+3$\times$q\\
+\keyw{if} a$<$0 \keyw{then} U+V \keyw{else} \keyw{if} a$\times$b$>$17 \keyw{then} U/V \keyw{else} \keyw{if} k$\neq$y \keyw{then}
+    V/U \keyw{else} 0\\
+a$\times$sin(omega$\times$t)\\
+0.57$_{10}$12$\times$a[N$\times$(N-1)/2,0]\\
+(A$\times$arctan(y)+Z)$\uparrow$(7+Q)\\
+\keyw{if} q \keyw{then} n-1 \keyw{else} n\\
+\keyw{if} a$<$0 \keyw{then} A/B \keyw{else} \keyw{if} b=0 \keyw{then} B/A \keyw{else} z\\
+}\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblArithmeticExpressionsSemantics}
+
+An arithmetic expression is a rule for computing a numerical value.
+In case of simple arithmetic expressions this value is obtained by
+executing the indicated arithmetic operations on the actual numerical
+values of the primaries of the expression, as explained in detail in
+section \ref{LblOperatorsAndTypes} below.  The actual numerical value
+for a primary is obvious in the case of numbers.  For variables it is
+the current value (assigned last in the dynamic sense), and for
+function designators it is the value arising from the computing rules
+defining the procedure (cf. section \ref{LblValuesOfFuncDesignators}
+Values of function designators) when applied to the current values of
+the procedure parameters given in the expression.  Finally, for
+arithmetic expressions enclosed in parentheses the value must through
+a recursive analysis be expressed in terms of the values of primaries
+of the other three kinds.
+
+In the more general arithmetic expression, which include if clauses,
+one out of several simple arithmetic expressions is selected on the
+basis of the actual values of the Boolean expression (cf. section
+\ref{LblBooleanExpressions} Boolean expressions).  This selection is
+made as follows: The Boolean expressions of the if clauses are
+evaluated one by one in the sequence from left to right until one
+having the value \keyw{true} is found.  The value of the arithmetic
+expression is then the value of the first arithmetic expression
+following this Boolean (the largest arithmetic expression found in
+this position is understood).  The construction:
+
+\begin{flushleft}
+\texttt{\keyw{else} <simple arithmetic expression>}\\
+\end{flushleft}
+
+is equivalent to the construction:
+
+\begin{flushleft}
+\texttt{\keyw{else} \keyw{if} \keyw{true} \keyw{then} <simple arithmetic expression>}\\
+\end{flushleft}
+
+
+\subsubsection{Operators and types}
+\label{LblOperatorsAndTypes}
+
+Apart from the Boolean expressions of if clauses, the constituents of
+simple arithmetic expressions must be of types \keyw{real} or
+\keyw{integer} (cf. section \ref{LblTypeDeclarations} Type
+declarations).  The meaning of the basic operators and the types of
+the expressions to which they lead are given by the following rules:
+
+\paragraph{} \label{LblOperatorsAndTypesP1}
+The operators +, -, and $\times$ have the conventional meaning
+(addition, subtraction, and multiplication).  The type of the
+expression will by \keyw{integer} if both of the operands are of
+\keyw{integer} type, otherwise \keyw{real}.
+
+\paragraph{} \label{LblOperatorsAndTypesP2}
+The operations \texttt{<term> / <factor> and <term> $\div$ <factor>}
+both denote division, to be understood as a multiplication of the term
+by the reciprocal of the factor with due regard to the rules of
+precedence (cf. section \ref{LblArithmeticExpressionsPrecedence}).
+Thus for example
+
+\begin{flushleft}
+\texttt{a/b$\times$7/(p-q)$\times$v/s}\\
+\end{flushleft}
+
+means
+
+\begin{flushleft}
+\texttt{((((a$\times$(b$\uparrow$-1))$\times$7)$\times$((p-q)$\uparrow$-1))$\times$v)$\times$(s$\uparrow$-1)}\\
+\end{flushleft}
+
+The operator \texttt{/} is defined for all four combinations of types
+\keyw{real} and \keyw{integer} and will yield results of \keyw{real}
+type in any case.  The operator $\div$ is defined only for two
+operands of type \keyw{integer} and will yield a result of type
+\keyw{integer}, mathematically defined as follows:
+
+\begin{flushleft}
+\texttt{a $\div$ b = sign(a/b) $\times$ entier(abs(a/b))}\\
+\end{flushleft}
+
+(cf. sections \ref{LblStandardFunctions} and \ref{LblTransferFunctions}).
+
+\paragraph{} \label{LblOperatorsAndTypesP3}
+The operation \texttt{<factor> $\uparrow$ <factor>} denotes
+exponentiation, where the factor is the base and the primary is the
+exponent.  Thus for example
+
+\begin{flushleft}
+\texttt{2 $\uparrow$ n $\uparrow$ k means $(2^n)^k$}\\
+\end{flushleft}
+
+while
+
+\begin{flushleft}
+\texttt{2 $\uparrow$ (n $\uparrow$ m)  means  $2^{(n^m)}$}\\
+\end{flushleft}
+
+
+Writing i for a number of \keyw{integer} type, r for a number of
+\keyw{real} type, and a for a number of ether \keyw{integer} or
+\keyw{real} type, the result is given by the following rules:
+
+
+\begin{enumerate}
+\item[$a \uparrow i$]
+  \begin{flushleft}
+    if $i > 0$:\\
+    \hspace{1.0cm}$a \times a \times \cdots \times a$ (i times), of the same type as a.\\
+
+    if $i = 0$:\\
+
+    \hspace{1.0cm}if $a \neq 0$:\\
+    \hspace{2.0cm}$1$, of the same type as a.\\
+
+    \hspace{1.0cm}if $a = 0$:\\
+    \hspace{2.0cm}undefined.\\
+
+    if $i < 0$:\\
+
+    \hspace{1.0cm}if $a \neq 0$:\\
+    \hspace{2.0cm}$1/(a \times a \times a \times \cdots \times a)$\\
+    \hspace{2.0cm}(the denominator has -i factors), of type \keyw{real}.\\
+
+    \hspace{1.0cm}if $a = 0$:\\
+    \hspace{2.0cm}undefined.\\
+  \end{flushleft}
+
+\item[$a \uparrow r$]
+
+  \begin{flushleft}
+    if $a > 0$:\\
+    \hspace{1.0cm}$exp(r \times ln(a))$, of type \keyw{real}.\\
+
+    if $a = 0$\\
+    \hspace{1.0cm}if $r > 0$:\\
+    \hspace{2.0cm}$0.0$, of type \keyw{real}.\\
+    \hspace{1.0cm}if $r < 0$:\\
+    \hspace{2.0cm}undefined.\\
+
+    if $a < 0$:\\
+    \hspace{1.0cm}always undefined.\\
+  \end{flushleft}
+
+\end{enumerate}
+
+
+\subsubsection{Precedence of operators}
+\label{LblArithmeticExpressionsPrecedence}
+
+The sequence of operations within one expression is generally from
+left to right, with the following additional rules:
+
+\paragraph{} \label{LblArithmeticExpressionsPrecedenceP1}
+According to the syntax given in section
+\ref{LblArithmeticExpressionsSyntax} the following rules of precedence
+hold:
+
+\begin{tabular*}{10cm}{rl}
+  first:  & $\uparrow$\\
+  second: & $\times / \div$\\
+  third:  & $+ -$\\
+\end{tabular*}
+
+\paragraph{} \label{LblArithmeticExpressionsPrecedenceP2}
+The expression between a left parenthesis and the matching right
+parenthesis is evaluated by itself and this value is used in
+subsequent calculations.  Censequently the desired order of execution
+of operations within an expression can always be arranged by
+appropriate positioning of parenthesis.
+
+\subsubsection[Arithmetics of real quantities]{Arithmetics of \keyw{real} quantities}
+\label{LblArithmeticExpressionsRealQuantities}
+
+Numbers and variables of type \keyw{real} must be interpreted in the
+sense of numerical analysis, i.e.  as entities defined inherently with
+only a finite accuracy.  Similarly, the possibility of the occurrence
+of a finite deviation from the mathematically defined result in any
+arithmetic expression is explicitly understood.  No exact arithmetic
+will be specified, however, and it is indeed understood that different
+hardware representations may evaluate arithmetic expressions
+differently.  The control of the possible consequences of such
+differences must be carried out by the methods of numerical analysis.
+This control must be considered a part of the process to be described,
+and will therefore be expressed in terms of the language
+itself.
+
+
+
+\subsection{Boolean expressions}
+\label{LblBooleanExpressions}
+
+
+\subsubsection{Syntax}
+\label{LblBooleanExpressionsSyntax}
+
+\begin{flushleft}
+
+\vspace{0.2em}\texttt{<relational operator> ::= \mlt{} | \mle{} | \meq{} | \mge{} | \mgt{} | \mne{}}\\
+
+\vspace{0.2em}\texttt{<relation> ::= <simple arithmetic expression> \\
+  \hspace{1.0cm}<relational operator> <simple arithmetic expression>}\\
+
+\vspace{0.2em}\texttt{<Boolean primary> ::= <logical value> | <variable> |\\
+  \hspace{1.0cm}<function designator> | <relation> | ( <Boolean expression> )}\\
+
+\vspace{0.2em}\texttt{<Boolean secondary> ::= <Boolean primary> | \mlnot{} <Boolean primary>}\\
+
+\vspace{0.2em}\texttt{<Boolean factor> ::= <Boolean secondary> |\\
+  \hspace{1.0cm}<Boolean factor> \mland{} <Boolean secondary>}\\
+
+\vspace{0.2em}\texttt{<Boolean term> ::= <Boolean factor> |\\
+  \hspace{1.0cm}<Boolean term> \mlor{} <Boolean factor>}\\
+
+\vspace{0.2em}\texttt{<implication> ::= <Boolean term> |\\
+  \hspace{1.0cm}<implication> \mlimp{} <Boolean term>}\\
+
+\vspace{0.2em}\texttt{<simple Boolean> ::= <implication> |\\
+  \hspace{1.0cm}<simple Boolean> \mleqv{} <implication>}\\
+
+\vspace{0.2em}\texttt{<Boolean expression> ::= <simple Boolean> |\\
+  \hspace{1.0cm}<if clause> <simple Boolean> \keyw{else} <Boolean expression>}\\
+
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{x=-2\\
+Y\mgt{}V\mlor{}z\mlt{}q\\
+a+b\mgt{}-5\mland{}z-d\mgt{}q\mpow{}2\\
+p\mland{}q\mlor{}x\mne{}y \\
+g\mleqv{}\mlnot{}a\mland{}b\mland{}\mlnot{}c\mlor{}d\mlor{}e\mlimp{}\mlnot{} f\\
+\keyw{if} k\mlt{}1 \keyw{then} s\mlt{}w \keyw{else} h \mle{} c\\
+\keyw{if} \keyw{if} \keyw{if} a \keyw{then} b \keyw{else} c \keyw{then} d \keyw{else} f \keyw{then} g \keyw{else} h \mlt{} k\\
+}\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblBooleanExpressionsSemantics}
+
+A Boolean expression is a rule for computing a logical value.  The
+principles of evaluation are entirely analogous to those given for
+arithmetic expressions in section \ref{LblArithmeticExpressionsSemantics}.
+
+\subsubsection{Types}
+\label{LblBooleanExpressionsTypes}
+
+Variables and function designators entered as Boolean primaries must
+be declared \keyw{Boolean} (cf. section \ref{LblTypeDeclarations} Type
+declarations and section \ref{LblValuesOfFuncDesignators} Value of
+function designators).
+
+\subsubsection{The operators}
+\label{LblBooleanExpressionsOperators}
+
+Relations take on the value \keyw{true} whenever the corresponding
+relation is satisfied for the expressions involved, otherwise
+\keyw{false}.
+
+The meaning of the logical operators \mlnot{} (not), \mland{} (and),
+\mlor{} (or), \mlimp{} (implies), and \mleqv{} (equivalent), is given
+by the following function table.
+
+\vspace{1em}
+\begin{tabular*}{16.0cm}{l|cccc}
+b1       & \keyw{false} & \keyw{false} & \keyw{true}  & \keyw{true}\\
+b2       & \keyw{false} & \keyw{true}  & \keyw{false} & \keyw{true}\\
+\cline{1-5}
+\mlnot{} b1     & \keyw{true}  & \keyw{true}  & \keyw{false} & \keyw{false}\\
+b1 \mland{} b2  & \keyw{false} & \keyw{false} & \keyw{false} & \keyw{true}\\
+b1 \mlor{} b2   & \keyw{false} & \keyw{true}  & \keyw{true}  & \keyw{true}\\
+b1 \mlimp{} b2  & \keyw{true}  & \keyw{true}  & \keyw{false} & \keyw{true}\\
+b1 \mleqv{} b2  & \keyw{true}  & \keyw{false} & \keyw{false} & \keyw{true}\\
+\end{tabular*}
+
+
+\subsubsection{Precedence of operators}
+\label{LblBooleanExpressionsOperatorsPrecedence}
+
+The sequence of operations within one expression is generally from
+left to right, with the following additional rules:
+
+According to the syntax given in section
+\ref{LblBooleanExpressionsSyntax} the following rules of precedence
+hold:
+
+\begin{tabular*}{10cm}{rl}
+  first:  & arithmetic expressions according to section \ref{LblArithmeticExpressionsPrecedence}.\\
+  second: & \mlt{} \mle{} \meq{} \mge{} \mgt{} \mne{}\\
+  third:  & \mlnot{}\\
+  fourth: & \mland{}\\
+  fifth:  & \mlor{}\\
+  sixth:  & \mlimp{}\\
+  seventh:& \mleqv{}\\
+\end{tabular*}
+
+The use of parentheses will be interpreted in the sense given in
+section \ref{LblArithmeticExpressionsPrecedence}.
+
+
+
+\subsection{Designational expressions}
+\label{LblDesignationalExpressions}
+
+
+\subsubsection{Syntax}
+\label{LblDesignationalExpressionsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<label> ::= <identifier> | <unsigned integer>}\\
+
+\vspace{0.2em}\texttt{<switch identifier> ::= <identifier>}\\
+
+\vspace{0.2em}\texttt{<switch designator> ::= <switch identifier> [<subscript expression>]}\\
+
+\vspace{0.2em}\texttt{<simple designational expression> ::= <label> |\\
+  \hspace{1.0cm}<switch designator> | (<designational expression>)}\\
+
+\vspace{0.2em}\texttt{<designational expression> ::= <simple designational expression> |\\
+  \hspace{1.0cm}<if clause> <simple designational expression>\\
+  \hspace{1.0cm}\keyw{else} <designational expression>}\\
+\end{flushleft}
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{17\\
+p9\\
+Coose[n-1]\\
+Town [\keyw{if} y\mlt{}0 \keyw{then} N \keyw{else} N+1]\\
+\keyw{if} Ab\mlt{}c \keyw{then} 17 \keyw{else} q[\keyw{if} w \mle{} 0 \keyw{then} 2 \keyw{else} n]}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblDesignationalExpressionsSemantics}
+
+A designational expression is a rule for obtaining a label of a
+statement (cf. section 4.  Statements).  Again the principle of the
+evaluation is entirely analogous to that of arithmetic expressions
+(section \ref{LblArithmeticExpressionsSemantics}).  In the general
+case the Boolean expression of the if clauses will select a simple
+designational expression.  If this is a label the desired result is
+already found.  A switch designator refers refers to the corresponding
+switch declaration (cf. section \ref{LblSwitchDeclarations} Switch
+declarations) and by the actual numerical value of its subscript
+expression selects one of the designational expressions listed in the
+switch declaration by counting these from left to right.  Since the
+designational expression thus selected may again by a switch
+designator this evaluation is obviously a recursive process.
+
+\subsubsection{The subscript expression}
+
+The evaluation of the subscript expression is analogous to that of
+subscripted variables (cf. section \ref{LblVariableSubscriptsP2}).
+The value of a switch designator is defined only if the subscript
+expression assumes one of the positive values 1, 2, 3, ..., n, where n
+is the number of entries in the switch list.
+
+\subsubsection{Unsigned integers as labels}
+
+Unsigned integers used as labels have the property that leading zeroes
+do not affect their meaning, e.g. \texttt{00127} denotes the same
+label as \texttt{217}.
+
+
+
+\section{Statements}
+\label{LblStatements}
+
+
+The units of operation within the language are called statements.
+They will normally be executed consecutively as written.  However,
+this sequence of operations may be broken by go to statements, which
+define their successor explicitly, and shortened by conditional
+statements, which may cause certain statements to be skipped.
+
+In order to make it possible to define a specific dynamic succession,
+statements may be provided with labels.
+
+Since sequences of statements may be grouped together into compound
+statements and blocks the definition of statement must necessarily be
+recursive.  Also since declarations, described in section 5, enter
+fundamentally into the syntactic structure, the syntactic definition
+of statements must suppose declarations to be already defined.
+
+
+
+\subsection{Compound statements and blocks}
+
+
+\subsubsection{Syntax}
+\label{LblCompoundStatementsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<unlabelled basic statement> ::= <assignment statement> |\\
+  \hspace{1.0cm}<go to statement> | <dummy statement> | <procedure statement>}\\
+
+\vspace{0.2em}\texttt{<basic statement> ::= <unlabelled basic statement> |\\
+  \hspace{1.0cm}<label>: <basic statement>}\\
+
+\vspace{0.2em}\texttt{<unconditional statement> ::= <basic statement> |\\
+  \hspace{1.0cm}<compound statement> | <block>}\\
+
+\vspace{0.2em}\texttt{<statement> ::= <unconditional statement> |\\
+  \hspace{1.0cm}<conditional statement> | <for statement>}\\
+
+\vspace{0.2em}\texttt{<compound tail> ::= <statement> \keyw{end} |\\
+  \hspace{1.0cm}<statement> ; <compound tail>}\\
+
+\vspace{0.2em}\texttt{<block head> ::= \keyw{begin} <declaration> |\\
+  \hspace{1.0cm}<block head> ; <declaration>}\\
+
+\vspace{0.2em}\texttt{<unlabelled compound> ::= \keyw{begin} <compound tail>}\\
+
+\vspace{0.2em}\texttt{<compound statement> ::= <unlabelled compound> |\\
+  \hspace{1.0cm}<label>: <compound statement>}\\
+
+\vspace{0.2em}\texttt{<block> ::= <unlabelled block> | <label>: <block>}\\
+
+\vspace{0.2em}\texttt{<program> ::= <block> | <compound statement>}\\
+\end{flushleft}
+
+This syntax may be illustrated as follows: Denoting arbitrary
+statements, declarations, and labels, by the letters S, D, L,
+respectively, the basic syntactic units take the forms:
+
+Compound statement:
+\begin{flushleft}
+\texttt{L:L: ... \keyw{begin} S; S; ... S; S \keyw{end}}
+\end{flushleft}
+
+Block:
+\begin{flushleft}
+\texttt{L:L: ... \keyw{begin} D; D; .. D; S; S; ... S; S \keyw{end}}
+\end{flushleft}
+
+It should by kept in mind that each of the statements S may again be a
+complete compound statement or a block.
+
+
+\subsubsection{Examples}
+
+Basic statements:
+
+\begin{flushleft}
+\texttt{a:=p+q\\
+\keyw{goto} Naples\\
+Start: Continue: W:=7.993}\\
+\end{flushleft}
+
+Compound statements:
+
+\begin{flushleft}
+\texttt{\keyw{begin} x:=0; \keyw{for} y:=1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+  \hspace{2.0cm}x:=x+A[y];\\
+  \hspace{1.25cm}\keyw{if} x\mgt{}q \keyw{then} \keyw{goto} STOP \keyw{else} \keyw{if} x\mgt{}w-2 \keyw{then}\\
+  \hspace{2.0cm}\keyw{goto} S;\\
+  \hspace{1.25cm}Aw: St: W:=x+bob \keyw{end}}\\
+\end{flushleft}
+
+Block:
+
+\begin{flushleft}
+\texttt{Q: \keyw{begin} \keyw{integer} i, k; \keyw{real} w;\\
+  \hspace{1.85cm}\keyw{for} i:=1 \keyw{step} 1 \keyw{until} m \keyw{do}\\
+  \hspace{1.85cm}\keyw{for} k:=i+1 \keyw{step} 1 \keyw{until} m \keyw{do}\\
+  \hspace{1.85cm}\keyw{begin} w:=A[i,k];\\
+  \hspace{3.1cm}A[i,k]:=A[k,i];\\
+  \hspace{3.1cm}A[k,i]:=w \keyw{end} for i and k\\
+  \hspace{0.65cm}\keyw{end} block Q}\\
+\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblCompoundStatementsSemantics}
+
+Every block automatically introduces a new level of nomenclature.
+This is realized as follows: Any identifier occurring within the block
+my through a suitable declaration (cf. section 5.  Declarations) be
+specified to be local to the block in question.  This means (a) that
+the entity represented by this identifier inside the blocks has no
+existence outside it and (b) that any entity represented by this
+identifier outside the block is completely inaccessible inside the
+block.
+
+Identifiers (except those representing labels) occurring within a
+block and not being declared to this block will be non-local to it,
+i.e.  will represent the same entity inside the block and in the level
+immediately outside it.  A label separated by a colon from a
+statement, i.e.  labelling that statement, behaves as though declared
+in the head of the smallest embracing block, i.e.  the smallest block
+whose brackets \keyw{begin} and \keyw{end} enclose that statement.  In
+this context a procedure body must be considered as if it were
+enclosed by \keyw{begin} and \keyw{end} and treated as a block.
+
+Since a statement of a block may again itself be a block the concepts
+local and non-local to a block must be understood recursively.  Thus
+an identifier, which is non-local to a block A, may or may not be
+non-local to the block B in which A is one statement.
+
+
+
+\subsection{Assignment statements}
+
+
+\subsubsection{Syntax}
+\label{LblAssignmentStatementSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<left part> ::= <variable> := | <procedure identifier> :=}\\
+
+\vspace{0.2em}\texttt{<left part list> ::= <left part> | <left part list> <left part>}\\
+
+\vspace{0.2em}\texttt{<assignment statement> ::=\\
+  \hspace{1.0cm}<left part list> <arithmetic expression> |\\
+  \hspace{1.0cm}<left part list> <Boolean expression>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{s:=p[0]:=n:=n+1+s\\
+n:=n+1\\
+A:=B/C-v-q\mtim{}S\\
+S[v,k+2]:=3-arctan(s\mtim{}zeta)\\
+V:=Q\mgt{}Y\mland{}Z}\\
+\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblAssignmentStatementSemantics}
+
+Assignment statements serve for assigning the value of an expression
+to one or several variables or procedure identifiers.  Assignment to a
+procedure identifier may only occur within the body of a procedure
+defining the value of a function designator (cf. section
+\ref{LblValuesOfFuncDesignators}).  The process will in the general
+case be understood to take place in three steps as follows:
+
+\paragraph{} \label{LblAssignmentStatementSemanticsStep1} Any subscript
+expression occurring in the left part variables are evaluated in
+sequence from left to right.
+
+\paragraph{} The expression of the statement is evaluated.
+
+\paragraph{} The value of the expression is assigned to all the left part
+variables, with any subscript expressions having values as evaluated
+in step \ref{LblAssignmentStatementSemanticsStep1}.
+
+\subsubsection{Types}
+\label{LblAssignmentTypes}
+
+The type associated with all variables and procedure identifiers of a
+left part list must be the same.  If the type is \keyw{Boolean}, the
+expression must likewise be \keyw{Boolean}.  If the type is
+\keyw{real} or \keyw{integer}, the expression must be arithmetic.  If
+the type of the arithmetic expression differs from that associated
+with the variables and procedure identifiers, appropriate transfer
+functions are understood to be automatically invoked.  For transfer
+from \keyw{real} to \keyw{integer} type the transfer function is
+understood to yield a result equivalent to
+
+\begin{flushleft}
+\texttt{entier(E+0.5)}\\
+\end{flushleft}
+
+where E is the value of the expression.  The type associated with a
+procedure identifier is given by the declarator which appears as the
+first symbol of the corresponding procedure declaration (cf. section
+\ref{LblValuesOfFuncDesignators}).
+
+
+\subsection{Go to statements}
+\label{LblGotoStatements}
+
+
+\subsubsection{Syntax}
+\label{LblGotoStatementsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<go to statement> ::= \keyw{goto} <designational expression>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{\keyw{goto} 8\\
+\keyw{goto} exit [n+1]\\
+\keyw{goto} Town [\keyw{if} y\mlt{}0 \keyw{then} N \keyw{else} N+1]\\
+\keyw{goto} \keyw{if} Ab\mlt{}c \keyw{then} 17 \keyw{else} q [\keyw{if} w\mlt{}0 \keyw{then} 2 \keyw{else} n]}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblGotoStatementsSemantics}
+
+A go to statement interrupts the normal sequence of operations,
+defined by the write-up of statements, by defining its successor
+explicitly by the value of a designational expression.  Thus the next
+statement to be executed will be the one having this value as its
+label.
+
+\subsubsection{Restriction}
+
+Since labels are inherently local, no go to statement can lead from
+outside into a block.  A go to statement may, however, lead from
+outside into a compound statement.
+
+Go to an undefined switch designator.  A go to statement is equivalent
+to a dummy statement if the designational expression is a switch
+designator whose value is undefined.
+
+
+
+\subsection{Dummy statements}
+\label{LblDummyStatements}
+
+
+\subsubsection{Syntax}
+\label{LblDummyStatementsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<dummy statement> ::= <empty>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{L:\\
+\keyw{begin} ....; John: \keyw{end}}\\
+\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblDummyStatementsSemantics}
+
+A dummy statement executes no operation.  It may serve to place a
+label.
+
+
+
+
+\subsection{Conditional statements}
+
+
+\subsubsection{Syntax}
+\label{LblConditionalStatementsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<if clause> ::= \keyw{if} <Boolean expression> \keyw{then}}\\
+
+\vspace{0.2em}\texttt{<unconditional statement> ::= <basic statement> |\\
+  \hspace{1.0cm}<compound statement> | <block>}\\
+
+\vspace{0.2em}\texttt{<if statement> ::= <if clause> <unconditional statement>}\\
+
+\vspace{0.2em}\texttt{<conditional statement> ::= <if statement> |\\
+  \hspace{1.0cm}<if statement> \keyw{else} <statement> |\\
+  \hspace{1.0cm}<if clause> <for statement> |\\
+  \hspace{1.0cm}<label>: <conditional statement>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{\keyw{if} x\mgt{}0 \keyw{then} n:=n+1\\
+\keyw{if} s\mgt{}u \keyw{then} V: q:=n+m \keyw{else} \keyw{goto} R\\
+\keyw{if} s\mlt{}0 \mlor{} P\mle{}Q \keyw{then} AA: \keyw{begin} \keyw{if} q\mlt{}v \keyw{then} a:=v/s\\
+\hspace{7.25cm}\keyw{else} y:=2\mtim{}a \keyw{end}\\
+\hspace{2.8cm}\keyw{else} \keyw{if} v\mgt{}s \keyw{then} a:=v-q\\
+\hspace{5.1cm}\keyw{else} \keyw{if} v\mgt{}s-1 \keyw{then} \keyw{goto} S}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblConditionalStatementsSemantics}
+
+Conditional statements cause certain statements to be executed or
+skipped depending on the running values of specified Boolean
+expressions.
+
+\paragraph{If statement}
+\label{LblConditionalStatementsSemanticsIfStatement}
+The unconditional statement of an if statement will be executed if the
+Boolean expression of the if clause is true.  Otherwise it will be
+skipped and the operation will be continued with the next statement.
+
+\paragraph{Conditional statement}
+\label{LblConditionalStatementsSemanticsCondStatement}
+According to the syntax two different forms of conditional statements
+are possible.  These may be illustrated as follows:
+
+\begin{flushleft}
+\texttt{\keyw{if} B1 \keyw{then} S1 \keyw{else} \keyw{if} B2 \keyw{then} S2 \keyw{else} S3; S4}\\
+\end{flushleft}
+
+\begin{flushleft}
+\texttt{\keyw{if} B1 \keyw{then} S1 \keyw{else} \keyw{if} B2 \keyw{then} S2 \keyw{else} \keyw{if} B3 \keyw{then} S3; S4}\\
+\end{flushleft}
+
+Here B1 to B3 are Boolean expressions, while S1 to S3 are
+unconditional statements.  S4 is the statement following the complete
+conditional statement.
+
+The execution of a conditional statement may be described as follows:
+The Boolean expression of the if clause are evaluated one after the
+other in sequence from left to right until one yielding the value
+\keyw{true} is found.  Then the unconditional statement following this
+Boolean is executed.  Unless this statement defines its successor
+explicitly the next statement to be executed will be S4, i.e.  the
+statement following the complete complete conditional statement.  Thus
+the effect of the delimiter \keyw{else} may be described by saying
+that it defines the successor of the statement it follows to be the
+statement following the complete conditional statement.
+
+The construction
+
+\begin{flushleft}
+\texttt{\keyw{else} <unconditional statement>}
+\end{flushleft}
+
+is equivalent to
+
+\begin{flushleft}
+\texttt{\keyw{else} \keyw{if} \keyw{true} \keyw{then} <unconditional statement>}
+\end{flushleft}
+
+If none of the Boolean expressions of the if clauses is true, the
+effect of the whole conditional statement will be equivalent to that
+of a dummy statement.
+
+For further explanation the following picture may be useful:
+
+\vspace{1em}
+\setlength{\unitlength}{1cm}
+\begin{picture}(15,1.9)(0,-0.05)
+  \put (0.00,1.00){\texttt{\keyw{if} B1 \keyw{then} S1 \keyw{else} \keyw{if} B2 \keyw{then} S2 \keyw{else} S3; S4}}
+
+  \put (0.60,0.80){\vector(+0,-1){0.40}}
+  \put (3.75,0.40){\vector(+0,+1){0.40}}
+  \put (0.60,0.40){\line  (+1,+0){3.15}}
+  \put (1.50,0.00){\texttt{B1 \keyw{false}}}
+
+  \put (4.30,0.80){\vector(+0,-1){0.40}}
+  \put (7.45,0.40){\vector(+0,+1){0.40}}
+  \put (4.30,0.40){\line  (+1,+0){3.15}}
+  \put (5.20,0.00){\texttt{B2 \keyw{false}}}
+
+  \put (3.10,1.40){\vector(+0,+1){0.40}}
+  \put (6.70,1.40){\vector(+0,+1){0.40}}
+  \put (8.30,1.80){\vector(+0,-1){0.40}}
+  \put (3.10,1.80){\line  (+1,+0){5.20}}
+\end{picture}
+
+\paragraph{Go to into a conditional statement}
+
+The effect of a go to statement leading into a conditional statement
+follows directly from the above explanation of the effect of
+\keyw{else}.
+
+
+
+
+\subsection{For statements}
+\label{LblForStatements}
+
+\subsubsection{Syntax}
+\label{LblForStatementsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<for list element> ::= <arithmetic expression> | \\
+  \hspace{1.0cm}<arithmetic expression> \keyw{step} <arithmetic expression> \\
+  \hspace{1.0cm}\keyw{until} <arithmetic expression> |\\
+  \hspace{1.0cm}<arithmetic expression> \keyw{while} <Boolean expression>}\\
+
+\vspace{0.2em}\texttt{<for list> ::= <for list element> |\\
+  \hspace{1.0cm}<for list> , <for list element>}\\
+
+\vspace{0.2em}\texttt{<for clause> ::= \keyw{for} <variable> := <for list> \keyw{do}}\\
+
+\vspace{0.2em}\texttt{<for statement> ::= <for clause> <statement> |\\
+  \hspace{1.0cm}<label>: <for statement>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{\keyw{for} q:=1 \keyw{step} s \keyw{until} n \keyw{do} A[q]:=B[q]\\
+\keyw{for} k:=1,V1\mtim{}2 \keyw{while} V1\mlt{}N \keyw{do}\\
+\keyw{for} j:=I+G,L,1 \keyw{step} 1 \keyw{until} N, C+D \keyw{do} A[k,j]:=B[k,j]}\\
+\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblForStatementsSemantics}
+
+A for clause causes the statement S which it precedes to be repeatedly
+executed zero or more times.  In addition it performs a sequence of
+assignments to its controlled variable.  The process may be visualized
+by means of the following picture:
+
+\vspace{1em}
+\setlength{\unitlength}{1cm}
+\begin{picture}(15,1.5)(0,-0.05)
+  \put (0.00,0.60){\texttt{Initialize; test; statement S; advance; successor}}
+
+  \put (2.90,0.40){\vector(+0,-1){0.40}}
+  \put (9.00,0.00){\vector(+0,+1){0.40}}
+  \put (2.90,0.00){\line  (+1,+0){6.10}}
+
+  \put (2.90,1.40){\vector(+0,-1){0.40}}
+  \put (6.90,1.00){\vector(+0,+1){0.40}}
+  \put (2.90,1.40){\line  (+1,+0){4.00}}
+\end{picture}
+
+In this picture the word initialize means: perform the first
+assignment of the for clause.  Advance means: perform the next
+assignment of the for clause.  Test determines if the last assignment
+has been done.  If so, the execution continues with the successor of
+the for statement.  If not, the statement following the for clause is
+executed.
+
+
+\subsubsection{The for list elements}
+\label{LblForStatementsElements}
+
+The for list gives a rule for obtaining the values which are
+consecutively assigned to the controlled variable.  This sequence of
+values is obtained from the for list elements by taking these one by
+one in order in which they are written.  The sequence of values
+generated by each of the three species of for list elements and the
+corresponding execution of the statement S are given by the following
+rules:
+
+\paragraph{Arithmetic expression}
+\label{LblForStatementsSemanticsArithExpression}
+
+This element gives rise to one value, namely the value of the given
+arithmetic expression as calculated immediately before the
+corresponding execution of the statement S.
+
+\paragraph{Step-until-element}
+\label{LblForStatementsSemanticsStepUntil}
+
+An element of the form A \keyw{step} B \keyw{until} C, where A, B, and
+C are arithmetic expressions, gives rise to an execution which may be
+described most concisely in terms of additional Algol statement as
+follows:
+
+\begin{flushleft}
+\texttt{\hspace{1.0cm}V := A\\
+L1:  \keyw{if} (V-C)\mtim{}sign(B) \mgt{} 0 \keyw{then} \keyw{goto} ``Element exhausted'';\\
+\hspace{1.0cm}Statement S;\\
+\hspace{1.0cm}V := V+B;\\
+\hspace{1.0cm}\keyw{goto} L1;}\\
+\end{flushleft}
+
+where V is the controlled variable of the for clause and `Element
+exhausted' points to the evaluation according to the next element in
+the for list, or if the step-until-element is the last of the list, to
+the next statement in the program.
+
+\paragraph{While-element}
+\label{LblForStatementsSemanticsWhileElement}
+
+The execution governed by a for list element of the form E
+\keyw{while} F, where E is an arithmetic and F a Boolean expression,
+is most concisely described in terms of additional Algol statements as
+follows:
+
+\begin{flushleft}
+\texttt{L3:  V := E\\
+  \hspace{1.0cm}\keyw{if} \mlnot{} F \keyw{then} \keyw{goto} ``Element exhausted'';\\
+  \hspace{1.0cm}Statement S;\\
+  \hspace{1.0cm}\keyw{goto} L3;}\\
+\end{flushleft}
+
+where the notation is the same as in
+\ref{LblForStatementsSemanticsStepUntil} above.
+
+
+\subsubsection{The value of the controlled variable upon exit}
+
+Upon exit out of the statement S (supposed to be compound) through a
+go to statement the value of the controlled variable will be the same
+as it was immediately preceding the execution of the go to statement.
+
+If the exit is due to exhaustion of the for list, on the other hand,
+the value of the controlled variable is undefined after the exit.
+
+\subsubsection{Go to leading into a for statement.}
+
+The effect of a go to statement, outside a for statement, which refers
+to a label within the for statement, is undefined.
+
+
+
+
+\subsection{Procedure statements}
+\label{LblProcedureStatements}
+
+
+\subsubsection{Syntax}
+\label{LblProcedureStatementsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<actual parameter> ::= <string> | <expression> |\\
+  \hspace{1.0cm}<array identifier> | <switch identifier> |\\
+  \hspace{1.0cm}<procedure identifier>}\\
+
+\vspace{0.2em}\texttt{<letter string> ::= <letter> | <letter string> <letter>}\\
+
+\vspace{0.2em}\texttt{<parameter delimiter> ::= , | ) <letter string> : (}\\
+
+\vspace{0.2em}\texttt{<actual parameter list> ::= <actual parameter> |\\
+  \hspace{1.0cm}<actual parameter list> <parameter delimiter> <actual parameter>}\\
+
+\vspace{0.2em}\texttt{<actual parameter part> ::= <empty> | ( <actual parameter list> )}\\
+
+\vspace{0.2em}\texttt{<procedure statement> ::=\\
+  \hspace{1.0cm}<procedure identifier> <actual parameter part>}\\
+\end{flushleft}
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{Spur (A) Order: (7) Result to: (V)\\
+Transpose (W, v+1)\\
+Absmax (A, N, M, Yy, I, K)\\
+Innerproduct (A [t,P,u], B [P], 10, P, Y)}\\
+\end{flushleft}
+
+These examples correspond to examples given in section
+\ref{LblProcedureDeclarationsExamples}.
+
+\subsubsection{Semantics}
+\label{LblProcedureStatementsSemantics}
+
+A procedure statement serves to invoke (call for) the execution of a
+procedure body (cf. section \ref{LblProcedureDeclarations} procedure
+declarations).  Where the procedure body is a statement written in
+Algol the effect of this execution will be equivalent to the effect of
+performing the following operations on the program at the time of
+execution of the procedure statement.
+
+\paragraph{Value assignment (call by value)}
+\label{LblProcedureStatementsSemanticsCallByValue}
+
+All formal parameters quoted in the value part of the procedure
+declaration heading are assigned the values (cf. section
+\ref{LblValuesAndTypes} Values and types) of the corresponding actual
+parameters, these assignments being considers as being performed
+explicitly before entering the procedure body.  The effect is as
+though an additional block embracing the procedure body were created
+in which these assignments were made to variables local to this
+fictitious block with types as given in the corresponding
+specifications (cf. section
+\ref{LblProcedureDeclarationsSpecifications}).  As a consequence,
+variables called by value are to be considered as nonlocal to the body
+of the procedure, but local to the fictitious block (cf. section
+\ref{LblProcedureDeclarationsSemantics}).
+
+\paragraph{Name replacement (call by name)}
+\label{LblProcedureStatementsSemanticsCallByName}
+
+Any formal parameter not quoted in the value list is replaced,
+throughout the procedure body, by the corresponding actual parameter,
+after enclosing this latter in parentheses wherever syntactically
+possible.  Possible conflicts between identifiers inserted through
+this process and other identifiers already present within the
+procedure body will be avoided by suitable systematic changes of the
+formal or local identifiers involved.
+
+\paragraph{Body replacement and execution}
+
+Finally the procedure body, modified as above, is inserted in place of
+the procedure statement and executed.  if the procedure is called from
+a place outside the scope of any non-local quantity of the procedure
+bode the conflicts between the identifiers inserted through this
+process of body replacement and the identifiers whose declarations are
+valid at the place of the procedure statement or function designator
+will be avoided through suitable systematic changes of the latter
+identifiers.
+
+\subsubsection{Actual-formal correspondence}
+
+The correspondence between the actual parameters of the procedure
+statement and the formal parameters of the procedure heading is
+established as follows: The actual parameter list of the procedure
+statement must have the same number of entries as the formal parameter
+list of the procedure declaration heading.  The correspondence is
+obtained by taking the entries of these two lists in the same order.
+
+\subsubsection{Restrictions}
+\label{LblProcedureStatementsRestrictions}
+
+For a procedure statement to be defined it is evidently necessary that
+the operations on the procedure body defined in sections
+\ref{LblProcedureStatementsSemanticsCallByValue} and
+\ref{LblProcedureStatementsSemanticsCallByName} lead to a correct
+Algol statement.
+
+This imposes the restriction on any procedure statement that the kind
+and type of each actual parameter to be compatible with the kind and
+type of the corresponding formal parameter.  Some important particular
+cases of this general rule are the following:
+
+\paragraph{} \label{LblProcedureStatementsRestrictionsP1}
+If a string is supplied as an actual parameter in a procedure
+statement or function designator, whose defining procedure body is an
+Algol 60 statement (as opposed to non-Algol code, cf. section
+\ref{LblProcedureBodyExpressedInCode}), then this string can only be
+used within the procedure body as an actual parameter in further
+procedure calls.  Ultimately it can only be used by a procedure body
+expressed in non-Algol code.
+
+\paragraph{} \label{LblProcedureStatementsRestrictionsP2}
+A formal parameter which occurs as a left part variable in an
+assignment statement within the procedure body and which is not called
+by value can only correspond to an actual parameter which is a
+variable (special case of expression).
+
+\paragraph{} \label{LblProcedureStatementsRestrictionsP3}
+A formal parameter which is used within the procedure body as an array
+identifier can only correspond to an actual parameter which is an
+array identifier of an array of the same dimensions.  In addition if
+the formal parameter is called by value the local array created during
+the call will have the same subscript bounds as the actual array.
+
+\paragraph{} \label{LblProcedureStatementsRestrictionsP4}
+A formal parameter which is called by value cannot in general
+correspond to a switch identifier or a procedure identifier or a
+string, because these latter do not possess values (the exception is
+the procedure identifier of a procedure declaration which has an empty
+formal parameter part (cf. section \ref{LblProcedureDeclarations}) and
+which defines the value of a function designator (cf. section
+\ref{LblValuesOfFuncDesignators}).  This procedure identifier is in
+itself a complete expression).
+
+\paragraph{} \label{LblProcedureStatementsRestrictionsP5}
+Any formal parameter may have restrictions on the type of the
+corresponding actual parameter associated with it (these restrictions
+may, or may not, be given through specifications in the procedure
+heading).  In the procedure statement such restrictions must evidently
+be observed.
+
+\subsubsection{}
+
+Deleted
+
+\subsubsection{Parameter delimiters}
+\label{LblProcedureParameterDelimiters}
+
+All parameter delimiters are understood to be equivalent.  No
+correspondence between the parameter delimiters used in a procedure
+statement and those used in the procedure heading is expected beyond
+their number is the same.  Thus the information conveyed by using the
+elaborate ones is entirely optional.
+
+\subsubsection{Procedure body expressed in code}
+\label{LblProcedureBodyExpressedInCode}
+
+The restrictions imposed on a procedure statement calling a procedure
+having its body expressed in non-Algol code evidently can only be
+derived from the characteristics of the code used and the intent of
+the user and thus fall outside the scope of the reference language.
+
+
+
+\section{Declarations}
+\label{LblDeclarations}
+
+Declarations serve to define certain properties of the quantities used
+in the program, and to associate them with identifiers.  A declaration
+of an identifier is valid for one block.  Outside this block the
+particular identifier may be used for other purposes (cf. section
+\ref{LblCompoundStatementsSemantics}).
+
+Dynamically this implies the following: at the time of an entry into a
+block (through the \keyw{begin} since the labels inside are local and
+therefore inaccessible from outside) all identifiers declared for the
+block assume the significance implied by the nature of the
+declarations given.  If these identifiers had already been defined by
+other declarations outside they are for the time being given a new
+significance.  Identifiers which are not declared for the block, on
+the other hand, retain their old meaning.
+
+At the time of an exit from an block (through \keyw{end}, or by a go
+to statement) all identifiers which are declared for the block lose
+their local significance.
+
+A declaration my be marked with the additional declarator \keyw{own}.
+This has the following effect: upon a reentry into the block, the
+values of own quantities will be unchanged from their values at the
+last exit, while the values of declared variables which are not marked
+as own are undefined.  Apart from labels and formal parameters of
+procedure declarations and with the possible exception of those for
+standard functions (cf. sections \ref{LblBasicSymbolsIdentifiers} and
+\ref{LblBasicSymbolsNumbers}) all identifiers of a program must be
+declared.  No identifier may be declared more than once in any one
+block head.
+
+Syntax:
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<declaration> ::= <type declaration> | <array declaration> |\\
+  \hspace{1.0cm}<switch declaration> | <procedure declaration>}\\
+\end{flushleft}
+
+
+\subsection{Type declarations}
+\label{LblTypeDeclarations}
+
+\subsubsection{Syntax}
+\label{LblTypeDeclarationsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<type list> ::= <simple variable> | <simple variable> , <type list>}\\
+
+\vspace{0.2em}\texttt{<type> ::= \keyw{real} | \keyw{integer} | \keyw{Boolean}}\\
+
+\vspace{0.2em}\texttt{<local or own type> ::= <type> | \keyw{own} <type>}\\
+
+\vspace{0.2em}\texttt{<type declaration> ::= <local or own type> <type list>}\\
+\end{flushleft}
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{\keyw{integer} p, q, s\\
+\keyw{own} \keyw{Boolean} Acryl, n}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblTypeDeclarationsSemantics}
+
+Type declarations serve to declare certain identifiers to represent
+simple variables of a given type.  Real declared variables may only
+assume positive or negative values including zero.  Integer declared
+variables may only assume positive and negative integral values
+including zero.  Boolean declared variables may only assume the values
+\keyw{true} and \keyw{false}.
+
+In arithmetic expressions any position which can be occupied by a real
+declared variable may be occupied by an integer declared variable.
+
+For the semantics of \keyw{own}, see the fourth paragraph of section 5
+above.
+
+
+
+\subsection{Array declarations}
+\label{LblArrayDeclarations}
+
+\subsubsection{Syntax}
+\label{LblArrayDeclarationsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<lower bound> ::= <arithmetic expression>}\\
+
+\vspace{0.2em}\texttt{<upper bound> ::= <arithmetic expression>}\\
+
+\vspace{0.2em}\texttt{<bound pair> ::= <lower bound> : <upper bound>}\\
+
+\vspace{0.2em}\texttt{<bound pair list> ::= <bound pair> |\\
+  \hspace{1.0cm}<bound pair list> , <bound pair>}\\
+
+\vspace{0.2em}\texttt{<array segment> ::= <array identifier> [ <bound pair list> ] |\\
+  \hspace{1.0cm}<array identifier> , <array segment>}\\
+
+\vspace{0.2em}\texttt{<array list> ::= <array segment> |\\
+  \hspace{1.0cm}<array list> , <array segment>}\\
+
+\vspace{0.2em}\texttt{<array declaration> ::= \keyw{array} <array list> |\\
+  \hspace{1.0cm}<local or own type> \keyw{array} <array list>}\\
+\end{flushleft}
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{\keyw{array} a, b, c [7:n, 2:m], s [-2:10]\\
+\keyw{own} \keyw{integer} \keyw{array} A [\keyw{if} c\mlt{}0 \keyw{then} 2 \keyw{else} 1:20]\\
+\keyw{real} \keyw{array} q [-7:-1]}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblArrayDeclarationsSemantics}
+
+An array declaration declares one or several identifiers to represent
+multidimensional arrays of subscripted variables and gives the
+dimensions of the arrays, the bound of the subscripts, and the types
+of the variables.
+
+\paragraph{Subscript bounds} \label{LblArrayDeclarationsSemanticsP1}
+The subscript bounds for any array are given in the first subscript
+bracket following the identifier of this array in the form of a bound
+pair list.  Each item of this list gives the lower and upper bound of
+a subscript in the form of two arithmetic expressions separated by the
+delimiter :.  The bound pair list gives the bounds of all subscripts
+taken in order from left to right.
+
+\paragraph{Dimensions} \label{LblArrayDeclarationsSemanticsP2}
+
+The dimensions are given as the number of entries in the bound pair
+list.
+
+\paragraph{Types} \label{LblArrayDeclarationsSemanticsP3}
+
+All arrays declared in one declaration are of the same quoted type.
+If no type declarator is given the type \keyw{real} is understood.
+
+
+\subsubsection{Lower upper bound expressions}
+\label{LblArrayDeclarationsLowerUpperExpressions}
+
+\paragraph{} \label{LblArrayDeclarationsLowerUpperExpressionsP1}
+The expressions will be evaluated in the same way as subscript
+expressions (cf. section \ref{LblVariableSubscriptsP2}).
+
+\paragraph{} \label{LblArrayDeclarationsLowerUpperExpressionsP2}
+The expressions can only depend on variables and procedures which are
+non-local to the block for which the array declaration is valid.
+Consequently in the outermost block of a program only array
+declarations with constant bounds may be declared.
+
+\paragraph{} \label{LblArrayDeclarationsLowerUpperExpressionsP3}
+An array identifier id defined only when the values of all upper
+subscript bounds are not smaller than those of the corresponding lower
+bounds.
+
+\paragraph{} \label{LblArrayDeclarationsLowerUpperExpressionsP4}
+The expressions will by evaluated once at each entrace into the block.
+
+\subsubsection{The identity of subscripted variables}
+\label{LblArrayDeclarationsIdentityOfSubscriptedVariables}
+
+The identity of a subscripted variable is not related to the subscript
+bounds given in the array declaration.  However, even if an array is
+declared \keyw{own} the values of the corresponding subscripted
+variables will, at any time, be defined only for those of these
+variables which have subscripts within the most recently calculated
+subscript bounds.
+
+
+\subsection{Switch declarations}
+\label{LblSwitchDeclarations}
+
+
+\subsubsection{Syntax}
+\label{LblSwitchDeclarationsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<switch list> ::= <designational expression> |\\
+  \hspace{1.0cm}<switch list> , <designational expression>}\\
+
+\vspace{0.2em}\texttt{<switch declaration> ::=\\
+  \hspace{1.0cm}\keyw{switch} <switch identifier> := <switch list>}\\
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\begin{flushleft}
+\texttt{\keyw{switch} S:=S1,S2,Q[m], \keyw{if} v\mgt{}-5 \keyw{then} S3 \keyw{else} S4\\
+\keyw{switch} Q:=p1,w}\\
+\end{flushleft}
+
+\subsubsection{Semantics}
+\label{LblSwitchDeclarationsSemantics}
+
+A switch declaration defines the set of values of the corresponding
+switch designators.  These values are given one by one as the values
+of the designational expressions entered in the switch list.  With
+each of these designational expressions there is associated a positive
+integer, 1, 2, ..., obtained by counting the items in the list from
+left to right.  The value of the switch designator corresponding to a
+given value of the subscript expression (cf. section
+\ref{LblDesignationalExpressions} Designational expressions) is the
+value of the designational expression in the switch list having this
+given value as its associated integer.
+
+\subsubsection{Evaluation of expressions in the switch list}
+
+An expression in the switch list will be evaluated every time the item
+of the list in which the expression occurs is referred to, using the
+current values of all variables involved.
+
+\subsubsection{Influence of scopes}
+
+If a switch designator occurs outside the scope of a quantity entering
+into a designational expression in the switch list, and an evaluation
+of this switch designator selects this designational expression, then
+the conflicts between the identifiers for the quantities in this
+expression and the identifiers whose declarations are valid at the
+place of the switch designator will be avoided through suitable
+systematic changes of the latter identifiers.
+
+
+
+\subsection{Procedure declarations}
+\label{LblProcedureDeclarations}
+
+\subsubsection{Syntax}
+\label{LblProcedureDeclarationsSyntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<formal parameter> ::= <identifier>}\\
+
+\vspace{0.2em}\texttt{<formal parameter list> ::= <formal parameter> |\\
+  \hspace{1.0cm}<formal parameter list> <parameter delimiter> <formal parameter>}\\
+
+\vspace{0.2em}\texttt{<formal parameter part> ::= <empty> | ( <formal parameter list> )}\\
+
+\vspace{0.2em}\texttt{<identifier list> ::= <identifier> |\\
+  \hspace{1.0cm}<identifier list> , <identifier>}\\
+
+\vspace{0.2em}\texttt{<value part> ::= \keyw{value} <identifier list> ; | <empty>}\\
+
+\vspace{0.2em}\texttt{<specifier> ::= \keyw{string} | <type> | \keyw{array} |\\
+  \hspace{1.0cm}<type> \keyw{array} | \keyw{label} | \keyw{switch} |\\
+  \hspace{1.0cm}\keyw{procedure} | <type> \keyw{procedure}}\\
+
+\vspace{0.2em}\texttt{<specification part> ::= <empty> | <specifier> <identifier list> ; |\\
+  \hspace{1.0cm}<specification part> <specifier> <identifier list>}\\
+
+\vspace{0.2em}\texttt{<procedure heading> ::= <procedure identifier> <formal parameter part> ;\\
+  \hspace{1.0cm}<value part> <specification part>}\\
+
+\vspace{0.2em}\texttt{<procedure body> ::= <statement> | <code>}\\
+
+\vspace{0.2em}\texttt{<procedure declaration> ::=\\
+  \hspace{1.0cm}\keyw{procedure} <procedure heading> <procedure body> |\\
+  \hspace{1.0cm}<type> \keyw{procedure} <procedure heading> <procedure body>}\\
+
+\end{flushleft}
+
+
+\subsubsection{Examples}
+\label{LblProcedureDeclarationsExamples}
+
+(See also the examples at the end of the report.)
+
+\begin{flushleft}
+\texttt{\keyw{procedure} Spur (a) Order: (n); \keyw{value} n;\\
+\keyw{array} a; \keyw{integer} n; \keyw{real} s;\\
+\keyw{begin} \keyw{integer} k;\\
+\hspace{1.25cm}s:=0;\\
+\hspace{1.25cm}\keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do} s:=s+a[k,k]\\
+\keyw{end}\\
+}\end{flushleft}
+
+\begin{flushleft}
+\texttt{\keyw{procedure} Transpose (a) Order: (n); \keyw{value} n;\\
+\keyw{array} a; \keyw{integer} n;\\
+\keyw{begin} \keyw{real} w; \keyw{integer} i, k;\\
+\hspace{1.25cm}\keyw{for} i := 1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{1.25cm}\keyw{for} k := 1+i \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{1.25cm}\keyw{begin} w:=a[i,k];\\
+\hspace{2.50cm}a[i,k]:=a[k,i];\\
+\hspace{2.50cm}a[k,i]:=w\\
+\hspace{1.25cm}\keyw{end}\\
+\keyw{end} Transpose\\
+}\end{flushleft}
+
+\begin{flushleft}
+\texttt{\keyw{integer} \keyw{procedure} Step (u); \keyw{real} u;\\
+Step:=\keyw{if} 0\mle{}u\mland{}u\mle{}1 \keyw{then} 1 \keyw{else} 0\\
+}\end{flushleft}
+
+\begin{flushleft}
+\texttt{\keyw{procedure} Absmax (a) Size: (n, m) Result: (y) Subscripts: (i, k);\\
+\keyw{comment} The absolute greatest element of the matrix a, of size n by m\\
+is transferred to y, and the subscripts of this element to i and k;\\
+\keyw{array} a; \keyw{integer} n, m, i, k; \keyw{real} y;\\
+\keyw{begin} \keyw{integer} p, q;\\
+\hspace{1.25cm}y := 0;\\
+\hspace{1.25cm}\keyw{for} p:=1 \keyw{step} 1 \keyw{until} n \keyw{do} \keyw{for} q:=1 \keyw{step} 1 \keyw{until} m \keyw{do}\\
+\hspace{1.25cm}\keyw{if} abs(a[p,q])\mgt{}y \keyw{then} \keyw{begin} y:=abs(a[p,q]);\\
+\hspace{6.75cm}    i:=p; k:=q \keyw{end} \keyw{end} Absmax\\
+}\end{flushleft}
+
+\begin{flushleft}
+\texttt{\keyw{procedure} Innerproduct (a, b) Order: (k, p) Result: (y); \keyw{value} k;\\
+\keyw{integer} k, p; \keyw{real} y, a, b;\\
+s:=0;\\
+\keyw{for} p:=1 \keyw{step} 1 \keyw{until} k \keyw{do} s:=s+a\mtim{}b;\\
+y:=s\\
+\keyw{end} Innerproduct
+}\end{flushleft}
+
+
+\subsubsection{Semantics}
+\label{LblProcedureDeclarationsSemantics}
+
+A procedure declaration serves to define the procedure associated with
+a procedure identifier.  The principal constituent of a procedure
+declaration is a statement or a piece of code, the procedure body,
+which through the use of procedure statements and/or function
+designators may be activated from other parts of the block in the head
+of which the procedure declaration appears.  Associated with the body
+is a heading, which specifies certain identifiers occurring within the
+body to represent formal parameters.  Formal parameters in the
+procedure body will, whenever the procedure is activated (cf. section
+\ref{LblFunctionDesignators} Function designators and section
+\ref{LblProcedureStatements} Procedure statements) be assigned the
+values of or replaced by actual parameters.  Identifiers in the
+procedure body which are not formal will be either local or non-local
+to the body depending on whether they are declared within the body or
+not.  Those of them which are non-local to the body may well be local
+to the block in the head of which the procedure declaration appears.
+The procedure body always acts like a block, whether it has the form
+of one or not.  Consequently the scope of any label labelling a
+statement within the body or the body itself can never extended beyond
+the procedure body.  In addition, if the identifier of a formal
+parameter is declared anew within the procedure body (including the
+case of its use as a label in section
+\ref{LblCompoundStatementsSemantics}), it is thereby given a local
+significance and actual parameters which correspond to it are
+inaccessible throughout the scope of its inner local quantity.
+
+\subsubsection{Values of function designators}
+\label{LblValuesOfFuncDesignators}
+
+For a procedure declaration to define the value of a function
+designator there must, within the procedure declaration body, occur
+one or more explicit assignment statements with the procedure
+identifier in a left part; at least one of these must be executed, and
+the type associated with the procedure identifier must be declared
+through the appearance of a type declarator as the very first symbol
+of the procedure declaration.  The last value so assigned is used to
+continue the evaluation of the expression in which the function
+designator occurs.  Any occurrence of the procedure identifier within
+the body of the procedure other than in a left part in an assignment
+statement denotes activation of the procedure.
+
+\subsubsection{Specifications}
+\label{LblProcedureDeclarationsSpecifications}
+
+In the heading a specification part, giving information about the
+kinds and types of the formal parameters by means of an obvious
+notation, may be included.  In this part no formal parameter may occur
+more than once.  Specification of formal parameters called by value
+(cf. section \ref{LblProcedureStatementsSemanticsCallByValue}) must be
+supplied and specifications of formal parameters called by name (cf.
+section \ref{LblProcedureStatementsSemanticsCallByName}) may be
+omitted.
+
+\subsubsection{Code as procedure body}
+\label{LblProcedureDeclarationsCodeAsProcedureBody}
+
+It is understood that the procedure body may be expressed in non-Algol
+language.  Since it is intended that the use of this feature should be
+entirely a question of hardware representation, no further rules
+concerning this code language can be given within the reference
+language.
+
+
+
+\section{Examples of procedure declarations}
+
+\subsection{Example 1}
+
+\begin{flushleft}
+\texttt{\keyw{procedure} euler (fct,sum,eps,tim); \keyw{value} eps,tim; \keyw{integer} tim;\\
+\keyw{real} \keyw{procedure} fct; \keyw{real} sum,eps;\\
+\keyw{comment} euler computes the sum of fct(i) for i from zero up to\\
+infinity by means of a suitably refined euler transformation. The\\
+summation is stopped as soon as tim times in succession the absolute\\
+value of the terms of the transformed series are found to be less than\\
+eps. Hence, one should provide a function fct with one integer argument,\\
+an upper bound eps, and an integer tim. The output is the sum sum. euler\\
+is particularly efficient in the case of a slowly convergent or\\
+divergent alternating series;\\
+\keyw{begin} \keyw{integer} i,k,n,t; \keyw{array} m[0:15]; \keyw{real} mn,mp,ds;\\
+i:=n; t:=0; m[0]:=fct(0); sum:=m[0]/2;\\
+nextterm: i:=i+1; mn:=fct(i);\\
+\hspace{1.0cm}\keyw{for} k:=0 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{begin} mp:=(mn+m[k])/2; m[k]:=mn;\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}mn:=mp \keyw{end} means;\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{if} (abs(mn)\mlt{}abs(m[n])) \mland{} (n\mlt{}15) \keyw{then}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{begin} ds:=mn/2; n:=n+1; m[n]:=mn \keyw{end} accept\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{else} ds:=mn;\\
+\hspace{1.0cm}\hspace{1.0cm}sum:=sum+ds;\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{if} abs(ds)\mlt{}eps \keyw{then} t:=t+1 \keyw{else} t:=0;\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{if} t\mlt{}tim \keyw{then} \keyw{goto} nextterm\\
+\keyw{end} euler\\
+}\end{flushleft}
+
+
+
+\subsection[Example 2]{Example 2\footnotemark}
+
+\footnotetext{This RK-program contains some new ideas which are
+related to ideas of S.  Gill, A process for the step by step
+integration of differential equations in an automatic computing
+machine.  Proc.  Camb.  Phil.  Soc.  47 (1951) p.  96, and E.
+Fr\"oberg, On the solution of ordinary differential equations with
+digital computing machines, Fysiograf.  S\ae{}llsk.  Lund, F\"orhd.
+20 Nr.  11 (1950) p. 136-152.  It must be clear however that with
+respect to computing time and round-off errors it may not be optimal,
+nor has it actually been tested on a computer.}
+
+\begin{flushleft}
+{\tt \keyw{procedure} RK (x,y,n,FKT,eps,eta,xE,yE,fi); \keyw{value} x,y; \keyw{integer} n;\\
+\keyw{Boolean} fi; \keyw{real} x,eps,eta,xE; \keyw{array} y,yE; \keyw{procedure} FKT;\\
+\keyw{comment} RK integrates the system y'k=fk(x,y1,y2,...,yn)(k=1,2,...n)\\
+of differential equations with the method of Runge-Kutta with automatic\\
+search for appropriate length of integration step. Parameters are: The\\
+initial values x and y[k] for x and the unknown functions yk(x). The\\
+order n of the system. The procedure FKT(x,y,n,z) which represents the\\
+system to be integrated, i.e. the set of functions fk. The tolerance values\\
+eps and eta which govern the accuracy of the numerical integration. The end\\
+of the integration interval xE; The output parameter yE which represents\\
+the solution x=xE. The Boolean variable fi, which must always be given \\
+the value \keyw{true} for an isolated or first entry into RK. If however the\\
+functions y must be available at several meshpoints x0,x1,...,xn, then the\\
+procedure must be called repeatedly (with x=xk, xE=x(k+1), for k=0,1,...,n-1)\\
+and then the later calls may occur with fi=\keyw{false} which saves computing\\
+time. The input parameters of FKT must be x,y,z,n, the output parameter z\\
+represents the set of derivatives z[k]=fk(x,y[1],y[2],...,y[n]) for x and\\
+the actual y's. A procedure comp enters as a non-local identifier;\\
+\vspace{1.0em}
+\keyw{begin}\\
+\hspace{1.0cm}\keyw{array} z,y1,y2,y3[1:n]; \keyw{real} x1,x2,x3,H; \keyw{Boolean} out;\\
+\hspace{1.0cm}\keyw{integer} k,j; \keyw{own} \keyw{real} s,Hs;\\
+\hspace{1.0cm}\keyw{procedure} RK1ST (x,y,h,xe,ye); \keyw{real} x,h,xe; \keyw{array} y,ye;\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{comment} RK1ST integrates one single Runge-Kutta step with\\
+\hspace{1.0cm}\hspace{1.0cm}initial values x, y[k] which yields the output parameters xe=x+h\\
+\hspace{1.0cm}\hspace{1.0cm}and ye[k], the latter being the solution at xe.  Important: the\\
+\hspace{1.0cm}\hspace{1.0cm}parameters n, FKT, z enter RK1ST as nonlocal entities;\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{begin}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{array} w[1:n], a[1:5]; \keyw{integer} k,j;\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}a[1]:=a[2]:=a[5]:=h/2; a[3]:=a[4]:=h;\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}xe:=x;\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do} ye[k]:=w[k]:=y[k];\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{for} j:=1 \keyw{step} 1 \keyw{until} 4 \keyw{do}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{begin}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}FKT(xe,w,n,z);\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}xe:=x+a[j];\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{begin}\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}w[k]:=y[k]+a[j]\mtim{}z[k];\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}ye[k]:=ye[k]+a[j+1]\mtim{}z[k]/3\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{end} k\\
+\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\hspace{1.0cm}\keyw{end} j\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{end} RK1ST;\\
+\vspace{1.0em}
+Begin of program:\\
+\vspace{1.0em}
+\hspace{1.0cm}\keyw{if} fi \keyw{then} \keyw{begin} H:=xE-x; s:=0 \keyw{end} \keyw{else} H:=Hs;\\
+\hspace{1.0cm}out:=\keyw{false};\\
+\vspace{1.0em}
+AA: \keyw{if} (x+2.01\mtim{}H-xE)\mgt{}0) \mleqv{} (H\mgt{}0) \keyw{then}\\
+\hspace{1.0cm}\keyw{begin} Hs:=H; out:=\keyw{true}; H:=(xE-x)/2 \keyw{end} if;\\
+\hspace{1.0cm}RK1ST (x,y,2\mtim{}H,x1,y1);\\
+\vspace{1.0em}
+BB: RK1ST (x,y,H,x2,y2); RK1ST (x2,y2,H,x3,y3);\\
+\hspace{1.0cm}\keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{1.0cm}\hspace{1.0cm}\keyw{if} comp (y1[k],y3[k],eta)\mgt{}eps \keyw{then} \keyw{goto} CC;\\
+\hspace{1.0cm}\keyw{comment} comp(a,b,c) is a function designator, the value of\\
+\hspace{1.0cm}which is the absolute value of the difference of the mantissae of a\\
+\hspace{1.0cm}and b, after the exponents of these quantities have been made equal\\
+\hspace{1.0cm}to the largest of the exponents of the originally given parameters\\
+\hspace{1.0cm}a, b, c;\\
+\hspace{1.0cm}x:=x3; \keyw{if} out \keyw{then} \keyw{goto} DD;\\
+\hspace{1.0cm}\keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do} y[k]:=y3[k];\\
+\hspace{1.0cm}\keyw{if} s=5 \keyw{then} \keyw{begin} s:=0; H:=2\mtim{}H \keyw{end} if;\\
+\hspace{1.0cm}s:=s+1; \keyw{goto} AA;\\
+\vspace{1.0em}
+CC: H:=0.5\mtim{}X; out:=\keyw{false}; x1:=x2;\\
+\hspace{1.0cm}\keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do} y1[k]:=y2[k];\\
+\hspace{1.0cm}\keyw{goto} BB;\\
+\vspace{1.0em}
+DD: \keyw{for} k:=1 \keyw{step} 1 \keyw{until} n \keyw{do} yE[k]:=y3[k]\\
+\keyw{end} RK\\
+}\end{flushleft}
+
+
+
+
+
+
+
+
+\section{Alphabetic index of definitions of concepts and syntactic units}
+
+All references are given through section numbers.  The references are
+given in three groups:
+
+\begin{description}
+
+\item[def] Following the abbreviation ``def'', reference to the
+             syntactic definition (if any) is given.
+
+\item[synt] Following the abbreviation ``synt'', references to the
+             occurrences in metalinguistic formulae are given.
+             References already quoted in the def-group are not
+             repeated.
+
+\item[text] Following the word ``text'', the references to definitions
+             given in the text are given. 
+
+\end{description}
+
+The basic symbols represented by signs other than underlined words
+have been collected at the beginning.  The examples have been ignored
+in compiling the index.
+
+
++ see: plus
+
+- see: minus
+
+\mtim{} see: multiply
+
+/ \mdiv{} see: divide
+
+\mpow{} see: exponentiation
+
+\mlt{} \mle{} \meq{} \mge{} \mgt{} \mne{} see: \texttt{<relational operator>}
+
+\mleqv{} \mlimp{} \mlor{} \mland{} \mlnot{} see: \texttt{<logical operator>}
+
+, see: comma
+
+. see: decimal point
+
+\ten{} see: ten
+
+: see: colon
+
+; see: semicolon
+
+:= see: colon equal
+
+\blankchar{} see: space
+
+( ) see: parentheses
+
+[ ] see: subscript bracket
+
+` ' see: string quote
+
+
+\texttt{<actual parameter>},
+def
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}\*
+
+\texttt{<actual parameter list>},
+def
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}\*
+
+\texttt{<actual parameter part>},
+def
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}\*
+
+\texttt{<adding operator>},
+def
+\ref{LblArithmeticExpressionsSyntax}\*
+
+alphabet,
+text
+\ref{LblBasicSymbolsLetters}\*
+
+arithmetic,
+text
+\ref{LblArithmeticExpressionsRealQuantities}\*
+
+\texttt{<arithmetic expression>},
+def
+\ref{LblArithmeticExpressionsSyntax},
+synt
+\ref{LblExpressions},
+\ref{LblVariablesSyntax},
+\ref{LblBooleanExpressionsSyntax},
+\ref{LblAssignmentStatementSyntax},
+\ref{LblForStatementsSyntax},
+\ref{LblArrayDeclarationsSyntax}
+text
+\ref{LblArithmeticExpressionsSemantics}\*
+
+\texttt{<arithmetic operator>},
+def
+\ref{LblBasicSymbolsDelimiters}
+text
+\ref{LblOperatorsAndTypes}\*
+
+\keyw{array},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArrayDeclarationsSyntax},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+array,
+text
+\ref{LblVariableSubscriptsP1}\*
+
+\texttt{<array declaration>},
+def
+\ref{LblArrayDeclarationsSyntax}
+synt
+\ref{LblDeclarations}
+text
+\ref{LblArrayDeclarationsSemantics}\*
+
+\texttt{<array identifier>},
+def
+\ref{LblVariablesSyntax}
+synt
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblArrayDeclarationsSyntax}
+text
+\ref{LblValuesAndTypes}\*
+
+\texttt{<array list>},
+def
+\ref{LblArrayDeclarationsSyntax}\*
+
+\texttt{<array segment>},
+def
+\ref{LblArrayDeclarationsSyntax}\*
+
+\texttt{<assignment statement>},
+def
+\ref{LblAssignmentStatementSyntax}
+synt
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblStructureOfTheLanguage},
+\ref{LblAssignmentStatementSemantics}\*
+
+\texttt{<basic statement>},
+def
+\ref{LblCompoundStatementsSyntax}
+synt
+\ref{LblConditionalStatementsSyntax}\*
+
+\texttt{<basic symbol>},
+def
+\ref{LblBasicSymbols}\*
+
+\keyw{begin},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblCompoundStatementsSyntax}\*
+
+\texttt{<block>},
+def
+\ref{LblCompoundStatementsSyntax}
+synt
+\ref{LblConditionalStatementsSyntax}
+text
+\ref{LblStructureOfTheLanguage},
+\ref{LblCompoundStatementsSemantics},
+\ref{LblDeclarations}\*
+
+\texttt{<block head>},
+def
+\ref{LblCompoundStatementsSyntax}\*
+
+\keyw{Boolean},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblTypeDeclarationsSyntax}
+text
+\ref{LblTypeDeclarationsSemantics}\*
+
+\texttt{<Boolean expression>},
+def
+\ref{LblBooleanExpressionsSyntax}
+synt
+\ref{LblExpressions},
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblAssignmentStatementSyntax},
+\ref{LblConditionalStatementsSyntax},
+\ref{LblForStatementsSyntax}
+text
+\ref{LblBooleanExpressionsSemantics}\*
+
+\texttt{<Boolean factor>},
+def
+\ref{LblBooleanExpressionsSyntax}\*
+
+\texttt{<Boolean primary>},
+def
+\ref{LblBooleanExpressionsSyntax}\*
+
+\texttt{<Boolean secondary>},
+def
+\ref{LblBooleanExpressionsSyntax}\*
+
+\texttt{<Boolean term>},
+def
+\ref{LblBooleanExpressionsSyntax}\*
+
+\texttt{<bound pair>},
+def
+\ref{LblArrayDeclarationsSyntax}\*
+
+\texttt{<bound pair list>},
+def
+\ref{LblArrayDeclarationsSyntax}\*
+
+\texttt{<bracket>},
+def
+\ref{LblBasicSymbolsDelimiters}\*
+
+\texttt{<code>},
+synt
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureBodyExpressedInCode},
+\ref{LblProcedureDeclarationsCodeAsProcedureBody}\*
+
+colon:,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblCompoundStatementsSyntax},
+\ref{LblConditionalStatementsSyntax},
+\ref{LblForStatementsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblArrayDeclarationsSyntax}\*
+
+colon equal :=,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblAssignmentStatementSyntax},
+\ref{LblForStatementsSyntax},
+\ref{LblSwitchDeclarationsSyntax}\*
+
+comma , ,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblVariablesSyntax},
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblForStatementsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblTypeDeclarationsSyntax},
+\ref{LblArrayDeclarationsSyntax},
+\ref{LblSwitchDeclarationsSyntax},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\keyw{comment},
+synt
+\ref{LblBasicSymbolsDelimiters}\*
+
+comment convention,
+\ref{LblBasicSymbolsDelimiters}\*
+
+\texttt{<compound statement>},
+def
+\ref{LblCompoundStatementsSyntax}
+synt
+\ref{LblConditionalStatementsSyntax}
+text
+\ref{LblStructureOfTheLanguage}\*
+
+\texttt{<compound tail>},
+def
+\ref{LblCompoundStatementsSyntax}\*
+
+\texttt{<conditional statement>},
+def
+\ref{LblConditionalStatementsSyntax}
+synt
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblConditionalStatementsSemantics}\*
+
+\texttt{<decimal fraction>},
+def
+\ref{LblBasicSymbolsNumbersSyntax}\*
+
+\texttt{<decimal number>},
+def
+\ref{LblBasicSymbolsNumbersSyntax}
+text
+\ref{LblBasicSymbolsNumbersSemantics}\*
+
+decimal point . ,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBasicSymbolsNumbersSemantics}\*
+
+\texttt{<declaration>},
+def
+\ref{LblDeclarations}
+synt
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblStructureOfTheLanguage},
+\ref{LblDeclarations} (complete section)\*
+
+\texttt{<declarator>},
+def
+\ref{LblBasicSymbolsDelimiters}\*
+
+\texttt{<delimiter>},
+def
+\ref{LblBasicSymbolsDelimiters}
+synt
+\ref{LblBasicSymbols}
+
+\texttt{<designational expression>},
+def
+\ref{LblDesignationalExpressionsSyntax}
+synt
+\ref{LblExpressions},
+\ref{LblGotoStatementsSyntax},
+\ref{LblSwitchDeclarationsSyntax}
+text
+\ref{LblDesignationalExpressionsSemantics}\*
+
+\texttt{<digit>},
+def
+\ref{LblBasicSymbolsDigits}
+synt
+\ref{LblBasicSymbols},
+\ref{LblBasicSymbolsIdentifiersSyntax},
+\ref{LblBasicSymbolsNumbersSyntax}\*
+
+dimension,
+text
+\ref{LblArrayDeclarationsSemanticsP2}\*
+
+divide / \mdiv{},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArithmeticExpressionsSyntax}
+text
+\ref{LblOperatorsAndTypesP2}\*
+
+\texttt{<dummy statement>},
+def
+\ref{LblDummyStatementsSyntax}
+synt
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblCompoundStatementsSemantics}\*
+
+\keyw{else},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblBooleanExpressionsSyntax},
+\ref{LblDesignationalExpressionsSyntax},
+\ref{LblConditionalStatementsSyntax}
+text
+\ref{LblCompoundStatementsSemantics}\*
+
+\texttt{<empty>},
+def
+\ref{FormalismForSyntacticDescription}
+synt
+\ref{LblBasicSymbolsStringsSyntax},
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblDummyStatementsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\keyw{end},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblCompoundStatementsSyntax}\*
+
+entier,
+text
+\ref{LblTransferFunctions}\*
+
+exponentiation \mpow{},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArithmeticExpressionsSyntax}
+text
+\ref{LblOperatorsAndTypesP3}\*
+
+\texttt{<expression>},
+def
+\ref{LblExpressions}
+synt
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}
+text
+\ref{LblExpressions} (complete section)\*
+
+\texttt{<exponential part>},
+def
+\ref{LblBasicSymbolsNumbersSyntax}
+text
+\ref{LblBasicSymbolsNumbersSemantics}\*
+
+\texttt{<factor>},
+def
+\ref{LblArithmeticExpressionsSyntax}\*
+
+\keyw{false},
+synt
+\ref{LblBasicSymbolsLogical}\*
+
+\texttt{<for clause>},
+def
+\ref{LblForStatementsSyntax}
+text
+\ref{LblForStatementsSemantics}\*
+
+\texttt{<for list>},
+def
+\ref{LblForStatementsSyntax}
+text
+\ref{LblForStatementsElements}\*
+
+\texttt{<for list element>},
+def
+\ref{LblForStatementsSyntax}
+text
+\ref{LblForStatementsSemanticsArithExpression},
+\ref{LblForStatementsSemanticsStepUntil},
+\ref{LblForStatementsSemanticsWhileElement}\*
+
+\texttt{<formal parameter>},
+def
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureDeclarationsSemantics}\*
+
+\texttt{<formal parameter list>},
+def
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<formal parameter part>},
+def
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<for statement>},
+def
+\ref{LblForStatementsSyntax}
+synt
+\ref{LblCompoundStatementsSyntax},
+\ref{LblConditionalStatementsSyntax}
+text
+\ref{LblForStatements} (complete section)\*
+
+\texttt{<function designator>},
+def
+\ref{LblFunctionDesignatorsSyntax}
+synt
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblBooleanExpressionsSyntax}
+text
+\ref{LblFunctionDesignatorsSemantics},
+\ref{LblValuesOfFuncDesignators}\*
+
+\keyw{goto},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblGotoStatementsSyntax}\*
+
+\texttt{<go to statement>},
+def
+\ref{LblBooleanExpressionsSyntax}
+synt
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblGotoStatementsSemantics}\*
+
+\texttt{<identifier>},
+def
+\ref{LblBasicSymbolsIdentifiersSyntax}
+synt
+\ref{LblVariablesSyntax},
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblDesignationalExpressionsSyntax},
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblBasicSymbolsIdentifiersSemantics}\*
+
+\texttt{<identifier list>},
+def
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\keyw{if},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblConditionalStatementsSyntax}\*
+
+\texttt{<if clause>},
+def
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblConditionalStatementsSyntax}
+synt
+\ref{LblBooleanExpressionsSyntax},
+\ref{LblDesignationalExpressionsSyntax}
+text
+\ref{LblArithmeticExpressionsSemantics},
+\ref{LblConditionalStatementsSemanticsCondStatement}\*
+
+\texttt{<if statement>},
+def
+\ref{LblConditionalStatementsSyntax}
+text
+\ref{LblConditionalStatementsSemanticsIfStatement}\*
+
+\texttt{<implication>},
+def
+\ref{LblBooleanExpressionsSyntax}\*
+
+\keyw{integer},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblTypeDeclarationsSyntax}
+text
+\ref{LblTypeDeclarationsSemantics}\*
+
+\texttt{<integer>},
+def
+\ref{LblBasicSymbolsNumbersSyntax}
+text
+\ref{LblBasicSymbolsNumbersTypes}\*
+
+\keyw{label},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<label>},
+def
+\ref{LblDesignationalExpressionsSyntax}
+synt
+\ref{LblCompoundStatementsSyntax},
+\ref{LblConditionalStatementsSyntax},
+\ref{LblForStatementsSyntax}
+text
+\ref{LblStructureOfTheLanguage},
+\ref{LblCompoundStatementsSemantics}\*
+
+\texttt{<left part>},
+def
+\ref{LblAssignmentStatementSyntax}\*
+
+\texttt{<left part list>},
+def
+\ref{LblAssignmentStatementSyntax}\*
+
+\texttt{<letter>},
+def
+\ref{LblBasicSymbolsLetters},
+synt
+\ref{LblBasicSymbols},
+\ref{LblBasicSymbolsIdentifiersSyntax},
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}\*
+
+\texttt{<letter string>},
+def
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}\*
+
+local, text
+\ref{LblCompoundStatementsSemantics}\*
+
+\texttt{<local or own type>},
+def
+\ref{LblTypeDeclarationsSyntax}
+synt
+\ref{LblArrayDeclarationsSyntax}\*
+
+\texttt{<logical operator>},
+def
+\ref{LblBasicSymbolsDelimiters}
+synt
+\ref{LblBooleanExpressionsSyntax}
+text
+\ref{LblBooleanExpressionsOperators}\*
+
+\texttt{<logical value>},
+def
+\ref{LblBasicSymbolsLogical}
+synt
+\ref{LblBasicSymbols},
+\ref{LblBooleanExpressionsSyntax}\*
+
+\texttt{<lower bound>},
+def
+\ref{LblArrayDeclarationsSyntax}
+text
+\ref{LblArrayDeclarationsLowerUpperExpressions}\*
+
+minus -,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBasicSymbolsNumbersSyntax},
+\ref{LblArithmeticExpressionsSyntax}
+text
+\ref{LblOperatorsAndTypesP1}\*
+
+multiply \mtim{},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArithmeticExpressionsSyntax}
+text
+\ref{LblOperatorsAndTypesP1}\*
+
+\texttt{<multiplying operator>},
+def
+\ref{LblArithmeticExpressionsSyntax}\*
+
+non-local,
+text
+\ref{LblCompoundStatementsSemantics}\*
+
+\texttt{<number>},
+def
+\ref{LblBasicSymbolsNumbersSyntax}
+text
+\ref{LblBasicSymbolsNumbersSemantics},
+\ref{LblBasicSymbolsNumbersTypes}\*
+
+\texttt{<open string>},
+def
+\ref{LblBasicSymbolsStringsSyntax}\*
+
+\texttt{<operator>},
+def
+\ref{LblBasicSymbolsDelimiters}\*
+
+\keyw{own},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblTypeDeclarationsSyntax}
+text
+\ref{LblDeclarations},
+\ref{LblArrayDeclarationsIdentityOfSubscriptedVariables}\*
+
+\texttt{<parameter delimiter>},
+def
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}
+synt
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureParameterDelimiters}\*
+
+parentheses (),
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblBooleanExpressionsSyntax},
+\ref{LblDesignationalExpressionsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblArithmeticExpressionsPrecedenceP2}\*
+
+plus +,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBasicSymbolsNumbersSyntax},
+\ref{LblArithmeticExpressionsSyntax}
+text
+\ref{LblOperatorsAndTypesP1}\*
+
+\texttt{<primary>},
+def
+\ref{LblArithmeticExpressionsSyntax}\*
+
+\keyw{procedure},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<procedure body>},
+def
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<procedure declaration>},
+def
+\ref{LblProcedureDeclarationsSyntax}
+synt
+\ref{LblDeclarations}
+text
+\ref{LblSwitchDeclarations}\*
+
+\texttt{<procedure heading>},
+def
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureDeclarationsSemantics}\*
+
+\texttt{<procedure identifier>},
+def
+\ref{LblFunctionDesignatorsSyntax}
+synt
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureStatementsRestrictionsP4}\*
+
+\texttt{<procedure statement>},
+def
+\ref{LblProcedureStatementsSyntax}
+synt
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblProcedureStatementsSemantics}\*
+
+\texttt{<program>},
+def
+\ref{LblCompoundStatementsSyntax}
+text
+\ref{LblStructureOfTheLanguage}\*
+
+\texttt{<proper string>},
+def
+\ref{LblBasicSymbolsStringsSyntax}\*
+
+\keyw{real},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblTypeDeclarationsSyntax}
+text
+\ref{LblTypeDeclarationsSemantics}\*
+
+\texttt{<relation>},
+def
+\ref{LblBooleanExpressionsSyntax}
+text
+\ref{LblBooleanExpressionsOperators}\*
+
+\texttt{<relational operator>},
+def
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBooleanExpressionsSyntax}\*
+
+scope,
+text
+\ref{LblQuantitiesKindsAndScopes}\*
+
+semicolon ; ,
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblCompoundStatementsSyntax},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<separator>},
+def
+\ref{LblBasicSymbolsDelimiters}\*
+
+\texttt{<sequential operator>},
+def
+\ref{LblBasicSymbolsDelimiters}\*
+
+\texttt{<simple arithmetic expression>},
+def
+\ref{LblArithmeticExpressionsSyntax}
+text
+\ref{LblArithmeticExpressionsSemantics}\*
+
+\texttt{<simple Boolean>},
+def
+\ref{LblBooleanExpressionsSyntax}\*
+
+\texttt{<simple designational expression>},
+def
+\ref{LblDesignationalExpressionsSyntax}\*
+
+
+\texttt{<simple variable>},
+def
+\ref{LblVariablesSyntax}
+synt
+\ref{LblTypeDeclarationsSyntax}
+text
+\ref{LblBasicSymbolsIdentifiersSemantics}\*
+
+space \blankchar{},
+synt
+\ref{LblBasicSymbolsDelimiters}
+text
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBasicSymbolsStringsSemantics}\*
+
+\texttt{<specification part>},
+def
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureDeclarationsSpecifications}\*
+
+\texttt{<specificator>},
+def
+\ref{LblBasicSymbolsDelimiters}\*
+
+\texttt{<specifier>},
+def
+\ref{LblProcedureDeclarationsSyntax}\*
+
+standard function,
+text
+\ref{LblStandardFunctions},
+\ref{LblTransferFunctions}\*
+
+\texttt{<statement>},
+def
+\ref{LblCompoundStatementsSyntax}
+synt
+\ref{LblConditionalStatementsSyntax},
+\ref{LblForStatementsSyntax},
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblStatements} (complete section)\*
+
+statement bracket see \keyw{begin} \keyw{end}\*
+
+\keyw{step},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblForStatementsSyntax}
+text
+\ref{LblForStatementsSemanticsStepUntil}\*
+
+\keyw{string},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<string>},
+def
+\ref{LblBasicSymbolsStringsSyntax}
+synt
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax}
+text
+\ref{LblBasicSymbolsStringsSemantics}\*
+
+string quotes `',
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBasicSymbolsStringsSyntax}
+text
+\ref{LblBasicSymbolsStringsSemantics}\*
+
+subscript,
+text
+\ref{LblVariableSubscriptsP1}\*
+
+subscript bound,
+text
+\ref{LblArrayDeclarationsSemanticsP1}\*
+
+subscript brackets [],
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblVariablesSyntax},
+\ref{LblDesignationalExpressionsSyntax},
+\ref{LblArrayDeclarationsSyntax}\*
+
+\texttt{<subscripted variable>},
+def
+\ref{LblVariablesSyntax}
+text
+\ref{LblVariableSubscriptsP1}\*
+
+\texttt{<subscript expression>},
+def
+\ref{LblVariablesSyntax}
+synt
+\ref{LblDesignationalExpressionsSyntax}\*
+
+\texttt{<subscript list>},
+def
+\ref{LblVariablesSyntax}\*
+
+successor,
+text
+\ref{LblStatements}\*
+
+\keyw{switch},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblSwitchDeclarationsSyntax},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+\texttt{<switch declaration>},
+def
+\ref{LblSwitchDeclarationsSyntax}
+synt
+\ref{LblDeclarations}
+text
+\ref{LblSwitchDeclarationsSemantics}\*
+
+\texttt{<switch designator>},
+def
+\ref{LblDesignationalExpressionsSyntax}
+text
+\ref{LblDesignationalExpressionsSemantics}\*
+
+\texttt{<switch identifier>},
+def
+\ref{LblDesignationalExpressionsSyntax}
+synt
+\ref{LblFunctionDesignatorsSyntax},
+\ref{LblProcedureStatementsSyntax},
+\ref{LblSwitchDeclarationsSyntax}\*
+
+\texttt{<switch list>},
+def
+\ref{LblSwitchDeclarationsSyntax}\*
+
+\texttt{<term>},
+def
+\ref{LblArithmeticExpressionsSyntax}\*
+
+ten \ten{},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblBasicSymbolsNumbersSyntax}\*
+
+\keyw{then},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblConditionalStatementsSyntax}\*
+
+transfer function,
+text
+\ref{LblTransferFunctions}\*
+
+\keyw{true},
+synt
+\ref{LblBasicSymbolsLogical}\*
+
+\texttt{<type>},
+def
+\ref{LblTypeDeclarationsSyntax}
+synt
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblValuesAndTypes}\*
+
+\texttt{<type declaration>},
+def
+\ref{LblTypeDeclarationsSyntax}
+synt
+\ref{LblDeclarations}
+text
+\ref{LblTypeDeclarationsSemantics}\*
+
+\texttt{<type list>},
+def
+\ref{LblTypeDeclarationsSyntax}\*
+
+\texttt{<unconditional statement>},
+def
+\ref{LblCompoundStatementsSyntax},
+\ref{LblConditionalStatementsSyntax}\*
+
+\texttt{<unlabelled basic statement>},
+def
+\ref{LblCompoundStatementsSyntax}\*
+
+\texttt{<unlabelled block>},
+def
+\ref{LblCompoundStatementsSyntax}\*
+
+\texttt{<unlabelled compound>},
+def
+\ref{LblCompoundStatementsSyntax}\*
+
+\texttt{<unsigned integer>},
+def
+\ref{LblBasicSymbolsNumbersSyntax},
+\ref{LblDesignationalExpressionsSyntax}\*
+
+\texttt{<unsigned number>},
+def
+\ref{LblBasicSymbolsNumbersSyntax}
+synt
+\ref{LblArithmeticExpressionsSyntax}\*
+
+\keyw{until},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblForStatementsSyntax}
+text
+\ref{LblForStatementsSemanticsStepUntil}\*
+
+\texttt{<upper bound>},
+def
+\ref{LblArrayDeclarationsSyntax}
+text
+\ref{LblArrayDeclarationsLowerUpperExpressions}\*
+
+\keyw{value},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblProcedureDeclarationsSyntax}\*
+
+value,
+text
+\ref{LblValuesAndTypes},
+\ref{LblArithmeticExpressionsSemantics}\*
+
+\texttt{<value part>},
+def
+\ref{LblProcedureDeclarationsSyntax}
+text
+\ref{LblProcedureStatementsSemanticsCallByValue}\*
+
+\texttt{<variable>},
+def
+\ref{LblVariablesSyntax}
+synt
+\ref{LblArithmeticExpressionsSyntax},
+\ref{LblBooleanExpressionsSyntax},
+\ref{LblAssignmentStatementSyntax},
+\ref{LblForStatementsSyntax}
+text
+\ref{LblVariablesSemantics}\*
+
+\texttt{<variable identifier>},
+def
+\ref{LblVariablesSyntax}\*
+
+\keyw{while},
+synt
+\ref{LblBasicSymbolsDelimiters},
+\ref{LblForStatementsSyntax}
+text
+\ref{LblForStatementsSemanticsWhileElement}
+
+\vspace{4em}
+
+Note.  This report is published in Numerische Mathematik, in the
+Communications of the ACM, and in the Journal of the British Computer
+Soc.  Reproduction of this report for any purpose is explicitly
+permitted; reference should be made to this issue of Numerische
+Mathematik and to the respective issues of the Communications and the
+Journal of the British Computer Soc.  as the source.
+
+\vspace{1em}
+
+Technical University Delft\*
+Delft, Holland\*
+W. L. van der Poel,\*
+(Chairman of Working Group 2.1 on Algol of the\*
+International Federation for Information Processing)
+
+
+\end{document}

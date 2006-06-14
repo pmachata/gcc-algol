@@ -1,0 +1,64 @@
+\documentclass[a4paper,11pt]{report}
+\usepackage{a4wide}
+\usepackage[latin2]{inputenc}
+\usepackage[
+  bookmarks=true,
+  bookmarksopen=true,
+  colorlinks=false,
+  urlbordercolor={0 0 0},
+  pdfhighlight=/I,
+  pdftitle=,
+  pdfauthor=Petr\ Machata,
+  pdfstartview=FitH,
+  bookmarksopenlevel=2
+  ]{hyperref}
+\usepackage{subscript}
+\pagestyle{empty}
+\topmargin 0in
+\begin{document}
+
+This is a series of notes regarding what I'm going to want to have
+there included.
+
+ + Introduction: the purpose of work, goals, how to read, how is it
+ written.  Write at the very end of work.
+
+ + GCC the platform: How is GCC organized internally, how the
+ compilation process works, what is required on side of future
+ frontend implementor.  What is GENERIC and how is it used.  Concrete
+ stuff: the way GCC works, and how to use it when you want to gccify
+ your parser.  I don't think it makes a sense to include whole GENERIC
+ reference here.  Provide few examples and leave the rest to next
+ chapter.  Debugging -- how to debug GCC itself.  Dejagnu testing
+ suite.  Attributes -- how do frontend handle attributes, how do they
+ define their own.  -std=XXX, -pedantic -- how to support various
+ language versions.
+
+ + ALGOL 60: the language.  Why ALGOL 60.  High level overview of how
+ the language looks like and what's inside.  Pick interesting points,
+ if they are interesting from language implementor's POV.  Show
+ extensions to the language (IO, structures, separate compilation).
+ Provide UML model of ALGOL representation.  Methods employed to
+ implement lexical and syntactic analysis. (Just a short note.  Most
+ probably flex and yacc, but maybe we would rather stick with
+ recursive descend.)
+
+ + ALGOL 60 over GCC: Case study.  Suppose we have the parser library
+ ready and waiting.  How to plug it into GCC?  Let's see... step by
+ step from creation of apropriate directory, to setting up configures
+ (don't forget about the optional keyword distinguisher (probably only
+ case-sensitivity flag)), to initialization and to translation of
+ ALGOL 60 representation data structures to GENERIC.  How to plug
+ testsuite to gcc.
+
+ + Conclusion: Why this work simply rocks.  What has been done, what
+ could have been done better, etc.
+
+ + Appendix A: steps to install ALGOL 60 compiler on end user system.
+
+ + Appendix B: source codes.
+
+ + Appendix C: ALGOL 60 spec (don't attach to work? maybe just use it
+ as a reference)
+
+\end{document}

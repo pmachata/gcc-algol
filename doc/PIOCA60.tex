@@ -1,0 +1,1542 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage{a4wide}
+\usepackage[latin2]{inputenc}
+\usepackage[
+  bookmarks=true,
+  bookmarksopen=true,
+  colorlinks=false,
+  urlbordercolor={0 0 0},
+  pdfhighlight=/I,
+  pdftitle=A\ Proposal\ For\ InputOutput\ Conventions\ In\ ALGOL\ 60,
+  pdfauthor=Petr\ Machata,
+  pdfstartview=FitH,
+  bookmarksopenlevel=2
+  ]{hyperref}
+\usepackage{subscript}
+\pagestyle{empty}
+\topmargin 0in
+\begin{document}
+\setcounter{secnumdepth}{5}
+
+\title{A Proposal For Input-Output Conventions In ALGOL 60\\
+A Report of the Subcommittee on ALGOL of the ACM Programming Languages Committee.}
+
+\author{S. Gorn, Editor; R. W. Bemer, Asst. Editor, Glossary \& Terminology\\
+  J. Green, Asst. Editor, Programming Languages\\
+  E. Lohse, Asst. Editor, Information Interchange.\\
+  D. E. Knuth\footnote{California Institute of Technology, Pasadena, Calif.}, Chairman\\
+  L. L. Bumgarner, P.Z. Ingerman, J.N. Merner\\
+  D. E. Hamilton, M.P. Lietzke, D.W. Ross}
+
+\date{May 1964}
+
+\maketitle
+
+\def\keyw#1{{\tt \bf \underline{#1}}}
+\def\blankchar{\leavevmode\hbox{\tt\char`\ }}
+
+\def\program#1{{\tt\begin{tabbing}#1\end{tabbing}}}
+
+\def\Algol{{\sc Algol}\space}
+
+\def\mleqv{$\equiv$}
+\def\mlnot{$\neg$}
+\def\mland{$\wedge$}
+\def\mlor{$\vee$}
+\def\mlimp{$\Rightarrow$}
+\def\mlt{$<$}
+\def\mle{$\leq$}
+\def\mgt{$>$}
+\def\mge{$\geq$}
+\def\meq{$=$}
+\def\mne{$\neq$}
+\def\mpow{$\uparrow$}
+\def\mtim{$\times$}
+\def\mdiv{$\div$}
+\def\ten{\textsubscript{10}}
+
+\def\mychapter#1{{\Huge \bf \vspace{1em}#1}\vspace{1.0em}}
+\def\mysection#1{{\Large \bf \vspace{1em}#1}\vspace{1.0em}}
+\def\mysubsection#1{{\large \bf \vspace{1em}#1}\vspace{1.0em}}
+
+\def\note#1{{{\it Note.\space}#1}}
+
+The \Algol 60 language as first defined made no explicit reference to
+input and output processes. Such processes appeared to be quite
+dependent on the computer used, and so it was difficult to obtain
+agreement on those matters. As time has passed, a great many \Algol
+compilers have come into use, and each compiler has incorporated some
+input-output facilities. Experience has shown that such facilities can
+be introduced in a manner which is compatible and consistent with the
+\Algol language, and which (more importantly) is almost completely
+machine-independent. However, the existing implementations have taken
+many different approaches to the subject, and this has hampered the
+interchange of programs between installations. The ACM \Algol
+committee has carefully studied the various proposals in an attempt to
+define a set of conventions for doing input and output which would be
+suitable for use on most computers.  The present report constitutes
+the recommendations of that committee.
+
+The input-output conventions described here do not involve extensions
+or changes to the \Algol 60 language.  Hence they can be incorporated
+into existing processors with a minimum of effort. The conventions
+take the form of a set of procedures\footnote{Throughout this report,
+names of system procedures are in lower case, and names of procedures
+used in illustrative examples are in UPPER CASE.}, which are to be
+written in code for the various machines; this report discusses the
+function and use of these procedures. The material contained in this
+proposal is intended to supplement the procedures {\it in real}, {\it
+out real}, {\it in symbol}, {\it out symbol} which have been defined
+by the international \Algol committee; the procedures described here
+could, with trivial exceptions, be expressed in terms of these
+four\footnote{Defined at meeting of IFIP/WG2.1--\Algol in Delft during
+September, 1963. The definition of these procedures is not available
+for publication at this time.--J. G., Ed.}.
+
+The first part of this report describes the methods by which formats
+are represented; then the calls on the input and output procedures
+themselves are discussed. The primary objective of the present report
+is to describe the proposal concisely and precisely, rather than to
+give a programmer's introduction to the input-output conventions.  A
+simpler and more intuitive (but less exact) description can be written
+to serve as a teaching tool.
+
+Many useful ideas were suggested by input-output conventions of the
+compilers listed in the references below.  We are also grateful for
+the extremely helpful contributions of F. L. Bauer, M. Paul,
+H. Rutishauser, K. Samelson, G. Seegm\"uller, W. L. v. d. Poel, and
+other members of the European computing community, as well as
+A. Evans, Jr., R. W. Floyd, A. G. Grace, J. Green, G. E. Haynam, and
+W. C. Lynch of the USA.
+
+\section{Formats}
+\label{Lbl++Formats}
+
+In this section a certain type of string, which specifies the format
+of quantities to be input or output, is defined, and its meaning is
+explained.
+
+\subsection[Number Formats]{Number Formats (cf. ALGOL Report 2.5)}
+
+\subsubsection{Syntax}
+
+Basic components :
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<replicator> ::= <unsigned integer> | X }\\
+
+\vspace{0.2em}\texttt{<insertion> ::= B | <replicator> B | <string>}\\
+
+\vspace{0.2em}\texttt{<insertion sequence> ::= <empty> | <insertion sequence> <insertion>}\\
+
+\vspace{0.2em}\texttt{<Z> ::= Z | <replicator> Z | Z <insertion sequence> C |\\
+  \hspace{1.0cm}<replicator> Z <insertion sequence> C}\\
+
+\vspace{0.2em}\texttt{<Z part> ::= <Z> | <Z part> <Z> | <Z part> <insertion>}\\
+
+\vspace{0.2em}\texttt{<D> ::= D | <replicator> D | D <insertion sequence> C |\\
+  \hspace{1.0cm}<replicator> D <insertion sequence> C}\\
+
+\vspace{0.2em}\texttt{<D part> ::= <D> | <D part> <D> | <D part> <insertion>}\\
+
+\vspace{0.2em}\texttt{<T part> ::= <empty> | T <insertion sequence>}\\
+
+\vspace{0.2em}\texttt{<sign part> :: = <empty> | <insertion sequence> $+$ |\\
+  \hspace{1.0cm}<insertion sequence> $-$}\\
+
+\vspace{0.2em}\texttt{<integer part> :: = <Z part> | <D part> | <Z part> <D part>}\\
+\end{flushleft}
+
+Format structures:
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<unsigned integer format> ::= <insertion sequence> <integer part>}\\
+
+\vspace{0.2em}\texttt{<decimal fraction format> ::= $.$ <insertion sequence> <D part> <T part> |\\
+  \hspace{1.0cm}V <insertion sequence> <D part> <T part>}\\
+
+\vspace{0.2em}\texttt{<exponent part format> ::= \ten<sign part> <unsigned integer format>}\\
+
+\vspace{0.2em}\texttt{<decimal number format> ::= <unsigned integer format> <T part> |\\
+  \hspace{1.0cm}<insertion sequence> <decimal fraction format> |\\
+  \hspace{1.0cm}<unsigned integer format> <decimal fraction format>}\\
+
+\vspace{0.2em}\texttt{<number format> ::= <sign part> <decimal number format> |\\
+  \hspace{1.0cm}<decimal number format> + <insertion sequence> |\\
+  \hspace{1.0cm}<decimal number format> - <insertion sequence> |\\
+  \hspace{1.0cm}<sign part> <decimal number format> <exponent part format>}\\
+\end{flushleft}
+
+\note{This syntax could have been described more simply, but the
+rather awkward constructions here have been formulated so that no
+syntactic ambiguities (in the sense of formal hmguage theory) will
+exist.}
+
+\subsubsection{Examples}
+
+Examples of number formats appear in Figure \ref{Fig++ExamplesOfNumberFormats}.
+\begin{figure}
+
+\begin{tabular*}{15.0cm}{p{5cm}|p{5cm}|p{5cm}}
+
+Number format &
+Result from $-13.296$ &
+Result from $1007.999$ \\
+
+\cline{1-3}
+
+{\tt +ZZZCDDD.DD} &
+{\tt -013.30} &
+{\tt +1,008.00} \\
+
+{\tt +3ZC3D.2D} &
+{\tt -013.30} &
+{\tt +1,008.00} \\
+
+{\tt -3D2B3D.2DT}   &
+{\tt -000\blankchar{}\blankchar{}013.29} &
+{\tt 001\blankchar{}\blankchar{}007.99} \\
+
+{\tt 5Z.5D-} &
+{\tt 13.29600-} &
+{\tt 1007.99900} \\
+
+{\tt `integer\blankchar{}part\blankchar{}'-4ZV `,\blankchar{}fraction'B3D} &
+{\tt integer\blankchar{}part\blankchar{}\blankchar{}\blankchar{}-13 ,\blankchar{}fraction\blankchar{}296} &
+{\tt integer\blankchar{}part\blankchar{}1007 ,\blankchar{}fraction\blankchar{}999} \\
+
+{\tt -.5D\ten{}+2D`...'} &
+{\tt -.13296\ten{}+02...} &
+{\tt .10080\ten{}+04...} \\
+
+{\tt +ZD\ten{}2Z} &
+{\tt -13} &
+{\tt +10\ten{}\blankchar{}2} \\
+
+{\tt +D.DDBDDBDDB\ten+DD} &
+{\tt -1.32\blankchar{}96\blankchar{}00\blankchar{}\ten{}+01} &
+{\tt +1.00\blankchar{}79\blankchar{}99\blankchar{}\ten{}+03} \\
+
+{\tt XB.XD\ten{}-DDD} &
+{\tt (depends on call)} &
+{\tt (depends on call)} \\
+\end{tabular*}
+\caption{Examples of number formats}
+\label{Fig++ExamplesOfNumberFormats}
+\end{figure}
+
+\subsubsection{Semantics}
+
+The above syntax defines the allowable strings which can comprise a
+``number format.''  We will first describe the interpretation to be
+taken during {\it output}.
+
+\paragraph{Replicators}
+\label{Lbl++Formats+Number+Semantics+Replicators}
+An unsigned integer {\tt n} used as replicator means the quantity is
+repeated n times; thus {\tt 3B} is equivalent to {\tt BBB}. The
+character {\tt X} as replicator means a number of times which will be
+specified when the format is called (see Section
+\ref{Lbl++IoProc+Layout+Format}).
+
+\paragraph{Insertions}
+The syntax has been set up so that strings, delimited by string
+quotes, may be inserted anywhere within a number format. The
+corresponding information in the strings (except for the outermost
+string quotes) will appear inserted in the same place with respect to
+the rest of the number. Similarly, the letter {\tt B} may be inserted
+anywhere within a number format, and it stands for a blank space.
+
+\paragraph{Sign, zero, and comma suppression}
+\label{Lbl++Formats+Number+Semantics+SignZeroComma}
+
+The portion of a number to the left of the decimal point consists of
+an optional sign, then a sequence of {\tt Z}'s and a sequence of {\tt
+D}'s, with possible {\tt C}'s following a {\tt Z} or a {\tt D}, plus
+possible insertion characters.
+
+The convention on signs is the following: (a) if no sign appears, the
+number is assumed to be positive, and the treatment of negative
+numbers is undefined; (b) if a plus sign appears, the sign will appear
+as $+$ or $-$ on the external medium; and (c) if a minus sign appears,
+the sign will appear if minus, and will be suppressed if plus.
+
+The letter {\tt Z} stands for zero suppression, and the letter {\tt D}
+stands for digit printing {\it without} zero suppression.  Each {\tt
+Z} and {\tt D} stands for a single digit position; a zero digit
+specified by {\tt Z} will be suppressed, i.e. replaced by a blank
+space, when all digits to its left are zero.  A digit specified by
+{\tt D} will always be printed.  Note that the number zero printed
+with all {\tt Z}'s in the format will give rise to all blank spaces,
+so at least one {\tt D} should usually be given somewhere in the
+format.
+
+The letter {\tt C} stands for a comma.  A comma following a {\tt D}
+will always be printed; a comma following a {\tt Z} will be printed
+except when zero suppression takes place at that {\tt Z}. Whenever
+zero or comma suppression takes place, the sign (if any) is printed in
+place of the rightmost character suppressed.
+
+\paragraph{Decimal points}
+
+The position of the decimal point is indicated either by the character
+``.'' or by the letter {\tt V}. In the former case, the decimal point
+appears on the external medium; in the latter case, the decimal point
+is ``implied,'' i.e., it takes up no space on the external
+medium. (This feature is most commonly used to save time and space
+when preparing input data.) Only {\tt D}'s (no {\tt Z}'s) may appear
+to the right of the decimal point.
+
+\paragraph{Truncation}
+
+On output, nonintegral numbers are usually rounded to fit the format
+specified.  If the letter {\tt T} is used, however, truncation takes
+place instead.  Rounding and truncation of a number {\tt X} to {\tt d}
+decimal places are defined as follows:
+
+\begin{tabular*}{15.0cm}{rp{10.0cm}}
+Rounding   & $10^{-d}\cdot entier(10^d X + .5)$\\
+Truncation & $10^{-d}\cdot sign(X)\cdot entier(10^d abs(X))$\\
+\end{tabular*}
+
+\paragraph{Exponent part}
+
+The number following a ``10'' is treated exactly the same as the
+portion of a number to the left of a decimal point (Section
+\ref{Lbl++Formats+Number+Semantics+SignZeroComma}), except if the ``D
+part'' of the exponent is empty, i.e. no {\tt D}'s appear, and if the
+exponent is zero, the ``10'' and the sign are deleted.
+
+\paragraph{Two types of numeric format}
+
+Number formats are of two principal kinds:
+
+\begin{enumerate}
+
+\item[(a)] Decimal number with no exponent.  In this case, the number
+  is aligned according to the decimal point with the picture in the
+  format, and it is then truncated or rounded to the appropriate
+  number of decimal places.  The sign may precede or follow the
+  number.
+
+\item[(b)] Decimal number with exponent.  In this case, the number is
+  transforlned into the format of the decimal number with its most
+  significant digit nonzero; the exponent is adjusted accordingly.  If
+  the nmnber is zero, both the decimal part and the exponent part are
+  output as zero.
+
+\end{enumerate}
+
+If in case (a) the number is too large to be output in the specified
+form, or if in case (b) the exponent is too large, an overflow error
+occurs.  The action which takes place on overflow is undefined; it is
+recommended that the number of characters used in the output be the
+same as if no overflow had occurred, and that as much significant
+information as possible be output.
+
+\paragraph{Input}
+\label{Lbl++Formats+Number+Semantics+Input}
+
+A number input with a particular format specification should in
+general be the same as the number which would be output with the same
+format, except less error checking occurs. The rules are, more
+precisely:
+
+\begin{enumerate}
+
+\item[(a)] Leading zeros and commas may appear even though {\tt Z}'s
+  are used in the format. Leading spaces may appear even if {\tt D}'s
+  are used.  In other words, no distinction between {\tt Z} and {\tt
+  D} is made on input.
+
+\item[(b)] Insertions take the same amount of space in the same
+  positions, but the characters appearing there are ignored on input.
+  In other words, an insertion specifies only the number of characters
+  to ignore, when it appears in an input format.
+
+\item[(c)] If the format specifies a sign at the left, the sign may
+  appear in any {\tt Z}, {\tt D} or {\tt C} position as long as it is
+  to the left of the number.  A sign specified at the right must
+  appear in place.
+
+\item[(d)] The following things are checked: The positions of commas,
+  decimal points, ``10'', and the presence of digits in place of {\tt
+  D} or {\tt Z} after the first significant digit.  If an error is
+  detected in the data, the result is undefined; it is recommended
+  that the input procedure attempt to reread the data as if it were in
+  standard format (Section \ref{Lbl++Formats+StandardFormat}) and also to give some error indication
+  compatible with the system being used.  Such an error indication
+  might be suppressed at the programmer's option if the data became
+  meaningful when it was reread in standard format.
+
+\end{enumerate}
+
+
+\subsection{Other Formats}
+
+\subsubsection{Syntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<S> ::= S | <replicator> S}\\
+
+\vspace{0.2em}\texttt{<string format> ::= <insertion sequence> <S> | <string format> <S> |\\
+  \hspace{1.0cm}<string format> <insertion>}\\
+
+\vspace{0.2em}\texttt{<A> ::= A | <replicator> A}\\
+
+\vspace{0.2em}\texttt{<alpha format> ::= <insertion sequence> <A> | <alpha format> <A> |\\
+  \hspace{1.0cm}<alpha format> <insertion>}\\
+
+\vspace{0.2em}\texttt{<nonformat> ::= I | R | L}\\
+
+\vspace{0.2em}\texttt{<Boolean part> ::= P | 5F | FFFFF | F}\\
+
+\vspace{0.2em}\texttt{<Boolean format> ::=\\
+  \hspace{1.0cm}<insertion sequence> <Boolean part> <insertion sequence>}\\
+
+\vspace{0.2em}\texttt{<title format> ::= <insertion> | <title format> <insertion>}\\
+
+\vspace{0.2em}\texttt{<alignment mark> ::= / | \mpow{} | <replicator>$/$ | <replietor>\mpow{}}\\
+
+\vspace{0.2em}\texttt{<format item 1> ::= <number format> | <string format> |\\
+  \hspace{1.0cm}<alpha format> | <nonformat> | <Boolean format> | <title format> |\\
+  \hspace{1.0cm}<alignment mark> <format item 1>}\\
+
+\vspace{0.2em}\texttt{<format item> ::= <format item 1> | <alignment mark> |\\
+  \hspace{1.0cm}<format item> <alignment mark>}\\
+
+\end{flushleft}
+
+
+\subsubsection{Examples}
+
+\program{\mpow{}5Z.5D///\\
+3S`='6S4B\\
+AA`='\\
+\mpow{}R\\
+P\\
+/`Execution.'\mpow{}}
+
+
+\subsubsection{Semantics}
+
+\paragraph{String format}
+
+A string format is used for output of string quantities.  Each of the
+{\tt S}-positions in the format corresponds to a single character in
+the string which is output.  If the string is longer than the number
+of {\tt S}'s, the leftmost characters are transferred; if the string
+is shorter, \blankchar{}-symbols are effectively added at the right of
+the string.
+
+The word ``character'' as used in this report refers to one unit of
+information on the external input or output medimn; if \Algol basic
+symbols are used in strings which do not have a single-character
+representation on the external medium being used, the result is
+undefined.
+
+\paragraph{Alpha format}
+\label{Lbl++Formats+Other+Semantics+Alpha}
+
+Each letter {\tt A} means one character is to be transmitted; this is
+the same as {\tt S}-format, except the \Algol equivalent of the
+alphabetics is of type integer rather than a string.  The translation
+between the external and internal code will vary from one machine to
+another, and so programmers should refrain from using this feature in
+a machine-dependent manner.  Each implelnentor should specify the
+maxinmm number of characters which can be used for a single integer
+variable.  The following operations are undefined for quantities which
+have been input using alpha format: arithmetic operations, relations
+except ``\meq'' and ``\mne'', and output using a different number of
+{\tt A}'s in the output format.  If the integer is output using the
+same nmnber of {\tt A}'s, the same string will be output as was input.
+
+A programmer may work with these alphabetic quantities in a
+machine-independent manner by using the transfer function {\it
+equiv(S)} where {\it S} is a string; the value of {\it equiv(S)} is of
+type integer, and it is defined to have exactly the same value as if
+the string {\it S} had been input using alpha format.  For example,
+one may write\vspace{0.5em}\\
+{\tt\keyw{if} X = equiv(`ALPHA') \keyw{then} \keyw{go to} PROCESS ALPHA;}\vspace{0.5em}\\
+where the value of {\it X} has been input using the format ``AAAAA''.
+
+\paragraph{Nonformat}
+
+An {\tt I}, {\tt R} or {\tt L} is used to indicate that the value of a
+single variable of integer, real, or Boolean type, respectively, is to
+be input or output from or to an external medium, using the internal
+machine representation.  If a value of type integer is output with
+{\tt R}-format or if a value of type real is input with {\tt
+I}-format, the appropriate transfer function is invoked.  The precise
+behavior of this format, and particularly its interaction with other
+formats, is undefined in general.
+
+\paragraph{Boolean format}
+
+When Boolean quantities are input or output, the format {\tt P}, {\tt
+F}, {\tt 5F} or {\tt FFFFF} must be used.  The correspondence is
+defined as follows:\vspace{0.5em}\\
+\begin{tabular*}{15.0cm}{cccc}
+Internal to \Algol & {\tt P} & {\tt F} & {\tt 5F} \meq\space {\tt FFFFF}     \\
+\cline{1-4}
+\keyw{true}        & {\tt 1} & {\tt T} & {\tt TRUE\blankchar} \\
+\keyw{false}       & {\tt 0} & {\tt F} & {\tt FALSE}          \\
+\end{tabular*}\vspace{0.5em}\\
+On input, anything failing to be in the proper form is undefined.
+
+
+\paragraph{Title format}
+
+All formats discussed so far have given a correspondence between a
+single \Algol real, integer, Boolean, or string quantity and a number
+of characters in the input or output.  A title format item consists
+entirely of insertions and alignment marks, and so it does not require
+a corresponding \Algol quantity.  On input, it merely causes skipping
+of the characters, and on output it causes emission of the insertion
+characters it contains. (If titles are to be input, alpha format
+should be used; see Section \ref{Lbl++Formats+Other+Semantics+Alpha})
+
+
+\paragraph{Alignment marks}
+
+The characters ``/'' and ``\mpow{}'' in a format item indicate line
+and page control actions.  The precise definition of these actions
+will be given later (see Section \ref{Lbl++IoProc+IoCalls}); they have
+the following intuitive interpretation: (a) ``/'' means go to the next
+line, in a manner similar to the ``carriage return'' operation on a
+typewriter. (b) ``\mpow{}'' means do a /-operation and then skip to
+the top of the next page.
+
+Two or more alignment marks indicates the number of times the
+operations are to be performed; for example, ``//'' on output means
+the current line is completed and the next line is effectively set to
+all blanks.  Alignment marks at the left of a format item cause
+actions to take place before the regular format operation, and if they
+are at the right they take place afterwards.
+
+\note{On machines which do not have the character \mpow{} in their
+character set, it is recommended that some convenient character such
+as an asterisk be substituted for \mpow{} in format strings.}
+
+
+\subsection{Format Strings}
+\label{Lbl++Formats+FormatStrings}
+
+The format items mentioned above are combined into format strings
+according to the rules in this section.
+
+\subsubsection{Syntax}
+
+\begin{flushleft}
+\vspace{0.2em}\texttt{<format primary> ::= <format item> |\\
+  \hspace{1.0cm}<replicator> (<format secondary>) | (<format secondary>)}\\
+
+\vspace{0.2em}\texttt{<format secondary> ::= <format primary> |\\
+  \hspace{1.0cm}<format secondary>, <format primary>}\\
+
+\vspace{0.2em}\texttt{<format string> ::= `<format secondary>' | `'}\\
+\end{flushleft}
+
+\subsubsection{Examples}
+
+\program{`4(15ZD),//'\\
+`\mpow{}'\\
+`.5D\ten{}+D, X(2(20B.8D\ten{}+D), 10S)'\\
+``...This\blankchar{}is\blankchar{}a\blankchar{}peculiar\blankchar{}`format\blankchar{}string'''}
+
+\subsubsection{Semantics}
+
+A format string is simply a list of format items, which are to be
+interpreted from left to right.  The construction ``{\tt <replicator>
+(<format secondary>)}'' is simply an abbreviation for ``replicator''
+repetitions of the parenthesized quantity (see Section
+\ref{Lbl++Formats+Number+Semantics+Replicators}).  The construction
+``{\tt (<format secondary>)}'' is used to specify an infinite
+repetition of the parenthesized quantity.
+
+All spaces within a format string except those which are part of
+insertion substrings are irrelevant.
+
+It is recommended that the \Algol compiler check the syntax of strings
+which (from their context) are known to be format strings as the
+program is compiled.  In most cases it will also be possible for the
+compiler to translate format strings into an intermediate code
+designed for highly efficient input-output processing by the other
+procedures.
+
+
+\subsection{Summary of Format Codes}
+
+\begin{tabular*}{15.0cm}{rp{12.0cm}}
+A    & alphabetic character represented as integer \\
+B    & blank space \\
+C    & comma\\
+D    & digit\\
+F    & Boolean TRUE or FALSE\\
+I    & integer untranslated\\
+L    & Boolean untranslated \\
+P    & Boolean bit \\
+R    & real untranslated \\
+S    & string character \\
+T    & truncation \\
+V    & implied decimal point\\
+X    & arbitrary replicator \\
+Z    & zero suppression \\
+$+$  & print the sign \\
+$-$  & print the sign if it is minus \\
+\ten & exponent part indicator \\
+()   & delimiters of replicated format secondaries \\
+,    & separates format items\\
+/    & line alignment\\
+\mpow{}& page alignment\\
+`'   & delimiters of inserted string\\
+.    & decimal point \\
+\end{tabular*}
+
+
+\subsection[Standard Format]{``Standard'' Format}
+\label{Lbl++Formats+StandardFormat}
+
+There is a format available {\it without} specification (cf. Section
+\ref{Lbl++IoProc+IoCalls}) which has the following characteristics.
+
+\begin{enumerate}
+
+\item[(a)] On input, any number written according to the \Algol syntax
+  for {\tt <number>} is accepted with the conventional meaning.  These
+  are of {\it arbitrary} length, and they are delimited at the right
+  by the following conventions:
+
+  \begin{enumerate}
+    \item[(i)] A letter or character other than a decimal point, sign,
+      digit, or ``10'' occurring to the right of a decimal point,
+      sign, digit, or ``10'' is a delinfiter.
+
+    \item[(ii)] A sequence of $k$ or more blank spaces serves as a
+      delimiter as in (i); a sequence of less than $k$ blank spaces is
+      ignored. This number $k\geq1$ is specified by the implementor
+      (and the implementor may choose to let the programmer specify k
+      on a control card of some sort).
+
+    \item[(iii)] If the number contains a decimal point, sign, digit,
+      or ``10'' on the line where the number begins, the right-hand
+      margin of that line serves as a delimiter of the number.
+      However, if the first line of a field contains no such
+      characters, the number is determined by reading several lines
+      until finding a definfiter of type (i) or (ii).  In other words,
+      a number is not usually split across more than one line, unless
+      its first line contains nothing but spaces or characters which
+      do not enter into the number itself.  (See Section
+      \ref{Lbl++IoProc+IoCalls} for further discussion of standard
+      input format.)
+  \end{enumerate}
+
+\item[(b)] On output, a number is given in the form of a decimal
+  number with an exponent. This decimal number has the amount of
+  significant figures which the machine can represent; it is suitable
+  for reading by the standard input format.  Standard output format
+  takes a fixed number of characters on the output medium; this size
+  is specified by each \Algol installation.  Standard output format
+  can also be used for the output of strings, and in this case the
+  number of characters is equal to the length of the string.
+
+\end{enumerate}
+
+
+\section{Input and Output Procedures}
+
+\subsection{General Characteristics}
+\label{Lbl++IoProc+General}
+
+The over-all approach to input and output which is provided by the
+procedures of this report will be introduced here by means of a few
+examples, and the precise definition of the procedures will be given
+later.
+
+Consider first a typical case, in which we want to print a line
+containing the values of the integer variables $N$ and $M$, each of
+which is nonnegative, with at most five digits; also the value of
+$X[M]$, in the form of a signed number with a single nonzero digit to
+the left of the decimal point, and with an exponent indicated; and
+finally the value of $cos(t)$, using a format with a fixed decimal
+point and no exponent.  The following might be written for this case:
+
+\program{output 4 (6, `2(BBBZZZZD),3B,+D.DDDDDD\ten{}+DDD,3B,-Z.DDDDBDDDD/',\\
+  \hspace{1.0cm}N, M, X[M], cos(t))}
+
+This example has the following significance. (a) The ``4'' in output 4
+means four values are being output.  (b) The ``6'' means that output
+is to go to unit number 6.  This is the logical unit number, i.e., the
+programmer's number for that unit, and it does not necessarily mean
+physical unit number 6.  See Section
+\ref{Lbl++IoProc+General+UnitNumbers}, for further discussion of unit
+numbers.  (c) The next parameter, `2(BBB \dots DDDD/', is the format
+string which specifies a format for outputting the four values.  (d)
+The last four parameters are the values being printed.  If $N = 500$,
+$M = 0$, $X[0] = 18061579$, and $t = 3.1415926536$, we obtain the
+line\vspace{0.5em}\\ {\tt
+\blankchar\blankchar\blankchar\blankchar\blankchar500\blankchar\blankchar\blankchar\blankchar\blankchar\blankchar\blankchar{}0\blankchar\blankchar\blankchar+1.806158\ten{}+007\blankchar\blankchar\blankchar-1.0000\blankchar{}0000}\vspace{0.5em}\\
+as output.
+
+Notice the ``/'' used in the above format; this symbol signifies the
+end of a line.  If it had not been present, more numbers could have
+been placed on the same line in a future output statement.  The
+programmer may build the contents of a line in several steps, as his
+algorithm proceeds, without automatically starting a new line each
+time output is called.  For example, the above could have been
+written\vspace{0.5em}\\
+{\tt output 1 (6, 'BBBZZZZD', N);\\
+output 1 (6, 'BBBZZZZD', M);\\
+output 2 (6,'3B,+D.DDDDDD\ten{}+DDD,3B,-Z.DDDDBDDDD',X[M],cos(t));\\
+output 0 (6, '/');}\vspace{0.5em}\\
+with equivalent results.
+
+In the example above, a line of 48 characters was output.  If for some
+reason these output statements are used with a device incapable of
+printing 48 characters on a single line, the output would actually
+have been recorded on two or more lines, according to a rule which
+automatically keeps from breaking numbers between two consecutive
+lines wherever possible. (The exact rule appears in Section
+\ref{Lbl++IoProc+IoCalls})
+
+Now let us go to a slightly more complicated example: the real array
+$A[1:n, 1:n]$ is to be printed, starting on a new page.  Supposing
+each element is printed with the format ``{\tt BB-ZZZZ.DD}'', which
+uses ten characters per item, we could write the following program:
+
+\program{output 0 (6, `\mpow');\\
+\keyw{for} i := 1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\keyw{begin} \=\keyw{for} j := 1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\>\hspace{1.0cm}output 1 (6, `BB-ZZZZ.DD', A[i, j]);\\
+\>output 0 (6, '//') \keyw{end}.}
+
+If $10n$ characters will fit on one line, this little program will
+print $n$ lines, double spaced, with $n$ values per line; otherwise
+$n$ groups of $k$ lines separated by blank lines are produced, where
+$k$ lines are necessary for the printing of $n$ values.  For example,
+if $n = 10$ and if the printer has 120 character positions, 10
+double-spaced lines are produced.  If, however, a 72-character printer
+is being used, 7 values are printed on the first line, 3 on the next,
+the third is blank, then 7 more values are printed, etc.
+
+There is another way to achieve the above output and to obtain more
+control over the page format as well.  The subject of page format will
+be discussed further in Section \ref{Lbl++IoProc+HorizVertControl},
+and we will indicate here the manner in which the above operation can
+be done conveniently using a single output statement.  The procedures
+{\it output O}, {\it output 1}, etc. mentioned above provide only for
+the common cases of output, and they are essentially a special
+abbreviation for certain calls on the more general procedure {\it out
+list}.  This more general procedure could be used for the above
+problem in the following manner:\vspace{0.5em}\\ {\tt out list (6,
+LAYOUT, LIST)}\vspace{0.5em}\\ Here LAYOUT and LIST are the names of
+procedures which appear below.  The first parameter of out list is the
+logical unit number as described above. The second parameter is the
+name of a so-called ``layout procedure''; general layout procedures
+are discussed in Section \ref{Lbl++IoProc+Layout}.  The third
+parameter of {\it out list} is the name of a so-called ``list
+procedure''; general list procedures are discussed in Section
+\ref{Lbl++IoProc+ListProc}.
+
+In general, a layout procedure specifies the format control of the
+input or output. For the case we are considering, we could write a
+simple layout procedure (named ``LAYOUT'') as follows:
+\program{\keyw{procedure} LAYOUT; format 1 (`\mpow{},(X(BB-ZZZZ.DD),//)', n)}
+\noindent{}The $1$ in {\it format 1} means a format string containing
+one {\tt X} is given. The format string is
+\program{\mpow{},(X(BB-ZZZZ.DD),//)}
+\noindent{}which means skip to a new page, then repeat the format {\tt
+X(BB-ZZZZ.DD),//} until the last value is output.  The latter format
+means that {\tt BB-ZZZZ.DD} is to be used X times, then skip to a new
+line. Finally, {\it format 1} is a procedure which effectively inserts
+the value of $n$ for the letter {\tt X} appearing in the format
+string.
+
+A {\it list procedure} serves to specify a list of quantities.  For the
+problem under consideration, we could write a simple list procedure
+(named ``LIST'') as follows:
+\program{\keyw{procedure} LIST(ITEM);\\
+\keyw{for} i := \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{1.0cm}\keyw{for} j := 1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\hspace{2.0cm}ITEM(A[i, j])}
+\noindent{}Here ``{\tt ITEM(A[i, j])}'' means that $A[i, j]$ is the
+next item of the list. The procedure {\it ITEM} is a formal parameter
+which might have been given a different name such as {\it PIECE} or
+{\it CHUNK}; list procedures are discussed in more detail in Section
+\ref{Lbl++IoProc+ListProc}.
+
+The declarations of {\it LAYOUT} and {\it LIST} above, together with
+the procedure statement {\tt out list (6, LAYOUT, LIST)}, accomplish
+the desired output of the array $A$.
+
+Input is done in a manner dual to output, in such a way that it is the
+exact inverse of the output process wherever possible. The procedures
+{\it in list} and {\it input n} correspond to {\it out list} and {\it
+output n} ($n = 0, 1, \dots$).
+
+Two other procedures, {\it get} and {\it put}, are introduced to
+facilitate storage of intermediate data on external devices.  For
+example, the statement {\it put(100, LIST)} would cause the values
+specified in the list procedure named {\it LIST} to be recorded in the
+external medium with an identification number of 100.  The subsequent
+statement {\it get(100, LIST)} would restore these values.  The
+external medium might be a disk file, a drum, a magnetic tape, etc.;
+the type of device and the format in which data is stored there is of
+no concern to the programmer.
+
+\subsubsection{Unit numbers}
+\label{Lbl++IoProc+General+UnitNumbers}
+
+The first parameter of input and output procedures is the logical unit
+number, i.e. some number which the programmer has chosen to identify
+some input or output device.  The connection between logical unit
+numbers and the actual physical unit numbers is specified by the
+programmer {\it outside} of the \Algol language, by means of ``control
+cards'' preceding or following his program, or in some other way
+provided by the \Algol implementor.  The situation which arises if the
+same physical unit is being used for two different logical numbers, or
+if the same physical unit is used both for input and for output, is
+undefined in general.
+
+It is recommended that the internal computer memory (e.g. the core
+memory) be available as an ``input-output device,'' so that data may
+be edited by means of input and output statements.
+
+
+\subsection{Horizontal and Vertical Control}
+\label{Lbl++IoProc+HorizVertControl}
+
+This section deals with the way in which the sequence of characters,
+described by the rules of formats in Section \ref{Lbl++Formats}, is
+mapped onto input and output devices.  This is done in a manner which
+is essentially independent of the device being used, in the sense that
+with these specifications the programmer can anticipate how the input
+or output data will appear on virtually any device.  Some of the
+features of this description will, of course, be more appropriately
+used on certain devices than on others.
+
+We will begin by assuming we are doing {\it output} to a {\it
+printer}.  This is essentially the most difficult case to handle, and
+we will discuss the manner in which other devices fit into the same
+general framework.
+
+The page format is controlled by specifying the horizontal and the
+vertical layout.  Horizontal layout is controlled in essentially the
+same manner as vertical layout, and this symmetry between the
+horizontal and vertical dimensions should be kept in mind for easier
+understanding of the concepts in this section.
+
+Refer to Figure \ref{Fig++HorizVertControl}; the horizontal format is
+described in terms of three parameters ($L$, $R$, $P$), and the
+vertical format has corresponding parameters ($L'$, $R'$, $P'$). The
+parameters $L$, $L'$ and $R$, $R'$ indicate left and right margins,
+respectively; Figure \ref{Fig++HorizVertControl} shows a case where $L
+= L' = 4$ and $R = R' = 12$. Only positions $L$ through $R$ of a
+horizontal line are used, and only lines $L'$ and $R'$ of the page are
+used; we require that $1 \leq L \leq R$ and $1 \leq L' \leq R'$.  The
+parameter $P$ is the nmnber of characters per line, and $P'$ is the
+number of lines per page.  Although $L$, $R$, $L'$, and $R'$ are
+chosen by the programmer, the values of $P$ and $P'$ are
+characteristics of the device and they are usually out of the
+programmer's control.  For those devices on which $P$ and $P'$ can
+vary (for example, some printers have two settings, one on which there
+are 66 lines per page, and another on which there are 88), the values
+are specified to the system in some manner external to the \Algol
+program, e.g. on control cards.  For certain devices, values of $P$ or
+$P'$ might be essentially infinite.
+
+\begin{figure}
+  \setlength{\unitlength}{1cm}
+  \centering
+  \begin{picture}(10.0,9.5)(0,-0.25)
+    %vertical line
+    \put ( 0.25,0.00){\line (+1,+0){0.25}}
+    \put ( 0.50,0.00){\line (+0,+1){9.00}}
+    \put ( 0.25,9.00){\line (+1,+0){0.25}}
+    %...with dots
+    \multiput ( 0.50,0.50)(0.00,0.50){17}{\circle*{0.1}}
+    %...and numbers
+    \put ( 0.00,8.50){\makebox(0.50,0.50){1}}
+    \put ( 0.00,8.00){\makebox(0.50,0.50){2}}
+    \put ( 0.00,7.50){\makebox(0.50,0.50){3}}
+    \put ( 0.00,7.00){\makebox(0.50,0.50){4}}
+    \put ( 0.00,6.50){\makebox(0.50,0.50){5}}
+    \put ( 0.00,6.00){\makebox(0.50,0.50){6}}
+    \put ( 0.00,5.50){\makebox(0.50,0.50){7}}
+    \put ( 0.00,5.00){\makebox(0.50,0.50){8}}
+    \put ( 0.00,4.50){\makebox(0.50,0.50){9}}
+    \put ( 0.00,4.00){\makebox(0.50,0.50){10}}
+    \put ( 0.00,3.50){\makebox(0.50,0.50){11}}
+    \put ( 0.00,3.00){\makebox(0.50,0.50){12}}
+    \put ( 0.00,2.50){\makebox(0.50,0.50){13}}
+    \put ( 0.00,2.00){\makebox(0.50,0.50){14}}
+    \put ( 0.00,1.50){\makebox(0.50,0.50){15}}
+    \put ( 0.00,1.00){\makebox(0.50,0.50){16}}
+    \put ( 0.00,0.50){\makebox(0.50,0.50){17}}
+    \put ( 0.00,0.00){\makebox(0.50,0.50){18}}
+    %...and description
+    \put ( 1.00,7.33){\makebox(0.50,0.50){$L'$}}
+    \put ( 0.50,7.25){\line (+2,+1){0.55}}
+    \put ( 1.00,2.75){\makebox(0.50,0.50){$R'$}}
+    \put ( 0.50,3.25){\line (+2,-1){0.55}}
+    \put ( 1.00,-0.25){\makebox(0.50,0.50){$P'$}}
+    \put ( 0.50,0.25){\line (+2,-1){0.55}}
+
+    %horizontal line
+    \put ( 1.00,4.25){\line (+0,+1){0.25}}
+    \put ( 1.00,4.50){\line (+1,+0){9.00}}
+    \put (10.00,4.25){\line (+0,+1){0.25}}
+    %...with dots
+    \multiput ( 1.50,4.50)(0.50,0.00){17}{\circle*{0.1}}
+    %...and numbers
+    \put ( 1.00,4.00){\makebox(0.50,0.50){1}}
+    \put ( 1.50,4.00){\makebox(0.50,0.50){2}}
+    \put ( 2.00,4.00){\makebox(0.50,0.50){3}}
+    \put ( 2.50,4.00){\makebox(0.50,0.50){4}}
+    \put ( 3.00,4.00){\makebox(0.50,0.50){5}}
+    \put ( 3.50,4.00){\makebox(0.50,0.50){6}}
+    \put ( 4.00,4.00){\makebox(0.50,0.50){7}}
+    \put ( 4.50,4.00){\makebox(0.50,0.50){8}}
+    \put ( 5.00,4.00){\makebox(0.50,0.50){9}}
+    \put ( 5.50,4.00){\makebox(0.50,0.50){10}}
+    \put ( 6.00,4.00){\makebox(0.50,0.50){11}}
+    \put ( 6.50,4.00){\makebox(0.50,0.50){12}}
+    \put ( 7.00,4.00){\makebox(0.50,0.50){13}}
+    \put ( 7.50,4.00){\makebox(0.50,0.50){14}}
+    \put ( 8.00,4.00){\makebox(0.50,0.50){15}}
+    \put ( 8.50,4.00){\makebox(0.50,0.50){16}}
+    \put ( 9.00,4.00){\makebox(0.50,0.50){17}}
+    \put ( 9.50,4.00){\makebox(0.50,0.50){18}}
+    %...and description
+    \put ( 2.25,5.00){\makebox(0.50,0.50){$L$}}
+    \put ( 2.75,4.50){\line (-1,+2){0.25}}
+    \put ( 6.75,5.00){\makebox(0.50,0.50){$R$}}
+    \put ( 6.75,4.50){\line (+1,+2){0.25}}
+    \put ( 9.75,5.00){\makebox(0.50,0.50){$P$}}
+    \put ( 9.75,4.50){\line (+1,+2){0.25}}
+  \end{picture}
+  \caption{Margins in horizontal and vertical control}
+  \label{Fig++HorizVertControl}
+\end{figure}
+
+Although Figure \ref{Fig++HorizVertControl} shows a case where $P \geq
+R$ and $P' \geq R'$, it is of course quite possible that $P < R$ or
+$P' < R'$ (or both) might occur, since $P$ and $P'$ are in general
+unknown to the programmer.  In such cases, the algorithm described in
+Section \ref{Lbl++IoProc+IoCalls} is used to break up logical lines
+which are too wide to fit on a physical line, and to break up logical
+pages which are too large to fit a physical page.  On the other hand,
+the conditions $L \leq P$ and $L' \leq P'$ are insured by setting $L$
+or $L'$ equal to 1 automatically if they happen to be greater than $P$
+or $P'$, respectively.
+
+Characters determined by the output values are put onto a horizontal
+line; there are three conditions which cause a transfer to the next
+line: (a) normal line alignment, specified by a ``/'' in the format;
+(b) $R$-overflow, which occurs when a group of characters is to be
+transmitted which would pass position $R$; and (c) $P$-overflow, which
+occurs when a group of characters is to be transmitted which would not
+cause $R$-overflow but would pass position $P$.  When any of these
+three things occurs, control is transferred to a procedure specified
+by the programmer in case special action is desired (e.g. a change of
+margins in case of overflow; see Section
+\ref{Lbl++IoProc+Layout+EndControl}).
+
+Similarly, there are three conditions which cause a transfer to the
+next page: (a') normal page alignment, specified by a ``\mpow{}'' in the
+format; (b') $R'$-overflow, which occurs when a group of characters is
+to be transmitted which would appear on line $R'+1$; and (c')
+$P'$-overflow, which occurs when a group of characters is to be
+transmitted which would appear on line $P'+1 < R'+1$. The programmer
+may indicate special procedures to be executed at this time if he
+wishes, e.g. to insert a page heading, etc.
+
+Further details concerning pages and lines will be given later. Now we
+will consider how devices other than printers can be thought of in
+terms of the ideas above.
+
+A typewriter is, of course, very much like a printer and it requires
+no further comment.
+
+Punched cards with, say, 80 columns, have $P = 80$ and $P' = \infty$.
+Vertical control would appear to have little meaning for punched
+cards, although the implementor might choose to interpret ``\mpow{}'' to
+mean the insertion of a coded or blank card.
+
+With paper tape, we might again say that vertical control has little
+or no meaning; in this case, $P$ could be the number of characters
+read or written at a time.
+
+On magnetic tape capable of writing arbitrarily long blocks, we have
+$P = P' = \infty$.  We might think of each page as being a ``record,''
+i.e., an amount of contiguous information on the tape which is read or
+written at once.  The lines are subdivisions of a record, and $R'$
+lines form a record; $R$ characters are in each line.  In this way we
+can specify so-called ``blocking of records.''  Other interpretations
+might be more appropriate for magnetic tapes at certain installations,
+e.g. a format which would correspond exactly to printer format for
+future offline listing, etc.
+
+These examples are given merely to indicate how the concepts described
+above for printers can be applied to other devices.  Each implementor
+will decide what method is most appropriate for his particular
+devices, and if there are choices to be made they can be given by the
+programmer by means of control cards.  The manner in which this is
+done is of no concern in this report; our procedures are defined
+solely in terms of $P$ and $P'$.
+
+\subsection{Layout Procedures}
+\label{Lbl++IoProc+Layout}
+
+Whenever input or output is done, certain ``standard'' operations are
+assumed to take place, unless otherwise specified by the programmer.
+Therefore one of the parameters of the input or output procedure is a
+so-called ``layout'' procedure, which specifies all of the nonstandard
+operations desired.  This is achieved by using any or all of the six
+``descriptive procedures'' {\it format}, {\it h end}, {\it v end},
+{\it h lim}, {\it v lim}, {\it no data} described in this section.
+
+The precise action of these procedures can be described in terms of
+the mythical concept of six ``hidden variables,'' H1, H2, H3, H4, H5,
+H6.  The effect of each descriptive procedure is to set one of these
+variables to a certain value; and as a matter of fact, that may be
+regarded as the sum total of the effect of a descriptive procedure.
+The programmer normally has no other access to these hidden variables
+(see, however, Section \ref{Lbl++IoProc+Other}).  The hidden variables
+have a scope which is local to {\it in list} and to {\it out list}.
+
+\subsubsection{Format procedures}
+\label{Lbl++IoProc+Layout+Format}
+
+The descriptive procedure call \program{format (string)}
+\noindent{}has the effect of setting the hidden variable H1 to
+indicate the string parameter. This parameter may either be a string
+explicitly written, or a formal parameter; but in any event, the
+string it refers to must be a format string, which satisfies the
+syntax of Section \ref{Lbl++Formats+FormatStrings}, and it must have
+no ``{\tt X}'' replicators.
+
+The procedure {\it format} is just one of a class of procedures which
+have the names {\it format n}, ($n = 0, 1, \dots$).  The name {\it
+format} is equivalent to {\it format O}.  In general, the procedure
+{\it format n} is used with format strings which have exactly $n$ {\tt
+X}-replicators.  The call is
+\program{format n (string, X$_1$, X$_2$, \dots{}, X$n$)}
+\noindent{}where each {\tt X$_i$} is an integer parameter called by
+value.  The effect is to replace each {\tt X} of the format string by
+one of the {\tt X$_i$}, with the correspondence defined from left to
+right.  Each {\tt X$_i$} must be nonnegative.
+
+For example,
+\program{format 2 (`XB.XD\ten{}+DD', 5, 10)}
+\noindent{}is equivalent to
+\program{format (`5B.10D\ten{}+DD').}
+
+\subsubsection{Limits}
+
+The descriptive procedure call
+\program{h lim (L, R)}
+\noindent{}has the effect of setting the hidden variable H2 to
+indicate the two parameters L and R. Similarly,
+\program{v lim (L', R')}
+\noindent{}sets H3 to indicate L' and R'.  These parameters have the
+significance described in Section \ref{Lbl++IoProc+HorizVertControl}.
+If {\it h lim} and {\it v lim} are not used, $L = L' = 1$ and $R = R'
+= \infty$.
+
+
+\subsubsection{End control}
+\label{Lbl++IoProc+Layout+EndControl}
+
+The descriptive procedure calls
+\program{h end (P\textsubscript{N}, P\textsubscript{R} , P\textsubscript{P});\\
+  v end (P\textsubscript{N'}, P\textsubscript{R'}, P\textsubscript{P'});}
+\noindent{}have the effect of setting the hidden variables H4 and H5,
+respectively, to indicate their parameters.  The parameters $P_{N}$,
+$P_{R}$, $P_{P}$, $P_{N'}$, $P_{R'}$, $P_{P'}$ are names of procedures
+(ordinarily dummy statements if {\it h end} and {\it v end} are not
+specified) which are activated in case of normal line alignment,
+$R$-overflow, $P$-overflow, normal page alignment, $R'$-overflow, and
+$P'$-overflow, respectively.
+
+\subsubsection{End of data}
+
+The descriptive procedure call
+\program{no data (L);}
+\noindent{}has the effect of setting the hidden variable H6 to
+indicate the parameter {\it L}.  Here {\it L} is a label.  End of data
+as defined here has meaning only on input, and it does not refer to
+any specific hardware features; it occurs when data is requested for
+input but no more data remains on the corresponding input medium.  At
+this point, a transfer to the statement labeled {\it L} will occur.
+If the procedure {\it{}no data} is not used, transfer will occur to a
+``label'' which has effectively been inserted just before the final
+\keyw{end} in the \Algol program, thus terminating the program.  (In
+this case the implementor may elect to provide an appropriate error
+comment.)
+
+
+\subsubsection{Examples}
+
+A layout procedure might look as follows:
+\program{\keyw{procedure} LAYOUT;\\
+\keyw{begin} \=format(`/');\\
+\>\keyw{if} B \keyw{then} \keyw{begin} \=format 1(`XB', Y + 10);\\
+\>\>no data (L32) \keyw{end};\\
+\>h lim(\keyw{if} B \keyw{then} 1 \keyw{else} 10, 30) \keyw{end};}
+\noindent{}Note that layout procedures never have formal parameters;
+this procedure, for example, refers to three global quantities, $B$,
+$Y$ and $L32$.  Suppose Y has the value 3; then this layout
+accomplishes the following:
+
+\vspace{0.5em}
+\begin{tabular*}{15.0cm}{cccc}
+Hidden variable & Procedure & \keyw{if} B = \keyw{true} & \keyw{if} B = \keyw{false}\\
+\cline{1-4}
+H1 & {\it format}  & `13B'        & `/'          \\
+H2 & {\it h lim}   & (1, 30)      & (10, 30)     \\
+H3 & {\it v lim}   & (1, $\infty$)& (1, $\infty$)\\
+H4 & {\it h end}   & ( , , )      & ( , , )      \\
+H5 & {\it v end}   & ( , , )      & ( , , )      \\
+H6 & {\it no data} & $L32$        & {\it end program}\\
+\end{tabular*}
+\vspace{0.5em}
+
+As a more useful example, we can take the procedure {\it LAYOUT} of
+Section \ref{Lbl++IoProc+General} and rewrite it so that the
+horizontal margins (11,110) are used on the page, except that if
+$P$-overflow or $R$-overflow occurs we wish to use the margins (16,
+105) for overflow lines.
+\program{\keyw{procedure} LAYOUT;\\
+\keyw{begin} \=format 1 (`\mpow{},(X(BB-ZZZZ.DD),//)', n);\\
+\>h lim (11,110); h end (K, L, L) \keyw{end};\\
+\keyw{procedure} K; h lim (11,110);\\
+\keyw{procedure} L; h lim (16,105);}
+\noindent{}This causes the limits (16, 105) to be set whenever
+overflow occurs, and the ``/'' in the format will reinstate the
+original margins when it causes procedure {\tt K} to be called.  (If
+the programmer wishes a more elaborate treatment of the overflow case,
+depending on the value of $P$, he may do this using the procedures of
+Section \ref{Lbl++IoProc+ControlProc})
+
+\subsection{List Procedures}
+\label{Lbl++IoProc+ListProc}
+
+\subsubsection{General characteristics}
+\label{Lbl++IoProc+ListProc+General}
+
+The concept of a list procedure is quite important to the input-output
+conventions described in this report, and it may also prove useful in
+other applications of \Algol.  It represents a specialized application
+of the standard features of ALGOL which permit a procedure identifier,
+$L$, to be given as an actual parameter of a procedure, and which
+permit procedures to be declared within procedures.
+
+The purpose of a list procedure is to describe a sequence of items
+which is to be transmitted for input or output.  A procedure is
+written in which the name of each item $V$ is written as the argument
+of a procedure, say {\it ITEM}, thus: {\it ITEM(V)}.  When the list
+procedure is called by an input-output system procedure, another
+procedure (such as the internal system procedure out item) will be
+``substituted'' for {\it ITEM}, $V$ will be called by name, and the
+value of $V$ will be transmitted for input or output. The standard
+sequencing of \Algol statements in the body of the list procedure
+determines the sequence of items in the list.
+
+A simple form of list procedure might be written as follows:
+\program{\keyw{procedure} LIST (ITEM);\\
+  \keyw{begin} ITEM(A); ITEM(B); ITEM(C) \keyw{end}}
+\noindent{}which says that the values of $A$, $B$ and $C$ are to be
+transmitted.  A more typical list procedure might be:
+\program{\keyw{procedure} PAIRS (ELT);\\
+\keyw{for} i := 1 \keyw{step} 1 \keyw{until} n \keyw{do}\\
+\keyw{begin} \=ELT(A[i]);\\
+\>ELT(B[i]) \keyw{end}}
+\noindent{}This procedure says that the values of the list of items
+$A[1]$, $B[1]$, $A[2]$, $B[2]$, \dots, $A[n]$, $B[n]$ are to be
+transmitted, in that order. Note that if $n \leq 0$ no items are
+transmitted at all.
+
+The parmneter of the ``item'' procedure (i.e. the parameter of {\it
+ITEM} or {\it ELT} in the above examples) is called by name.  It may
+be an arithmetic expression, a Boolean expression, or a string, in
+accordance with the format which will be associated with the item.
+Any of the ordinary features of \Algol may be used in a list
+procedure, so there is great flexibility.
+
+Unlike layout procedures which simply run through their statements and
+set up hidden variables H1 through H6, a list procedure is executed
+step by step with the input or output procedure, with control
+transferring back and forth.  This is accomplished by special system
+procedures such as {\it in item} and {\it out item} which are
+``interlaced'' with the list procedure, as described in Sections
+\ref{Lbl++IoProc+ListProc+Other} and \ref{Lbl++IoProc+IoCalls}.  The
+list procedure is called with {\it in item} (or {\it out item}) as
+actual parameter, and whenever this procedure is called within the
+list procedure, the actual input or output is taking place.  Through
+the interlacing, special format control, including the important
+device-independent overflow procedures, can take place during the
+transmission process.  Note that a list procedure may change the
+hidden variables by calling a descriptive procedure; this can be a
+valuable characteristic, e.g. when changing the format, based on the
+value of the first item which is input.
+
+\subsubsection{Other applications}
+\label{Lbl++IoProc+ListProc+Other}
+
+List procedures can actually be used in many ways in \Algol besides
+their use with input or output routines; they are useful for
+manipulating linear lists of items of a quite general nature.  To
+illustrate this fact, and to point out how the interlacing of control
+between list and driver procedures can be accomplished, here is an
+example of a procedure which calculates the sum of all of the elements
+in a list (assuming all elements are of integer or real type):
+\program{\keyw{procedure} ADD(Y, Z);\\
+\keyw{begin} \=\keyw{procedure} A(X); Z := Z + X;\\
+\>Z := 0; Y(A) \keyw{end}}
+\noindent{}The call {\it ADD(PAIRS, SUM)} will set the value of $SUM$
+to be the sum of all of the items in the list $PAIRS$ defined in
+Section \ref{Lbl++IoProc+ListProc+General}.  The reader should study
+this example carefully to grasp the essential significance of list
+procedures.  It is a simple and instructive exercise to write a
+procedure which sets all elements of a list to zero.
+
+\subsection{Input and Output Calls}
+\label{Lbl++IoProc+IoCalls}
+
+Here procedures are described which cause the actual transmission of
+input or output to take place.
+
+\subsubsection{Output}
+\label{Lbl++IoProc+IoCalls+Output}
+
+An output process is initiated by the call:
+\program{out list (unit, LAYOUT, LIST)}
+\noindent{}Here unit is an integer parameter called by value, which is
+the number of an output device (cf. Section
+\ref{Lbl++IoProc+General+UnitNumbers}). The parameter $LAYOUT$ is the
+name of a layout procedure (Section \ref{Lbl++IoProc+Layout}), and
+$LIST$ is the name of a list procedure (Section
+\ref{Lbl++IoProc+ListProc}).
+
+There is also another class of procedures, named {\it output n}, for
+$n = 0, 1, 2, \dots$, which is used for output as follows:
+\program{output n (unit, format string, e\textsubscript{1}, e\textsubscript{2}, \dots, e\textsubscript{n})}
+\noindent{}Each of these latter procedures can be defined in terms of
+out list as follows:
+\program{\keyw{procedure} output n(unit, format string, e\textsubscript{1}, e\textsubscript{2}, \dots, e\textsubscript{n});\\
+\keyw{begin} \={}\keyw{procedure} A; format (format string);\\
+\>{}\keyw{procedure} B(P); begin P(e\textsubscript{1}); P(e\textsubscript{2}); \dots; P(e\textsubscript{n}) \keyw{end};\\
+\>{}out list (unit, A, B) \keyw{end}}
+\noindent{}We will therefore assume in the following rules that out
+list has been called.
+
+Let the variables $p$ and $p'$ indicate the current position in the
+output for the unit under consideration, i.e. lines 1, 2, \dots, $p'$
+of the current page have been completed, as well as character
+positions 1, 2, \dots, $p$ of the current line (i.e., of line $p'+1$).
+At the beginning of the program, $p = p' = 0$. The symbols $P$ and
+$P'$ denote the line size and page size (see Section
+\ref{Lbl++IoProc+HorizVertControl}). Output takes place according to
+the following algorithm:
+
+\begin{enumerate}
+  \item[Step 1.] The hidden variables are set to standard values:\\
+    H1 is set to the ``standard'' format `'\\
+    H2 is set so that $L = 1, R = \infty$.\\
+    H3 is set so that $L' = 1, R' = \infty$.\\
+    H4 is set so that $P_N$, $P_R$, $P_P$ are all effectively equal to
+    the $DUMMY$ procedure defined as follows: ``{\tt \keyw{procedure}
+    DUMMY;;}''.\\
+    H5 is set so that $P_{N'}$, $P_{R'}$, $P_{P'}$ are all effectively
+    equal to DUMMY.\\
+    H6 is set to terminate the program in case the data ends (this has
+    meaning only on input).
+
+    \item[Step 2.] The layout procedure is called; this may change
+      some of the variables H1, H2, H3, H4, H5, H6.
+
+    \item[Step 3.] The next format item of the format string is
+      examined.  (\note{After the format string is exhausted,
+      ``standard'' format, Section \ref{Lbl++Formats+StandardFormat},
+      is used from then on until the end of the procedure.  In
+      particular, if the format string is `', standard format is used
+      throughout.}) Now if the next format item is a title format,
+      i.e. requires no data item, we proceed directly to step 4.
+      Otherwise, the list procedure is activated; this is done the
+      first time by {\it calling} the list procedure, using as actual
+      parameter a procedure named {\it out item}; this is done on all
+      subsequent times by merely returning from the procedure {\it out
+      item}, which will cause the list procedure to be continued from
+      the latest {\it out item} call.  (\note{The identifier out item
+      has scope local to out list, so a programmer may not call this
+      procedure directly.})  After the list procedure has been
+      activated in this way, it will either terminate or will call the
+      procedure {\it out item}.  In the former case, the output
+      process is completed; in the latter case, continue at step 4.
+
+    \item[Step 4.] Take the next item from the format
+      string. (\note{If the list procedure was called in step 3, it
+      may have called the descriptive procedure {\it format}, thereby
+      changing from the format which was examined during step 3. In
+      such a case, the new format is used here.  But at this point the
+      format item is effectively removed from the format string and
+      copied elsewhere; so that the format string itself, possibly
+      changed by further calls of {\it format}, will not be
+      interrogated until the next occurrence of step 3.  If the list
+      procedure has substituted a title format for a nontitle format,
+      the ``item'' it specifies will not be output, since a title
+      format consists entirely of insertions and alignment marks.})
+
+      Set ``$toggle$'' to \keyw{false}. (This is used to control the
+      breaking of entries between lines.) The alignment marks, if any,
+      at the left of the format item, now cause process A (below) to
+      be executed for each ``/'', and process B for each ``\mpow{}''.
+      If the format item consists entirely of alignment marks, then go
+      immediately to step 3.  Otherwise the size of the format
+      (i.e. the number of characters specified in the output medium)
+      is determined.  Let this size be denoted by $S$.  Continue with
+      step 5.
+
+    \item[Step 5.] Execute process C, to ensure proper page alignment.
+
+    \item[Step 6.] Line alignment: If $p < L-l$, effectively insert
+      blank spaces so that $p = L - 1$.  Now if $toggle =
+      \keyw{true}$, go to step 9; otherwise, test for line overflow as
+      follows: If $p + S > R$, perform process D, then call $P_R$ and
+      go to step 8; otherwise, if $p + S > P$, perform process D, call
+      $P_P$ , and go to step 8.
+
+    \item[Step 7.] Evaluate the next output item and output it
+      according to the rules given in Section \ref{Lbl++Formats}; in
+      the case of a title format, this is simply a transmission of the
+      insertions without the evaluation of an output item.  The
+      pointer $p$ is set to $p + S$.  Any alignment marks at the right
+      of the format item now cause activation of process A for each
+      ``/'' and of process B for each ``\mpow{}''.  Return to step 3.
+
+    \item[Step 8.] Set $toggle$ to \keyw{true}. Prepare a formatted
+      output item as in step 7, but do not record it on the output
+      medium yet (this is done in step 9).  Go to step 5.  (It is
+      necessary to re-examine page and line alignment, which may have
+      been altered by the overflow procedure; hence we go to step 5
+      rather than proceeding immediately to step 9.)
+
+    \item[Step 9.] Transfer as many characters of the current output
+      item as possible into positions $p+1$, \dots, without exceeding
+      position $P$ or $R$.  Adjust $p$ appropriately.  If the output
+      of this item is still unfinished, execute process D again, call
+      $P_R$ (if $R \leq P$) or $P_P$ (if $P < R$), and return to step
+      5.  The entire item will eventually be output, and then we
+      process alignment characters as in step 7, finally returning to
+      step 3.
+\end{enumerate}
+
+
+\begin{enumerate}
+    \item[Process A.] (``/'' operation) Check page alignment with
+      process C, then execute process D and call procedure $P_N$
+
+    \item[Process B.] (``\mpow{}'' operation) If $p > 0$, execute
+      process A.  Then execute process E and call procedure $P_{N'}$.
+
+    \item[Process C.] (Page alignment)\\
+      If $p'<L'-1$ and $p > 0$: execute process D, call procedure
+      $P_N$ , and repeat process C.\\
+      If $p'<L'-1$ and $p = 0$: execute process D until $p' = L'-1$.\\
+      If $p'+1>R'$: execute process E, call procedure $P_{R'}$, and
+      repeat process C.\\
+      If $p'+1>P'$: execute process E, call procedure $P_{P'}$, and
+      repeat process C.
+
+    \item[Process D.] Skip the output medium to the next line, set
+      $p=0$, and set $p'=p'+1$.
+
+    \item[Process E.] Skip the output medium to the next page, and set
+      $p'=0$.
+\end{enumerate}
+
+
+\subsubsection{Input}
+
+The input process is initiated by the call:
+\program{in list (unit, LAYOUT, LIST)}
+\noindent{}The parameters have the same significance as they did in
+the case of output, except that {\it unit} is in this case the number
+of an input device.  There is a class of procedures {\it input n}
+which stand for a call with a particularly simple type of layout and
+list, just as discussed in Section \ref{Lbl++IoProc+IoCalls+Output}
+for the case of output.  In the case of input, the parameters of the
+``item'' procedure within the list must be variables.
+
+The various steps which take place during the execution of {\it in
+list} are very much the same as those in the case of {\it out list},
+with obvious changes.  Instead of transferring characters of title
+format, the characters are ignored on input.  If the data is improper,
+some standard error procedure is used (cf. Section
+\ref{Lbl++Formats+Number+Semantics+Input}).
+
+The only significant change occurs in the case of standard input
+format, in which the number $S$ of the above algorithm cannot be
+determined in step 4.  The tests $p+S>R$ and $p+S>P$ now become a test
+on whether positions $p+l$, $p+2$, \dots, $min(R, P)$ have any numbers
+in them or not.  If so, the first number, up to its delimiter, is
+used; the $R$ and $P$ positions serve as delimiters here.  If not,
+however, overflow occurs, and subsequent lines are searched until a
+number is found (possibly causing additional overflows). The right
+boundary $min(R, P)$ will not count as a delimiter in the case of
+overflow.  This rule has been made so that the process of input is
+dual to that of output: an input item is not split across more than
+one line unless it has overflowed twice.
+
+Notice that the programmer has the ability to determine the presence
+or absence of data on a card when using standard format, because of
+the way overflow is defined.  The following program, for example, will
+count the number $n$ of data items on a single input card and will
+read them into $A[1]$, $A[2]$, \dots, $A[n]$. (Assume unit 5 is a card
+reader.)
+
+\program{\keyw{procedure} LAY; h end(EXIT, EXIT, EXIT);\\
+\keyw{procedure} LIST(ITEM); ITEM(A[n + 1]);\\
+\keyw{procedure} EXIT; \keyw{go to} L2;\\
+\\
+\hspace{1.0cm}\={}n := O;\\
+L1:\>in list(5, LAY, LIST);\\
+\>n := n - 1;\\
+\>\keyw{go to} L1;\\
+L2:\>\keyw{comment} mission accomplished;}
+
+
+\subsubsection{Skipping}
+
+Two procedures are available which achieve an effect similar to that
+of the ``tab'' key on a typewriter:
+\program{h skip (position, OVERFLOW)\\
+v skip (position, OVERFLOW)}
+\noindent{}where position is an integer variable called by value, and
+$OVERFLOW$ is the name of a procedure.  These procedures are defined
+only if they are called within a list procedure during an {\it in
+list} or {\it out list} operation.  For {\it h skip}, if $p <
+position$, set $p = position$; but if $p<position$, call the procedure
+$OVERFLOW$. For {\it v skip}, an analogous procedure is carried out:
+if $p'<position$, effectively execute process A of Section
+\ref{Lbl++IoProc+IoCalls+Output} $(position-p')$ times; but if
+$p'<position$, call the procedure $OVERFLOW$.
+
+\subsubsection{Intermediate data storage}
+The procedure call
+\program{put (n, LIST)}
+\noindent{}where $n$ is an integer parameter called by value and
+$LIST$ is the name of a list procedure (Section
+\ref{Lbl++IoProc+ListProc}), takes the values specified by the list
+procedure and stores them, together with the identification number
+$n$.  Anything previously stored with the same identification number
+is lost.  The variables entering into the list do not lose their
+values.
+
+The procedure call
+\program{get (n, LIST)}
+\noindent{}where $n$ is an integer parameter called by value and $LIST$ is the
+name of a list procedure, is used to retrieve the set of values which
+has previously been put away with identification number $n$.  The
+items in $LIST$ must be variables.  The stored values are retrieved in
+the same order as they were placed, and they must be compatible with
+the type of the elements specified by $LIST$; transfer functions may
+be invoked to convert from real to integer type or vice versa.  If
+fewer items are in $LIST$ than are associated with $n$, only the first
+are retrieved; if $LIST$ contains more items, the situation is
+undefined.  The values associated with $n$ in the external storage are
+not changed by {\it get}.
+
+\subsection{Control Procedures}
+\label{Lbl++IoProc+ControlProc}
+
+The procedure calls
+\program{out control (unit, xl, x2, x3, x4)\\
+in control (unit, xl, x2, x3, x4)}
+\noindent{}may be used by the programmer to determine the values of
+normally ``hidden'' system parameters, in order to have finer control
+over input and output.  Here unit is the number of an output or input
+device, and $xl$, $x2$, $x3$, $x4$ are variables.  The action of these
+procedures is to set $xl$, $x2$, $x3$, $x4$ equal to the current
+values of $p$, $P$, $p'$, $P'$, respectively, corresponding to the
+device specified.
+
+\subsection{Other Procedures}
+\label{Lbl++IoProc+Other}
+
+Other procedures which apply to specific input or output devices may
+be defined at certain installations, e.g. {\it tape skip} and {\it
+rewind} for controlling magnetic tape, etc.  An installation may also
+define further descriptive procedures (thus introducing further hidden
+variables); e.g., a procedure might be added to name a label to go to
+in case of an input error.  Procedures for obtaining the current
+values of hidden variables might also be incorporated.
+
+
+
+\section{An Example}
+
+A simple example follows, which is to print the first 20 lines of
+Pascal's triangle in triangular form:
+
+\begin{verbatim}
+   1
+  1 1
+ 1 2 1
+1 3 3 1
+\end{verbatim}
+
+These first 20 lines involve numbers which are at most five digits in
+magnitude.  The output is to begin a new page, and it is to be
+double-spaced and preceded by the title ``PASCALS TRIANGLE''.  We
+assume that unit number 3 is a line printer.
+
+Two solutions of the problem are given, each of which uses slightly
+different portions of the input-output conventions.
+
+\program{\keyw{begin} \=\keyw{integer} N, K, printer;\\
+\>\keyw{integer} \keyw{array} A [0:19];\\
+\>\keyw{procedure} AK(ITEM); ITEM(A[K]);\\
+\>\keyw{procedure} TRIANGLE; \keyw{begin} format('6Z');\\
+\>\hspace{1.0cm}h lim(58 - 3 \mtim N, 63 + 3 \mtim N) \keyw{end};\\
+printer := 3;\\
+output 0 (printer, `\mpow{}`PASCALS\blankchar{}TRIANGLE'//');\\
+\keyw{for} N := 0 \keyw{step} 1 \keyw{until} 19 \keyw{do}\\
+\keyw{begin} \=A[N] := 1;\\
+\>\keyw{for} K := N - 1 \keyw{step} -1 \keyw{until} 1 \keyw{do}\\
+\>\hspace{1.0cm}A[K] := A[K - 1] + A[K];\\
+\>\keyw{for} K := 0 \keyw{step} 1 \keyw{until} N \keyw{do}\\
+\>\hspace{1.0cm}out list (printer, TRIANGLE, AK);\\
+\>output 0 (printer, '//') \keyw{end} \keyw{end}}
+
+\program{\keyw{begin} \=\keyw{integer} N, IK, printer;\\
+\>\keyw{integer} \keyw{array} A [0:19];\\
+\>\keyw{procedure} LINES; format 2 (`XB,X(6Z),//', 57 - 3 \mtim N, N+1);\\
+\>\keyw{procedure} LIST(Q); \keyw{for} K := 0 \keyw{step} 1 \keyw{until} N \keyw{do} Q(A[K]);\\
+printer := 8;\\
+output 1 (printer, `\mpow{}20S//', `PASCALS\blankchar{}TRIANGLE');\\
+\keyw{for} N := 0 \keyw{step} 1 \keyw{until} 19 \keyw{do}\\
+\keyw{begin} \=A[N] := 1;\\
+\>\keyw{for} K := N - 1 \keyw{step} -1 \keyw{until} 1 \keyw{do} A[K] := A[K - 1] + A[K];\\
+\>out list (printer, LINES, LIST) \keyw{end} \keyw{end}}
+
+
+
+\section{Machine-dependent Portions}
+
+Since input-output processes must be machine-dependent to a certain
+extent, the portions of this proposal which are machine-dependent are
+summarized here.
+
+\begin{enumerate}
+\item The values of P and P' for the input and output devices.
+\item The treatment of I, L, and R (unformatted) format.
+\item The number of characters in standard output format.
+\item The internal representation of alpha format.
+\item The number of spaces, K, which will serveto delilnit standard
+input format values.
+\end{enumerate}
+
+
+\end{document}
