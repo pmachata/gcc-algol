@@ -1,5 +1,5 @@
-#CC      := gcc
-CC      := gcc-4.1-rh
+CC      := gcc
+#CC      := gcc-4.1-rh
 YACC    := bison
 FLEX    := flex
 DEBUG   := -ggdb3 -Wall -fno-inline
