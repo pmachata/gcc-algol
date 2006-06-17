@@ -19,6 +19,7 @@ FILES = cursor.c cursor.h\
 	util.c util.h\
 	lexer.l lexer.h lexer-test.c\
 	parser.y parser.h\
+	estring.c estring.h\
 	Makefile
 
 .PHONY: all doc dist clean check tests
@@ -53,6 +54,15 @@ check-logger: logger.o util.o logger.c Makefile
 	rm -f ./logger-test
 
 
+estring.o: estring.c estring.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c estring.c
+
+check-estring: estring.o estring.c Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST estring.c estring.o -o estring-test
+	./estring-test
+	rm -f ./estring-test
+
+
 parser.o: parser-tab.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c parser-tab.c -o parser.o
 
@@ -83,7 +93,7 @@ check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
 	rm -f ./check-lexer
 
 
-al60l: util.o cursor.o logger.o lexer.o parser.o Makefile
+al60l: util.o cursor.o logger.o lexer.o parser.o estring.o Makefile
 	$(CC) $(PROFILE) $(CFLAGS) util.o cursor.o logger.o lexer.o parser.o -o al60l
 
 dist: $(ARCHIVE_NAME)
@@ -99,7 +109,7 @@ $(ARCHIVE_NAME): $(FILES)
 clean:
 	rm -f *.o al60l
 
-check: check-util check-cursor check-logger check-lexer check-parser
+check: check-util check-estring check-cursor check-logger check-lexer check-parser
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="
