@@ -41,7 +41,7 @@ private_estr_realloc (estring_rep_t * dest, size_t limit)
     return 0;
 
   // align limit
-  size_t real_limit = limit;//(1 + limit/64)*64;
+  size_t real_limit = (1 + limit / 64) * 64;
 
   char * new_body = (char*)realloc (dest->body, real_limit);
   if (new_body == NULL)
@@ -260,7 +260,7 @@ private_estr_nprepend (estring_rep_t * dest, char const* src, size_t src_length)
   size_t future_length = dest->length + src_length;
 
   // if src==dest, we will have to actualize src after the
-  // realoocation of dest
+  // reallocation of dest
   int reloc = src == dest->body;
   if (private_estr_realloc (dest, future_length + 1))
     return -1;
@@ -269,7 +269,7 @@ private_estr_nprepend (estring_rep_t * dest, char const* src, size_t src_length)
 
   char * fut_body_begin = dest->body + src_length;
   memmove (fut_body_begin, dest->body, dest->length);
-  strncpy (dest->body, src, src_length);
+  memmove (dest->body, src, src_length);
   dest->length = future_length;
 
   return 0;
@@ -435,10 +435,14 @@ main (void)
 	  (*it) (str5, str5);
 	  assert (estr_length (str5) == s * 2);
 	}
-      for (int i = 0; i < estr_length (str5); ++i)
-	assert (estr_at (str5, i) == i%2?'a':'b');
+      for (int i = 1; i < estr_length (str5); i += 2)
+	{
+	  assert (estr_at (str5, i-1) == 'a');
+	  assert (estr_at (str5, i) == 'b');
+	  assert (estr_at (str5, -i) == EOF);
+	  assert (estr_at (str5, -i-1) == EOF);
+	}
       assert (estr_at (str5, estr_length (str5)) == EOF);
-      assert (estr_at (str5, -54) == EOF);
       estr_delete (str5);
     }
 
