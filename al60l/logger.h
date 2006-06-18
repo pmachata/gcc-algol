@@ -13,12 +13,14 @@
 /// filtering.
 typedef enum enum_debug_level_t
 {
-  ll_debug,             ///< Debug level information
+  ll_filter_nothing,    ///< Logical value for `filter nothing'.
+  ll_debug = ll_filter_nothing,    ///< Debug level information
   ll_info,              ///< General progress information
   ll_warning,           ///< Compilation warnings
   ll_error,             ///< Compilation errors
   ll_fatal_error,       ///< Fatal errors, usually leading to compiler halt
-  debug_level_t_count
+  ll_filter_all,
+  debug_level_t_count = ll_filter_all
 } debug_level_t;
 
 typedef struct struct_logger_t { } logger_t;

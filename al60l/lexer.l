@@ -7,6 +7,7 @@
 #include "logger.h"
 #include "util.h"
 #include "lexer.h"
+#include "estring.h"
 
 #include "parser-tab.h"
 
@@ -24,11 +25,16 @@ typedef struct struct_lexer_rep_t
   FILE * stream;
   int managed;
   token_kind_t last_tok;
+
+  /// Usually the lexeme is stored using flex-internal buffers.
+  /// However in certain cases, this does not work very well.
+  /// E.g. strings have to be parsed in a special way, processing one
+  /// character at a time.  That data are stored in `literal' field.
+  estring_t * literal;
 } lexer_rep_t;
 
-void lexer_invalid_character (lexer_rep_t * rep, char what);
-void lexer_unrecognized_character (lexer_rep_t * rep, char what);
-token_kind_t _lexer_got_token (void * flex_scanner, token_kind_t token_kind);
+static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
+static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
 
@@ -39,116 +45,129 @@ static int string_level = 0;
 
 %option noyywrap
 
+ /* primitives (RRA60 2.1, 2.2) */
 SPACE		[ \t\n\r\v\f]
-
-/* === RRA60 2.1 === */
 LETTER		[a-zA-Z]
-
-/* === RRA60 2.2 === */
 DIGIT		[0-9]
 
 %%
 
- /* <logical_value> */
-"'true'"  { return _lexer_got_token (yyscanner, KWTRUE); }
-"'false'" { return _lexer_got_token (yyscanner, KWFALSE); }
+ /* arithmetic operators */
+"+" { return private_lexer_got_token (yyscanner, AOPADD); }
+"-" { return private_lexer_got_token (yyscanner, AOPSUB); }
+"*" { return private_lexer_got_token (yyscanner, AOPMUL); }
+"/" { return private_lexer_got_token (yyscanner, AOPRDIV); }
+"'div'" { return private_lexer_got_token (yyscanner, AOPIDIV); }
+"**" { return private_lexer_got_token (yyscanner, AOPPOW); }
 
- /* <arithmetic_operator> */
-"+" { return _lexer_got_token (yyscanner, AOPADD); }
-"-" { return _lexer_got_token (yyscanner, AOPSUB); }
-"*" { return _lexer_got_token (yyscanner, AOPMUL); }
-"/" { return _lexer_got_token (yyscanner, AOPRDIV); }
-"'div'" { return _lexer_got_token (yyscanner, AOPIDIV); }
-"**" { return _lexer_got_token (yyscanner, AOPPOW); }
+ /* relational operators */
+"<"  { return private_lexer_got_token (yyscanner, ROPLT); }
+"<=" { return private_lexer_got_token (yyscanner, ROPLTE); }
+"="  { return private_lexer_got_token (yyscanner, ROPEQ); }
+">=" { return private_lexer_got_token (yyscanner, ROPGTE); }
+">"  { return private_lexer_got_token (yyscanner, ROPGT); }
+"!=" { return private_lexer_got_token (yyscanner, ROPNEQ); }
 
- /* <relational_operator> */
-"<"  { return _lexer_got_token (yyscanner, ROPLT); }
-"<=" { return _lexer_got_token (yyscanner, ROPLTE); }
-"="  { return _lexer_got_token (yyscanner, ROPEQ); }
-">=" { return _lexer_got_token (yyscanner, ROPGTE); }
-">"  { return _lexer_got_token (yyscanner, ROPGT); }
-"!=" { return _lexer_got_token (yyscanner, ROPNEQ); }
+ /* logical operators */
+"==" { return private_lexer_got_token (yyscanner, LOPEQ); }
+"=>" { return private_lexer_got_token (yyscanner, LOPIMP); }
+"||" { return private_lexer_got_token (yyscanner, LOPOR); }
+"&&" { return private_lexer_got_token (yyscanner, LOPAND); }
+"!"  { return private_lexer_got_token (yyscanner, LOPNOT); }
 
- /* <logical_operator> */
-"==" { return _lexer_got_token (yyscanner, LOPEQ); }
-"=>" { return _lexer_got_token (yyscanner, LOPIMP); }
-"||" { return _lexer_got_token (yyscanner, LOPOR); }
-"&&" { return _lexer_got_token (yyscanner, LOPAND); }
-"!"  { return _lexer_got_token (yyscanner, LOPNOT); }
+ /* brackets */
+"(" { return private_lexer_got_token (yyscanner, SEPLPAREN); }
+")" { return private_lexer_got_token (yyscanner, SEPRPAREN); }
+"[" { return private_lexer_got_token (yyscanner, SEPLBRACK); }
+"]" { return private_lexer_got_token (yyscanner, SEPRBRACK); }
 
- /* <sequential_operator> */
-"'goto'" { return _lexer_got_token (yyscanner, KWGOTO); }
-"'if'"   { return _lexer_got_token (yyscanner, KWIF); }
-"'then'" { return _lexer_got_token (yyscanner, KWTHEN); }
-"'else'" { return _lexer_got_token (yyscanner, KWELSE); }
-"'for'"  { return _lexer_got_token (yyscanner, KWFOR); }
-"'do'"   { return _lexer_got_token (yyscanner, KWDO); }
+ /* separators */
+"," { return private_lexer_got_token (yyscanner, SEPCOMMA); }
+":" { return private_lexer_got_token (yyscanner, SEPCOLON); }
+":=" { return private_lexer_got_token (yyscanner, SEPASSIGN); }
+";" { return private_lexer_got_token (yyscanner, SEPSEMICOLON); }
 
- /* <separator> */
-"," { return _lexer_got_token (yyscanner, SEPCOMMA); }
-":" { return _lexer_got_token (yyscanner, SEPCOLON); }
-":=" { return _lexer_got_token (yyscanner, SEPASSIGN); }
-"'step'" { return _lexer_got_token (yyscanner, KWSTEP); }
-"'until'" { return _lexer_got_token (yyscanner, KWUNTIL); }
-"'while'" { return _lexer_got_token (yyscanner, KWWHILE); }
-"'comment'" { return _lexer_got_token (yyscanner, KWCOMMENT); }
+ /* keywords */
+"'array'" { return private_lexer_got_token (yyscanner, KWARRAY); }
+"'begin'" { return private_lexer_got_token (yyscanner, KWBEGIN); }
+"'Boolean'" { return private_lexer_got_token (yyscanner, KWBOOLEAN); }
+"'comment'" { return private_lexer_got_token (yyscanner, KWCOMMENT); }
+"'do'"   { return private_lexer_got_token (yyscanner, KWDO); }
+"'else'" { return private_lexer_got_token (yyscanner, KWELSE); }
+"'end'" { return private_lexer_got_token (yyscanner, KWEND); }
+"'false'" { return private_lexer_got_token (yyscanner, KWFALSE); }
+"'for'"  { return private_lexer_got_token (yyscanner, KWFOR); }
+"'goto'" { return private_lexer_got_token (yyscanner, KWGOTO); }
+"'if'"   { return private_lexer_got_token (yyscanner, KWIF); }
+"'integer'" { return private_lexer_got_token (yyscanner, KWINTEGER); }
+"'label'" { return private_lexer_got_token (yyscanner, KWLABEL); }
+"'own'" { return private_lexer_got_token (yyscanner, KWOWN); }
+"'procedure'" { return private_lexer_got_token (yyscanner, KWPROCEDURE); }
+"'true'"  { return private_lexer_got_token (yyscanner, KWTRUE); }
+"'real'" { return private_lexer_got_token (yyscanner, KWREAL); }
+"'step'" { return private_lexer_got_token (yyscanner, KWSTEP); }
+"'string'" { return private_lexer_got_token (yyscanner, KWSTRING); }
+"'switch'" { return private_lexer_got_token (yyscanner, KWSWITCH); }
+"'then'" { return private_lexer_got_token (yyscanner, KWTHEN); }
+"'until'" { return private_lexer_got_token (yyscanner, KWUNTIL); }
+"'value'" { return private_lexer_got_token (yyscanner, KWVALUE); }
+"'while'" { return private_lexer_got_token (yyscanner, KWWHILE); }
 
- /* <bracket> */
-"(" { return _lexer_got_token (yyscanner, SEPLPAREN); }
-")" { return _lexer_got_token (yyscanner, SEPRPAREN); }
-"[" { return _lexer_got_token (yyscanner, SEPLBRACK); }
-"]" { return _lexer_got_token (yyscanner, SEPRBRACK); }
+ /* strings */
+ // Parsing string literal is somewhat kinky in ALGOL 60, for it
+ // allows nested forms.  Thus we have to count opening `s and closing
+ // 's, and collect everything that's inbetween to lexer->literal.
 "`" {
   BEGIN STRING;
   string_level = 1;
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  estr_clear (lexer->literal);
 }
-<STRING>"`" {
-  ++string_level;
+
+<STRING>("`"+) {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  string_level += yyget_leng (yyscanner);
+  if (estr_append_cstr (lexer->literal, yyget_text (yyscanner)) < 0)
+    log_printf (lexer->log, ll_fatal_error, "literal append failure");
 }
+
 <STRING>"'" {
   if (--string_level == 0)
     {
       BEGIN INITIAL;
-      return _lexer_got_token (yyscanner, LITSTRING);
+      return private_lexer_got_token (yyscanner, LITSTRING);
+    }
+  else
+    {
+      lexer_rep_t * lexer = yyget_extra (yyscanner);
+      if (estr_append_cstr (lexer->literal, yyget_text (yyscanner)) < 0)
+	log_printf (lexer->log, ll_fatal_error, "literal append failure");
     }
 }
-"'begin'" { return _lexer_got_token (yyscanner, KWBEGIN); }
-"'end'" { return _lexer_got_token (yyscanner, KWEND); }
 
- /* <declarator> */
-"'own'" { return _lexer_got_token (yyscanner, KWOWN); }
-"'Boolean'" { return _lexer_got_token (yyscanner, KWBOOLEAN); }
-"'integer'" { return _lexer_got_token (yyscanner, KWINTEGER); }
-"'real'" { return _lexer_got_token (yyscanner, KWREAL); }
-"'array'" { return _lexer_got_token (yyscanner, KWARRAY); }
-"'switch'" { return _lexer_got_token (yyscanner, KWSWITCH); }
-"'procedure'" { return _lexer_got_token (yyscanner, KWPROCEDURE); }
-
- /* <specificator> */
-"'string'" { return _lexer_got_token (yyscanner, KWSTRING); }
-"'label'" { return _lexer_got_token (yyscanner, KWLABEL); }
-"'value'" { return _lexer_got_token (yyscanner, KWVALUE); }
-
- /* === RRA60 2.4 === */
- /* <identifier> */
-{LETTER}({LETTER}|{DIGIT})* { }
-
-
-"//".* {
-    // skip one-line comments
+<STRING>([^`\']+) {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  if (estr_append_cstr (lexer->literal, yyget_text (yyscanner)) < 0)
+    log_printf (lexer->log, ll_fatal_error, "literal append failure");
 }
 
-";"   { return _lexer_got_token (yyscanner, SEPSEMICOLON); }
 
+ /* identifier */
+{LETTER}({LETTER}|{DIGIT})* {
+  return private_lexer_got_token (yyscanner, IDENTIFIER);
+}
+
+
+ /* numbers */
 "."   {
   // explicitly forbid single dot, which would otherwise get
   // classified as floating point number
   lexer_rep_t * lexer = yyget_extra (yyscanner);
-  lexer_unrecognized_character (lexer, *yyget_text (yyscanner));
+  private_lexer_invalid_character (lexer, *yyget_text (yyscanner));
 }
 
 ([0-9]+"."[0-9]*)|([0-9]*"."[0-9]+)|([0-9]*"'e'"[+-]?[0-9]+)|([0-9]+"."[0-9]*"'e'"[+-]?[0-9]+)|([0-9]*"."[0-9]+"'e'"[+-]?[0-9]+) {
-  return _lexer_got_token (yyscanner, LITFLOAT);
+  return private_lexer_got_token (yyscanner, LITFLOAT);
   /*
   yylval.litfloat = atof (yytext);
   csr_append (Lexer::g_cursor, yytext);
@@ -157,7 +176,7 @@ DIGIT		[0-9]
 }
 
 [0-9]+ {
-  return _lexer_got_token (yyscanner, LITINTEGER);
+  return private_lexer_got_token (yyscanner, LITINTEGER);
   /*
   yylval.litinteger = atol (yytext);
   csr_append (Lexer::g_cursor, yytext); return LITINTEGER;
@@ -172,7 +191,7 @@ DIGIT		[0-9]
   */
 }
 
-<<EOF>>	{ return _lexer_got_token (yyscanner, EOFTOK); }
+<<EOF>>	{ return private_lexer_got_token (yyscanner, EOFTOK); }
 
 \n {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
@@ -192,7 +211,7 @@ DIGIT		[0-9]
 . {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   cursor_move (lexer->cursor, 1);
-  lexer_invalid_character (lexer, *yytext);
+  private_lexer_invalid_character (lexer, *yytext);
 }
 
 %%
@@ -209,6 +228,7 @@ new_lexer (FILE * stream, char const* filename, int manage)
       guard_ptr (buf, 1, ret->toklog = new_logger ("token"));
       guard_ptr (buf, 1, ret->log = new_logger ("lexer"));
       guard_ptr (buf, 1, ret->cursor = new_cursor (filename));
+      guard_ptr (buf, 1, ret->literal = new_estring ());
 
       guard_int (buf, 1, yylex_init (&ret->flex_scanner));
       yyset_extra (ret, ret->flex_scanner);
@@ -222,6 +242,7 @@ new_lexer (FILE * stream, char const* filename, int manage)
     {
       delete_logger (ret->log);
       delete_cursor (ret->cursor);
+      delete_estring (ret->literal);
       // yylex_init is called the last, and nothing will fail
       // afterwards.  So we don't call yylex_destroy at all.
       free (ret);
@@ -251,27 +272,42 @@ delete_lexer (lexer_t * _lexer)
 
   delete_logger (lexer->log);
   delete_cursor (lexer->cursor);
+  delete_estring (lexer->literal);
 
   free (lexer);
 }
 
 /// Procedure to write out that bad character has been hit.
 /// Bad characters are considered errors.
-void
-lexer_invalid_character (lexer_rep_t * rep, char what)
+static void
+private_lexer_invalid_character (lexer_rep_t * rep, char what)
 {
   log_printf (rep->log, ll_error, "Invalid character `%c' (code %d)\n", what, (int)what);
 }
 
-void
-lexer_unrecognized_character (lexer_rep_t * rep, char what)
+/// Process new token.
+static token_kind_t
+private_lexer_got_token (void * flex_scanner, token_kind_t token_kind)
 {
-  log_printf (rep->log, ll_error, "Unrecognized character `%c' (code %d)\n", what, (int)what);
+  lexer_rep_t * lexer = yyget_extra (flex_scanner);
+  char const* lexeme = yyget_text (flex_scanner);
+  char const* literal = estr_cstr (lexer->literal);
+  cursor_move (lexer->cursor, yyget_leng (flex_scanner));
+
+  log_printf (lexer->toklog, ll_debug,
+	      "%s: hit [tok:%d] [lex:%s] [lit:%s]",
+	      cursor_to_str (lexer->cursor),
+	      token_kind, lexeme, literal);
+
+  return token_kind;
 }
+
+
 
 void
 lexer_next_tok (lexer_t * _lexer)
 {
+  assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   lexer->last_tok = yylex (lexer->flex_scanner);
 }
@@ -279,6 +315,7 @@ lexer_next_tok (lexer_t * _lexer)
 token_kind_t
 lexer_get_tok_kind (lexer_t * _lexer)
 {
+  assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   return lexer->last_tok;
 }
@@ -286,6 +323,7 @@ lexer_get_tok_kind (lexer_t * _lexer)
 char const*
 lexer_get_tok_lexeme (lexer_t * _lexer)
 {
+  assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   return yyget_text (lexer->flex_scanner);
 }
@@ -293,19 +331,27 @@ lexer_get_tok_lexeme (lexer_t * _lexer)
 int
 lexer_get_tok_lexeme_len (lexer_t * _lexer)
 {
+  assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   return yyget_leng (lexer->flex_scanner);
 }
 
-token_kind_t
-_lexer_got_token (void * flex_scanner, token_kind_t token_kind)
+estring_t *
+lexer_get_tok_literal (lexer_t * _lexer)
 {
-  lexer_rep_t * lexer = yyget_extra (flex_scanner);
-  char const* lexeme = yyget_text (flex_scanner);
-  cursor_move (lexer->cursor, yyget_leng (flex_scanner));
+  assert (_lexer != NULL);
+  lexer_rep_t * lexer = (void*)_lexer;
+  return lexer->literal;
+}
 
-  log_printf (lexer->toklog, ll_debug, "%s: %s was hit",
-	      cursor_to_str (lexer->cursor), lexeme);
-
-  return token_kind;
+void
+lexer_set_logging (lexer_t * _lexer, debug_level_t messages, int tokens)
+{
+  assert (_lexer != NULL);
+  lexer_rep_t * lexer = (void*)_lexer;
+  log_set_filter (lexer->log, messages);
+  if (tokens)
+    log_set_filter (lexer->toklog, ll_filter_nothing);
+  else
+    log_set_filter (lexer->toklog, ll_filter_all);
 }

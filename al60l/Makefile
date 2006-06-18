@@ -57,7 +57,7 @@ check-logger: logger.o util.o logger.c Makefile
 estring.o: estring.c estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c estring.c
 
-check-estring: estring.o estring.c Makefile
+check-estring: estring.o estring.c estring.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST estring.c estring.o -o estring-test
 	./estring-test
 	rm -f ./estring-test
@@ -72,8 +72,9 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-check-parser: parser-test.c parser.o logger.o lexer.o cursor.o parser.h lexer.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 parser-test.c parser.o lexer.o cursor.o logger.o util.o -o check-parser
+check-parser: parser-test.c parser.o logger.o lexer.o cursor.o parser.h lexer.h estring.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o check-parser \
+		parser-test.c parser.o lexer.o cursor.o logger.o util.o estring.o
 	export ct=`echo "'true' 'false' 'true' 'true'" | ./check-parser 2>/dev/null`; [ "x$$ct" = "x210" ]
 	rm -f ./check-parser
 
@@ -81,20 +82,21 @@ check-parser: parser-test.c parser.o logger.o lexer.o cursor.o parser.h lexer.h 
 lexer.o: lexer-tab.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c lexer-tab.c -o lexer.o
 
-lexer-tab.c: lexer.l lexer.h parser-tab.h logger.h pd.h cursor.h Makefile
+lexer-tab.c: lexer.l lexer.h parser-tab.h estring.h logger.h pd.h cursor.h Makefile
 	$(FLEX) -R -o lexer-tab.c --header-file=lexer-tab.h lexer.l
 
 lexer-tab.h: lexer-tab.c
 	[ -f ./lexer-tab.h ]
 
 check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 lexer-test.c lexer.o cursor.o logger.o util.o -o check-lexer
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o check-lexer \
+		lexer-test.c lexer.o cursor.o logger.o util.o estring.o
 	./check-lexer
 	rm -f ./check-lexer
 
 
 al60l: util.o cursor.o logger.o lexer.o parser.o estring.o Makefile
-	$(CC) $(PROFILE) $(CFLAGS) util.o cursor.o logger.o lexer.o parser.o -o al60l
+	$(CC) $(PROFILE) $(CFLAGS) util.o estring.o cursor.o logger.o lexer.o parser.o -o al60l
 
 dist: $(ARCHIVE_NAME)
 

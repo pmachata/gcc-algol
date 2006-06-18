@@ -31,23 +31,23 @@ void estr_stats (estring_t * dest)
 /// Create empty new string. Please note, that such a string has to be
 /// released with estr_delete(). Returns NULL if error is something ill
 /// happens.
-estring_t * estr_new (void)
+estring_t * new_estring (void)
      MALLOC_LIKE;
 
 /// Create new string by copying contents of 'src'. 'src' has to be
 /// null-terminated string.
-estring_t * estr_new_from (char const* src)
+estring_t * new_estring_from (char const* src)
      ARG_NONNULL(1)
      MALLOC_LIKE;
 
 /// Create a string as 1:1 copy of another string. Returns NULL if
 /// something fails.
-estring_t * estr_clone (estring_t * src)
+estring_t * clone_estring (estring_t * src)
      ARG_NONNULL(1)
      MALLOC_LIKE;
 
 /// Release memory allocated for string.
-void estr_delete (estring_t * str);
+void delete_estring (estring_t * str);
 
 /// Assign a new value to given string. Returns 0 on success or -1 if
 /// something failed. In such a case, original string is left intact.

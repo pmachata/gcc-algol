@@ -76,7 +76,7 @@ estr_stats (estring_t * _dest)
 }
 
 estring_t *
-estr_new (void)
+new_estring (void)
 {
   estring_rep_t * ret = malloc (sizeof (estring_rep_t));
   if (ret == NULL)
@@ -94,27 +94,38 @@ estr_new (void)
 }
 
 estring_t *
-estr_new_from (char const* src)
+new_estring_from (char const* src)
 {
   assert (src != NULL);
 
-  estring_t * ret = estr_new ();
+  estring_t * ret = new_estring ();
   estr_append_cstr(ret, src);
   return ret;
 }
 
 estring_t *
-estr_clone (estring_t * src)
+clone_estring (estring_t * src)
 {
   assert (src != NULL);
 
-  estring_t * ret = estr_new ();
+  estring_t * ret = new_estring ();
   if (ret == NULL)
     return NULL;
 
   estr_append (ret, src);
 
   return ret;
+}
+
+void
+delete_estring (estring_t * _dest)
+{
+  assert (_dest != NULL);
+  estring_rep_t * dest = (void*)_dest;
+  assert (dest->body != NULL);
+
+  free (dest->body);
+  free (dest);
 }
 
 int
@@ -143,17 +154,6 @@ estr_assign (estring_t * dest, estring_t * _src)
 
   estring_rep_t * src = (void*)_src;
   return estr_assign_cstr (dest, src->body);
-}
-
-void
-estr_delete (estring_t * _dest)
-{
-  assert (_dest != NULL);
-  estring_rep_t * dest = (void*)_dest;
-  assert (dest->body != NULL);
-
-  free (dest->body);
-  free (dest);
 }
 
 void
@@ -394,30 +394,30 @@ int
 main (void)
 {
   printf ("new/clone test.\n");
-  estring_t * str1 = estr_new_from ("ahoj svete");
+  estring_t * str1 = new_estring_from ("ahoj svete");
   assert (estr_compare (str1, str1) == 0);
 
-  estring_t * str2 = estr_new_from ("ahoj svete");
+  estring_t * str2 = new_estring_from ("ahoj svete");
   assert (estr_length (str1) == strlen ("ahoj svete"));
   assert (estr_compare (str1, str2) == 0);
 
-  estring_t * str3 = estr_clone (str1);
-  estr_delete (str1);
+  estring_t * str3 = clone_estring (str1);
+  delete_estring (str1);
   assert (estr_compare (str2, str3) == 0);
   estr_append (str2, str3);
   estr_append (str3, str3);
   assert (estr_compare (str2, str3) == 0);
 
   printf ("push/pop test.\n");
-  estring_t * str4 = estr_new ();
+  estring_t * str4 = new_estring ();
   int c;
   while ((c = estr_pop (str3)) != EOF)
     estr_push (str4, c);
   assert (estr_compare_cstr (str4, "etevs johaetevs joha") == 0);
 
-  estr_delete (str2);
-  estr_delete (str3);
-  estr_delete (str4);
+  delete_estring (str2);
+  delete_estring (str3);
+  delete_estring (str4);
 
   printf ("append/prepend:\n");
   int (*functions[])(estring_t *, estring_t *) = {estr_append, estr_prepend, NULL};
@@ -427,7 +427,7 @@ main (void)
        it++)
     {
       printf (" + test...\n");
-      estring_t * str5 = estr_new_from ("ab");
+      estring_t * str5 = new_estring_from ("ab");
       assert (estr_length (str5) == 2);
       for (int i = 0; i < 20; ++i)
 	{
@@ -443,7 +443,7 @@ main (void)
 	  assert (estr_at (str5, -i-1) == EOF);
 	}
       assert (estr_at (str5, estr_length (str5)) == EOF);
-      estr_delete (str5);
+      delete_estring (str5);
     }
 
   printf ("All passed.\n");

@@ -8,6 +8,8 @@
 
 #include "parser-tab.h"
 #include "pd.h"
+#include "estring.h"
+#include "logger.h"
 #include <stdio.h>
 
 typedef struct struct_lexer_t { } lexer_t;
@@ -57,8 +59,20 @@ token_kind_t lexer_get_tok_kind (lexer_t * lexer)
 char const* lexer_get_tok_lexeme (lexer_t * lexer)
      ARG_NONNULL(1);
 
+/// Answer the contents of LITSTRING token.  Returned value has to be
+/// cloned if it is to be used further, as lexer will rewrite it at
+/// next iteration.
+estring_t * lexer_get_tok_literal (lexer_t * lexer)
+     ARG_NONNULL(1);
+
 /// Answer the length of last lexeme.
 int lexer_get_tok_lexeme_len (lexer_t * lexer)
+     ARG_NONNULL(1);
+
+/// Controls what logging messages get printed.  `Messages' controls
+/// what error reporting is done.  `Tokens' controls whether debug
+/// info about processed tokens gets printed.
+void lexer_set_logging (lexer_t * lexer, debug_level_t messages, int tokens)
      ARG_NONNULL(1);
 
 #endif//_AL60L_LEXER_H_
