@@ -1,0 +1,84 @@
+Program ::=
+	| Label Program
+	| Block
+
+LabelList ::=
+	| <eps>
+	| Label LabelList
+
+Label ::=
+	| LabelIdentifier SEPCOLON
+
+LabelIdentifier ::=
+	| IDENTIFIER
+	| LITINTEGER
+
+CompoundStatement ::=
+	| KWBEGIN StatementList KWEND
+
+Block ::=
+	| KWBEGIN DeclarationList StatementList KWEND
+
+DeclarationList ::=
+	| <eps>
+	| Declaration SEPSEMICOLON DeclarationList
+
+StatementList ::=
+	| Statement SEPSEMICOLON CompoundBody
+	| Statement
+
+Statement ::=
+	| UnconditionalStatement
+	| LabelList IfStatement
+	| LabelList ForStatement
+
+UnconditionalStatement ::=
+	| LabelList Block
+	| BasicStatement
+
+BasicStatement ::=
+	| LabelList DummyStatement
+	| LabelList AssignmentStatement
+	| LabelList GotoStatement
+	| LabelList Expression    # note: only procedure calls allowed
+
+DummyStatement ::=
+	| <eps>
+
+AssignmentStatement ::=
+	| TargetVariableList Expression
+
+TargetVariableList ::=
+	| TargetVariable TargetVariables
+	| TargetVariable
+
+TargetVariable ::=
+	| IDENTIFIER SEPASSIGN
+
+GotoStatement ::=
+	| KWGOTO DesignationalExpression
+
+IfStatement ::=
+	| IfClause UnconditionalStatement OptElseClause
+	| IfClause ForStatement
+
+IfClause ::=
+	| KWIF Expression KWTHEN
+
+OptElseClause ::=
+	| <eps>
+	| KWELSE Statement
+
+ForStatement ::=
+	| KWFOR IDENTIFIER SEPASSIGN ForList KWDO Statement
+
+ForList ::=
+	| ForListElement
+	| ForList SEPCOMMA ForListElement
+
+ForListElement ::=
+	| Expression
+	| Expression KWSTEP Expression KWUNTIL Expression
+	| Expression KWWHILE Expression
+	# note: check if expression types match!
+	# note: not sure if it's possible to use float expressions
