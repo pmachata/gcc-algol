@@ -61,12 +61,23 @@ char const* lexer_get_tok_lexeme (lexer_t * lexer)
 
 /// Answer the contents of LITSTRING token.  Returned value has to be
 /// cloned if it is to be used further, as lexer will rewrite it at
-/// next iteration.
+/// next iteration.  The function checks whether last token held
+/// string at all, and an assertion fails if not.
 estring_t * lexer_get_tok_literal (lexer_t * lexer)
      ARG_NONNULL(1);
 
 /// Answer the length of last lexeme.
 int lexer_get_tok_lexeme_len (lexer_t * lexer)
+     ARG_NONNULL(1);
+
+/// Answer the number associated with the previous token, if there is
+/// any.  The function checks whether last token held number at all,
+/// and an assertion fails if not.
+double lexer_get_tok_number (lexer_t * lexer)
+     ARG_NONNULL(1);
+
+/// Similar to lexer_get_tok_number, but for integer values.
+long lexer_get_tok_integer (lexer_t * lexer)
      ARG_NONNULL(1);
 
 /// Controls what logging messages get printed.  `Messages' controls
