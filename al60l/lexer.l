@@ -217,6 +217,8 @@ DIGIT		[0-9]
 
  /* identifier */
 {LETTER}({LETTER}|{DIGIT})* {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  estr_assign_cstr (lexer->str_literal, yyget_text (yyscanner));
   return private_lexer_got_token (yyscanner, IDENTIFIER);
 }
 
@@ -433,7 +435,9 @@ lexer_get_tok_literal (lexer_t * _lexer)
 {
   assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
-  assert (lexer->current_tok == LITSTRING || !"current token is not LITSTRING");
+  assert (lexer->current_tok == LITSTRING
+	  || lexer->current_tok == IDENTIFIER
+	  || !"current token is neither LITSTRING, nor IDENTIFIER");
 
   return lexer->str_literal;
 }

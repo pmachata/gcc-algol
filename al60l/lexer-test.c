@@ -51,7 +51,7 @@ main(void)
   }
 
 
-  printf ("checking strings\n");
+  printf ("checking strings and identifiers\n");
   {
     int filedes[2] = {};
     int tst = pipe(filedes);
@@ -66,12 +66,28 @@ main(void)
       "`hallo `world'!' \n"
       "  ``another `complex' `str `ing''' yeah!' \n"
       " ``''  ```''`''  ``'`'`'``'`''`'' \n"
-      " `a`b'c`d'e`f'g`h`i'j`k'l'm`n'o'\n";
+      " `a`b'c`d'e`f'g`h`i'j`k'l'm`n'o'\n"
+      "q Soup V17a\n"
+      " a34kTMNs MARILYN begin  \n"
+      "end";
+    token_kind_t tokens[] = {
+      LITSTRING,
+      LITSTRING,
+      LITSTRING,LITSTRING,LITSTRING,
+      LITSTRING,
+      IDENTIFIER,IDENTIFIER,IDENTIFIER,
+      IDENTIFIER,IDENTIFIER,IDENTIFIER,
+      IDENTIFIER,
+      EOFTOK
+    };
     char * strings[] = {
       "hallo `world'!",
       "`another `complex' `str `ing''' yeah!",
       "`'", "``''`'", "`'`'`'``'`''`'",
       "a`b'c`d'e`f'g`h`i'j`k'l'm`n'o",
+      "q",        "Soup",      "V17a",
+      "a34kTMNs", "MARILYN",   "begin",
+      "end",
       NULL
     };
 
@@ -79,11 +95,15 @@ main(void)
     fflush (in);
     fclose (in);
 
-    for (char ** it = strings; *it != NULL; ++it)
+    char ** it = strings;
+    token_kind_t * itk = tokens;
+    for (; *it != NULL; ++it, ++itk)
       {
 	lexer_next_tok (lexer);
 	token_kind_t tk = lexer_get_tok_kind (lexer);
-	if (tk == LITSTRING)
+	assert (tk == *itk);
+	if (tk == LITSTRING
+	    || tk == IDENTIFIER)
 	  {
 	    estring_t * lit = lexer_get_tok_literal (lexer);
 	    assert (estr_compare_cstr (lit, *it) == 0);
