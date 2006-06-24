@@ -63,6 +63,15 @@ check-estring: estring.o estring.c estring.h Makefile
 	rm -f ./estring-test
 
 
+ast.o: ast.c ast.h estring.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c
+
+check-ast: ast.o ast.c ast.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o -o ast-test
+	./ast-test
+	rm -f ./ast-test
+
+
 parser.o: parser-tab.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c parser-tab.c -o parser.o
 
@@ -72,11 +81,12 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-check-parser: parser-test.c parser.o logger.o lexer.o cursor.o parser.h lexer.h estring.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o check-parser \
-		parser-test.c parser.o lexer.o cursor.o logger.o util.o estring.o
-	export ct=`echo "'true' 'false' 'true' 'true'" | ./check-parser 2>/dev/null`; [ "x$$ct" = "x210" ]
-	rm -f ./check-parser
+parser-test: parser-test.c parser.o ast.o logger.o lexer.o cursor.o parser.h lexer.h estring.h pd.h
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o parser-test \
+		parser-test.c parser.o ast.o lexer.o cursor.o logger.o util.o estring.o
+
+check-parser: parser-test Makefile
+	cd torture && ./torture.sh
 
 
 lexer.o: lexer-tab.c Makefile
@@ -95,8 +105,7 @@ check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
 	rm -f ./check-lexer
 
 
-al60l: util.o cursor.o logger.o lexer.o parser.o estring.o Makefile
-	$(CC) $(PROFILE) $(CFLAGS) util.o estring.o cursor.o logger.o lexer.o parser.o -o al60l
+al60l: parser-test
 
 dist: $(ARCHIVE_NAME)
 
@@ -111,7 +120,7 @@ $(ARCHIVE_NAME): $(FILES)
 clean:
 	rm -f *.o al60l
 
-check: check-util check-estring check-cursor check-logger check-lexer check-parser
+check: check-util check-estring check-cursor check-logger check-lexer check-ast check-parser
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="

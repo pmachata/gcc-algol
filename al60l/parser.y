@@ -45,9 +45,6 @@ yyerror (const char *str)
 
 %pure-parser
 
-%type <un_i> Main
-%type <un_i> Start
-
 %token EOFTOK
 %token KWTRUE
 %token KWFALSE
@@ -113,8 +110,6 @@ yyerror (const char *str)
 
 %token IDENTIFIER
 
-%token <name> IDENTIFIER
-
 %token LITFLOAT
 %token LITINTEGER
 %token LITSTRING
@@ -131,6 +126,110 @@ yyerror (const char *str)
 
 %%
 
+Program:
+  CompoundStatement
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
+      YYACCEPT;
+    }
+
+CompoundStatement:
+  LabelList Block
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "CompoundStatement -> LabelList Block");
+    }
+
+LabelList:
+  /*epsilon*/
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "LabelList -> <eps>");
+    }
+  |
+  Label LabelList
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "LabelList -> Label LabelList");
+    }
+
+Label:
+  LabelIdentifier SEPCOLON
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "Label -> LabelIdentifier SEPCOLON");
+    }
+
+LabelIdentifier:
+  IDENTIFIER
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
+    }
+  |
+  LITINTEGER
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "LabelIdentifier -> LITINTEGER");
+    }
+
+Block:
+  KWBEGIN StatementList KWEND
+    {
+      //allow DeclarationList after KWBEGIN
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "Block -> KWBEGIN DeclarationList StatementList KWEND");
+    }
+
+StatementList:
+  Statement SEPSEMICOLON StatementList
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "StatementList -> Statement SEPSEMICOLON StatementList");
+    }
+  |
+  Statement
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "StatementList -> Statement");
+    }
+
+Statement:
+  UnconditionalStatement
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "Statement -> UnconditionalStatement");
+    }
+
+UnconditionalStatement:
+  CompoundStatement
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
+    }
+  |
+  BasicStatement
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "UnconditionalStatement -> BasicStatement");
+    }
+
+BasicStatement:
+  LabelList DummyStatement
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
+    }
+
+DummyStatement:
+  /*epsilon*/
+    {
+      parser_rep_t * parser = _parser;
+      log_printf (parser->log, ll_debug, "DummyStatement -> <eps>");
+    }
+
+/*
 Main:
     Start
 	{
@@ -153,11 +252,12 @@ Start:
 	  $$ = $1 + log_printf (parser->log, ll_debug, "Start -> Start 'false'");
 	}
     |
-    /* empty */
+    // empty
 	{
 	  parser_rep_t * parser = _parser;
 	  $$ = log_printf (parser->log, ll_debug, "Start -> epsilon");
 	}
+*/
 
 %%
 

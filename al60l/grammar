@@ -1,6 +1,8 @@
 Program ::=
-	| Label Program
-	| Block
+	| CompoundStatement
+
+CompoundStatement ::=
+	| LabelList Block
 
 LabelList ::=
 	| <eps>
@@ -13,9 +15,6 @@ LabelIdentifier ::=
 	| IDENTIFIER
 	| LITINTEGER
 
-CompoundStatement ::=
-	| KWBEGIN StatementList KWEND
-
 Block ::=
 	| KWBEGIN DeclarationList StatementList KWEND
 
@@ -24,7 +23,7 @@ DeclarationList ::=
 	| Declaration SEPSEMICOLON DeclarationList
 
 StatementList ::=
-	| Statement SEPSEMICOLON CompoundBody
+	| Statement SEPSEMICOLON StatementList
 	| Statement
 
 Statement ::=
@@ -33,7 +32,7 @@ Statement ::=
 	| LabelList ForStatement
 
 UnconditionalStatement ::=
-	| LabelList Block
+	| CompoundStatement
 	| BasicStatement
 
 BasicStatement ::=
