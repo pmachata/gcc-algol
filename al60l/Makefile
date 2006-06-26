@@ -31,6 +31,7 @@ util.o: util.c util.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c util.c
 
 check-util: util.o util.c Makefile
+	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST util.c util.o -o util-test
 	./util-test
 	rm -f ./util-test
@@ -40,6 +41,7 @@ cursor.o: cursor.c cursor.h pd.h util.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c cursor.c
 
 check-cursor: cursor.o util.o cursor.c Makefile
+	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST cursor.c cursor.o util.o -o cursor-test
 	./cursor-test
 	rm -f ./cursor-test
@@ -49,6 +51,7 @@ logger.o: logger.c logger.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c logger.c
 
 check-logger: logger.o util.o logger.c Makefile
+	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST logger.c logger.o util.o -o logger-test
 	./logger-test
 	rm -f ./logger-test
@@ -58,6 +61,7 @@ estring.o: estring.c estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c estring.c
 
 check-estring: estring.o estring.c estring.h Makefile
+	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST estring.c estring.o -o estring-test
 	./estring-test
 	rm -f ./estring-test
@@ -67,6 +71,7 @@ ast.o: ast.c ast.h estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c
 
 check-ast: ast.o ast.c ast.h Makefile
+	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o -o ast-test
 	./ast-test
 	rm -f ./ast-test
@@ -86,6 +91,7 @@ parser-test: parser-test.c parser.o ast.o logger.o lexer.o cursor.o parser.h lex
 		parser-test.c parser.o ast.o lexer.o cursor.o logger.o util.o estring.o
 
 check-parser: parser-test Makefile
+	@echo "============================================="
 	cd torture && ./torture.sh
 
 
@@ -99,6 +105,7 @@ lexer-tab.h: lexer-tab.c
 	[ -f ./lexer-tab.h ]
 
 check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
+	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o check-lexer \
 		lexer-test.c lexer.o cursor.o logger.o util.o estring.o
 	./check-lexer

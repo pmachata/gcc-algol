@@ -206,7 +206,6 @@ main(void)
     delete_lexer (lexer);
   }
 
-
   printf ("All passed.\n");
   return 0;
 }

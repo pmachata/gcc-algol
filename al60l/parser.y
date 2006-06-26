@@ -1,4 +1,5 @@
 %{
+#include "ast.h"
 #include "logger.h"
 #include "lexer.h"
 #include "parser.h"
@@ -12,7 +13,7 @@ typedef struct struct_parser_rep_t
   lexer_t * lexer;
   logger_t * log;
   int manage;
-  int result;
+  statement_t * result;
 } parser_rep_t;
 
 static logger_t * global_logger = NULL;
@@ -36,11 +37,24 @@ yyerror (const char *str)
 
 #define YYPARSE_PARAM _parser
 #define YYLEX_PARAM _parser
+
+
+
+/// $0 in statement parts is used for referring to containing block of
+/// given statement.  This auxiliary macro is used to do copying of
+/// containing block to $0 for rules that require it.
+///
+/// Note: The assertion: If it's not a statement at all, odds are good
+/// it'll fail due to sigsegv, or due to internal assertion in stmt_kind.
+#define COPY_BLOCK(tgt,src) \
+    assert (stmt_kind (src) == stmt_block); tgt = src
+
 %}
 
 %union {
   int un_i;
   float un_f;
+  statement_t * stmt;
 }
 
 %pure-parser
@@ -124,21 +138,34 @@ yyerror (const char *str)
 %left AOPMUL AOPRDIV AOPIDIV
 %left AOPPOW
 
+%type <stmt> Program
+%type <stmt> DummyStatement
+%type <stmt> Block
+%type <stmt> BasicStatement
+%type <stmt> CompoundStatement
+%type <stmt> UnconditionalStatement
+%type <stmt> Statement
+%type <stmt> StatementList
+
 %%
 
 Program:
-  CompoundStatement
+  CompoundStatement EOFTOK
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
+      parser->result = $<stmt>1;
       YYACCEPT;
     }
+
 
 CompoundStatement:
   LabelList Block
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "CompoundStatement -> LabelList Block");
+      // @@@TODO: add block to $0
+      $$ = $2;
     }
 
 LabelList:
@@ -175,24 +202,30 @@ LabelIdentifier:
     }
 
 Block:
-  KWBEGIN StatementList KWEND
+  KWBEGIN {$<stmt>$ = new_stmt_block ();} StatementList KWEND
     {
       //allow DeclarationList after KWBEGIN
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Block -> KWBEGIN DeclarationList StatementList KWEND");
+      $$ = $<stmt>2;
     }
 
 StatementList:
-  Statement SEPSEMICOLON StatementList
+  //SEPSEMICOLON StatementList {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
+  StatementList SEPSEMICOLON {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
     {
       parser_rep_t * parser = _parser;
-      log_printf (parser->log, ll_debug, "StatementList -> Statement SEPSEMICOLON StatementList");
+      log_printf (parser->log, ll_debug, "StatementList -> StatementList SEPSEMICOLON Statement");
+      stmt_block_add_statement ($<stmt>3, $4);
+      $$ = $<stmt>3;
     }
   |
   Statement
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "StatementList -> Statement");
+      stmt_block_add_statement ($<stmt>0, $1);
+      $$ = $<stmt>0;
     }
 
 Statement:
@@ -200,6 +233,7 @@ Statement:
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Statement -> UnconditionalStatement");
+      $$ = $1;
     }
 
 UnconditionalStatement:
@@ -207,19 +241,23 @@ UnconditionalStatement:
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
+      $$ = $1;
     }
   |
   BasicStatement
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> BasicStatement");
+      $$ = $1;
     }
 
 BasicStatement:
-  LabelList DummyStatement
+  LabelList {COPY_BLOCK($<stmt>$, $<stmt>0);} DummyStatement
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
+      // TODO: use $0 to access symtab and add labels pointing to $2 there
+      $$ = $3;
     }
 
 DummyStatement:
@@ -227,37 +265,8 @@ DummyStatement:
     {
       parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "DummyStatement -> <eps>");
+      $$ = new_stmt_dummy ();
     }
-
-/*
-Main:
-    Start
-	{
-	  parser_rep_t * parser = _parser;
-	  $$ = $1 + log_printf (parser->log, ll_debug, "Main -> Start");
-	  parser->result = $$;
-	  YYACCEPT;
-	}
-
-Start:
-    Start KWTRUE
-	{
-	  parser_rep_t * parser = _parser;
-	  $$ = $1 + log_printf (parser->log, ll_debug, "Start -> Start 'true'");
-	}
-    |
-    Start KWFALSE
-	{
-	  parser_rep_t * parser = _parser;
-	  $$ = $1 + log_printf (parser->log, ll_debug, "Start -> Start 'false'");
-	}
-    |
-    // empty
-	{
-	  parser_rep_t * parser = _parser;
-	  $$ = log_printf (parser->log, ll_debug, "Start -> epsilon");
-	}
-*/
 
 %%
 
@@ -268,7 +277,7 @@ new_parser (lexer_t * lexer, int manage)
 
   ret->lexer = lexer;
   ret->manage = manage;
-  ret->result = -1;
+  ret->result = NULL;
 
   ret->log = new_logger ("parser");
   if (ret->log == NULL)
@@ -304,7 +313,7 @@ delete_parser (parser_t * _parser)
   free (parser);
 }
 
-int
+statement_t *
 parser_parse (parser_t * _parser)
 {
   parser_rep_t * parser = (void*)_parser;
@@ -314,5 +323,5 @@ parser_parse (parser_t * _parser)
   if (ret == 0)
     return parser->result;
   else
-    return -1;
+    return NULL;
 }

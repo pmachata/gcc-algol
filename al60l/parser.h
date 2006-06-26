@@ -8,6 +8,7 @@
 
 #include "pd.h"
 #include "lexer.h"
+#include "ast.h"
 #include <stdio.h>
 
 typedef struct struct_parser_t { } parser_t;
@@ -24,8 +25,9 @@ void delete_parser (parser_t * parser)
      ARG_NONNULL(1);
 
 
-/// 
-int parser_parse (parser_t * parser)
+/// Fire a parser.  Answer the AST tree of parsed file, or NULL when
+/// there were errors.
+statement_t * parser_parse (parser_t * parser)
      ARG_NONNULL(1);
 
 #endif//_AL60L_PARSER_H_

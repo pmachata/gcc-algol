@@ -39,7 +39,7 @@ BasicStatement ::=
 	| LabelList DummyStatement
 	| LabelList AssignmentStatement
 	| LabelList GotoStatement
-	| LabelList Expression    # note: only procedure calls allowed
+	| LabelList CallStatement
 
 DummyStatement ::=
 	| <eps>
@@ -81,3 +81,18 @@ ForListElement ::=
 	| Expression KWWHILE Expression
 	# note: check if expression types match!
 	# note: not sure if it's possible to use float expressions
+
+CallStatement ::=
+	| IDENTIFIER CallActualParams
+
+CallActualParams ::=
+	| <eps>
+	| SEPLPAREN CallActualParamList SEPRPAREN
+
+CallActualParamList ::=
+	| Expression
+	| CallActualParamList CallActualParamDelim Expression
+
+CallActualParamDelim ::=
+	| SEPCOMMA
+	| SEPRPAREN IDENTIFIER SEPCOLON SEPLPAREN

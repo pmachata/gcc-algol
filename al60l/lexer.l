@@ -206,6 +206,13 @@ DIGIT		[0-9]
 <END_COMMENT>"'end'" {
   return private_lexer_got_token (yyscanner, KWEND);
 }
+<END_COMMENT>"'"[^\' ]*"'" {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  if (strcmp (yyget_text (yyscanner), "'comment'") != 0)
+    log_printf (lexer->log, ll_warning,
+		"implicit 'end'-comment possibly contains keyword %s",
+		yyget_text (yyscanner));
+}
 <END_COMMENT>";" {
   BEGIN INITIAL;
   return private_lexer_got_token (yyscanner, SEPSEMICOLON);

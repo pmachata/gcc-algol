@@ -6,6 +6,7 @@
 #ifndef _AL60L_LEXER_H_
 #define _AL60L_LEXER_H_
 
+#include "ast.h" //for references in parser-tab.h
 #include "parser-tab.h"
 #include "pd.h"
 #include "estring.h"
