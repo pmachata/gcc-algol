@@ -16,13 +16,10 @@ typedef struct struct_parser_rep_t
   statement_t * result;
 } parser_rep_t;
 
-static logger_t * global_logger = NULL;
-
 // call lexer
 static int
-yylex (void * arg, void * _parser)
+yylex (YYSTYPE * arg, parser_rep_t * parser)
 {
-  parser_rep_t * parser = _parser;
   *(int*)arg = 15;
   lexer_next_tok (parser->lexer);
   return lexer_get_tok_kind (parser->lexer);
@@ -30,15 +27,10 @@ yylex (void * arg, void * _parser)
 
 // report error
 static void
-yyerror (const char *str)
+yyerror (parser_rep_t * parser, const char *str)
 {
-  log_printf (global_logger, ll_error, "yyerror: %s", str);
+  log_printf (parser->log, ll_error, "yyerror: %s", str);
 }
-
-#define YYPARSE_PARAM _parser
-#define YYLEX_PARAM _parser
-
-
 
 /// $0 in statement parts is used for referring to containing block of
 /// given statement.  This auxiliary macro is used to do copying of
@@ -58,6 +50,11 @@ yyerror (const char *str)
 }
 
 %pure-parser
+%error-verbose
+ //%token-table
+ //%locations
+%parse-param {parser_rep_t * parser}
+%lex-param {parser_rep_t * parser}
 
 %token EOFTOK
 %token KWTRUE
@@ -152,7 +149,6 @@ yyerror (const char *str)
 Program:
   CompoundStatement EOFTOK
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
       parser->result = $<stmt>1;
       YYACCEPT;
@@ -162,7 +158,6 @@ Program:
 CompoundStatement:
   LabelList Block
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "CompoundStatement -> LabelList Block");
       // @@@TODO: add block to $0
       $$ = $2;
@@ -171,33 +166,28 @@ CompoundStatement:
 LabelList:
   /*epsilon*/
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "LabelList -> <eps>");
     }
   |
   Label LabelList
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "LabelList -> Label LabelList");
     }
 
 Label:
   LabelIdentifier SEPCOLON
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Label -> LabelIdentifier SEPCOLON");
     }
 
 LabelIdentifier:
   IDENTIFIER
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
     }
   |
   LITINTEGER
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "LabelIdentifier -> LITINTEGER");
     }
 
@@ -205,7 +195,6 @@ Block:
   KWBEGIN {$<stmt>$ = new_stmt_block ();} StatementList KWEND
     {
       //allow DeclarationList after KWBEGIN
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Block -> KWBEGIN DeclarationList StatementList KWEND");
       $$ = $<stmt>2;
     }
@@ -214,7 +203,6 @@ StatementList:
   //SEPSEMICOLON StatementList {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
   StatementList SEPSEMICOLON {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "StatementList -> StatementList SEPSEMICOLON Statement");
       stmt_block_add_statement ($<stmt>3, $4);
       $$ = $<stmt>3;
@@ -222,7 +210,6 @@ StatementList:
   |
   Statement
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "StatementList -> Statement");
       stmt_block_add_statement ($<stmt>0, $1);
       $$ = $<stmt>0;
@@ -231,7 +218,6 @@ StatementList:
 Statement:
   UnconditionalStatement
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "Statement -> UnconditionalStatement");
       $$ = $1;
     }
@@ -239,14 +225,12 @@ Statement:
 UnconditionalStatement:
   CompoundStatement
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
       $$ = $1;
     }
   |
   BasicStatement
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> BasicStatement");
       $$ = $1;
     }
@@ -254,7 +238,6 @@ UnconditionalStatement:
 BasicStatement:
   LabelList {COPY_BLOCK($<stmt>$, $<stmt>0);} DummyStatement
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
       // TODO: use $0 to access symtab and add labels pointing to $2 there
       $$ = $3;
@@ -263,7 +246,6 @@ BasicStatement:
 DummyStatement:
   /*epsilon*/
     {
-      parser_rep_t * parser = _parser;
       log_printf (parser->log, ll_debug, "DummyStatement -> <eps>");
       $$ = new_stmt_dummy ();
     }
@@ -287,20 +269,6 @@ new_parser (lexer_t * lexer, int manage)
       return NULL;
     }
   log_set_filter (ret->log, ll_debug);
-
-  // Allocate system-wide logger.
-  // @@@ NOTE: this should be moved to logger or somewhere, it'll be
-  // useful for system-wide messages and errors across the code.
-  if (global_logger == NULL)
-    {
-      global_logger = new_logger ("proper");
-      if (global_logger == NULL)
-	{
-	  delete_parser ((void*)ret);
-	  return NULL;
-	}
-      log_set_filter (global_logger, ll_debug);
-    }
 
   return (void*)ret;
 }
