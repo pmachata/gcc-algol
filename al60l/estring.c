@@ -104,7 +104,7 @@ new_estring_from (char const* src)
 }
 
 estring_t *
-clone_estring (estring_t * src)
+clone_estring (estring_t const* src)
 {
   assert (src != NULL);
 
@@ -242,12 +242,12 @@ estr_append_cstr (estring_t * _dest, char const* src)
 }
 
 int
-estr_append (estring_t * _dest, estring_t * _src)
+estr_append (estring_t * _dest, estring_t const* _src)
 {
   assert (_src != NULL);
   assert (_dest != NULL);
   estring_rep_t * dest = (void*)_dest;
-  estring_rep_t * src = (void*)_src;
+  estring_rep_t const* src = (void*)_src;
 
   return private_estr_nappend (dest, src->body, src->length);
 }
@@ -286,12 +286,12 @@ estr_prepend_cstr (estring_t * _dest, char const* src)
 }
 
 int
-estr_prepend (estring_t * _dest, estring_t * _src)
+estr_prepend (estring_t * _dest, estring_t const* _src)
 {
   assert (_src != NULL);
   assert (_dest != NULL);
   estring_rep_t * dest = (void*)_dest;
-  estring_rep_t * src = (void*)_src;
+  estring_rep_t const* src = (void*)_src;
 
   return private_estr_nprepend (dest, src->body, src->length);
 }
@@ -420,9 +420,9 @@ main (void)
   delete_estring (str4);
 
   printf ("append/prepend:\n");
-  int (*functions[])(estring_t *, estring_t *) = {estr_append, estr_prepend, NULL};
+  int (*functions[])(estring_t *, estring_t const*) = {estr_append, estr_prepend, NULL};
 
-  for (int (**it)(estring_t *, estring_t *) = &functions[0];
+  for (int (**it)(estring_t *, estring_t const*) = &functions[0];
        *it != NULL;
        it++)
     {

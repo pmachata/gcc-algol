@@ -42,7 +42,7 @@ estring_t * new_estring_from (char const* src)
 
 /// Create a string as 1:1 copy of another string. Returns NULL if
 /// something fails.
-estring_t * clone_estring (estring_t * src)
+estring_t * clone_estring (estring_t const* src)
      ARG_NONNULL(1)
      MALLOC_LIKE;
 
@@ -92,7 +92,7 @@ double estr_tofloat(estring_t * str);
 int estr_append_cstr(estring_t * dest, char const* src);
 
 /// Like estr_append_cstr, but append estring instead of raw c string.
-int estr_append (estring_t * dest, estring_t * src);
+int estr_append (estring_t * dest, estring_t const* src);
 
 /// Similar to estr_append_cstr, but contents of 'src' is prepended
 /// before contents of 'dest'.  Returns 0 if OK, otherwise -1.
@@ -100,7 +100,7 @@ int estr_prepend_cstr (estring_t * dest, char const* src);
 
 /// Like estr_prepend_cstr, but prepend estring instead of raw c
 /// string.
-int estr_prepend (estring_t * dest, estring_t * src);
+int estr_prepend (estring_t * dest, estring_t const* src);
 
 /// Append a single character to the end of estring.  Returns 0 if all
 /// goes well, or -1 if something fails (such as we cannot grow more).

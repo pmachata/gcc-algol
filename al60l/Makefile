@@ -1,6 +1,6 @@
 CC      := gcc
 #CC      := gcc-4.1-rh
-YACC    := bison
+BISON   := bison
 FLEX    := flex
 DEBUG   := -ggdb3 -Wall -fno-inline
 #DEBUG   := -Wall -DNDEBUG
@@ -20,6 +20,7 @@ FILES = cursor.c cursor.h\
 	lexer.l lexer.h lexer-test.c\
 	parser.y parser.h\
 	estring.c estring.h\
+	ast.c ast.h\
 	Makefile
 
 .PHONY: all doc dist clean check tests
@@ -70,9 +71,9 @@ check-estring: estring.o estring.c estring.h Makefile
 ast.o: ast.c ast.h estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c
 
-check-ast: ast.o ast.c ast.h Makefile
+check-ast: ast.o estring.o estring.h ast.c ast.h Makefile
 	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o -o ast-test
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o estring.o -o ast-test
 	./ast-test
 	rm -f ./ast-test
 
@@ -81,7 +82,7 @@ parser.o: parser-tab.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c parser-tab.c -o parser.o
 
 parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
-	$(YACC) -o parser-tab.c -d parser.y
+	$(BISON) -o parser-tab.c -d parser.y
 
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]

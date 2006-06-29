@@ -32,6 +32,8 @@ typedef enum enum_for_elmt_kind_t
   for_elmt_expr,
 } for_elmt_kind_t;
 
+typedef struct struct_symtab_e_t { } symtab_e_t;
+
 
 
 
@@ -101,7 +103,9 @@ statement_t * new_stmt_dummy (void);
 
 statement_t * new_stmt_block (void);
 void stmt_block_add_statement (statement_t * block, statement_t * stmt);
-void stmt_block_add_decl (estring_t const* name, type_t * type);
+
+/// Name is cloned for use in symtab.
+symtab_e_t * stmt_block_add_decl (statement_t * block, estring_t const* name, type_t * type);
 
 void delete_stmt (statement_t * stmt);
 

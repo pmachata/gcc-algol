@@ -7,6 +7,7 @@
 
 #include "ast.h"
 #include <assert.h>
+#include <string.h>
 
 /// Represents dummy statements.
 struct stmt_dummy_rep
@@ -45,7 +46,7 @@ struct stmt_block_rep
   struct struct_statement_rep_t * tail;
 
   /// Symbol table. @@@TODO
-  void * symtab;
+  struct struct_symtab_e_rep_t * symtab;
 };
 
 /// Represents conditionals.
@@ -108,6 +109,16 @@ typedef struct struct_statement_rep_t
   } u;
 } statement_rep_t;
 
+typedef struct struct_type_rep_t {
+} type_rep_t;
+
+typedef struct struct_symtab_e_rep_t
+{
+  struct struct_symtab_e_rep_t * link;
+  estring_t const* name;
+  type_rep_t const* type;
+} symtab_e_rep_t;
+
 
 
 statement_rep_t *
@@ -138,6 +149,7 @@ new_stmt_block (void)
 
   ret->u.block.stmts = NULL;
   ret->u.block.tail = NULL;
+  ret->u.block.symtab = NULL;
 
   return (void*)ret;
 }
@@ -392,6 +404,28 @@ stmt_block_add_statement (statement_t * _block, statement_t * _stmt)
     }
   stmt->parent = block;
 }
+
+symtab_e_t *
+stmt_block_add_decl (statement_t * _block, estring_t const* name, type_t * _type)
+{
+  assert (_block != NULL);
+  statement_rep_t * block = (void*)_block;
+  assert (block->kind == stmt_block);
+
+  assert (_type != NULL);
+  type_rep_t * type = (void*)_type;
+
+  symtab_e_rep_t * ret = malloc (sizeof (symtab_e_rep_t));
+  ret->name = clone_estring (name);
+  ret->type = type;
+
+  // symtab is linked list ATM, add new decl
+  ret->link = block->u.block.symtab;
+  block->u.block.symtab = ret->link;
+
+  return (void*)ret;
+}
+
 
 #else /* SELF_TEST */
 

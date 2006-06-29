@@ -20,7 +20,6 @@ typedef struct struct_parser_rep_t
 static int
 yylex (YYSTYPE * arg, parser_rep_t * parser)
 {
-  *(int*)arg = 15;
   lexer_next_tok (parser->lexer);
   return lexer_get_tok_kind (parser->lexer);
 }
@@ -34,7 +33,8 @@ yyerror (parser_rep_t * parser, const char *str)
 
 /// $0 in statement parts is used for referring to containing block of
 /// given statement.  This auxiliary macro is used to do copying of
-/// containing block to $0 for rules that require it.
+/// containing block to $0 for rules that require it.  Typically, you
+/// would call it like this: COPY_BLOCK($<stmt>$, $<stmt>0);
 ///
 /// Note: The assertion: If it's not a statement at all, odds are good
 /// it'll fail due to sigsegv, or due to internal assertion in stmt_kind.
