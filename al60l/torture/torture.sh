@@ -3,6 +3,7 @@
 
 all_ok=1;
 compiler="../parser-test"
+dumper="$compiler -d"
 interpreter="false"
 mask='*.a60'
 
@@ -32,11 +33,34 @@ for file in compile/$mask; do
 		result="1";
 		$compiler $file >/dev/null 2>tmp || result="0"
 		if [ "$result" != "1" ]; then
-			echo -e "\tunexpected: compilation failed";
+			echo -e "\tunexpected: compilation failed"
 			cat tmp | sed 's/^/\t/'
-			all_ok=0;
-		fi;
+			all_ok=0
+		fi
 		rm tmp
+	fi;
+done;
+
+echo "---------- testing parsing ----------"
+
+for file in parse/$mask; do
+	if [ -e $file ]; then
+		echo $file;
+		result="1";
+		$dumper $file >dump 2>tmp || result="0"
+		if [ "$result" != "1" ]; then
+			echo -e "\tunexpected: compilation failed"
+			cat tmp | sed 's/^/\t/'
+			all_ok=0
+		else
+			diff -u $file dump &> tmp
+			if [ $? != 0 ]; then
+				echo -e "\tunexpected: non-cannonic dump"
+				cat tmp | sed 's/^/\t/'
+				all_ok=0
+			fi
+		fi
+		rm tmp dump
 	fi;
 done;
 
@@ -49,13 +73,13 @@ for file in run/$mask; do
 		echo "$file";
 		$compiler $file 2>tmp || result="0"
 		if [ "$result" != "1" ]; then
-			echo -e "\tunexpected: compilation failed";
+			echo -e "\tunexpected: compilation failed"
 			cat tmp | sed 's/^/\t/'
 			all_ok=0;
 		else
 			$interpreter $sfile >tmp 2>/dev/null && result="1" || result="0"
 			if [ "$result" != "1" ]; then
-				echo -e "\tunexpected: interpreter failed";
+				echo -e "\tunexpected: interpreter failed"
 				all_ok=0;
 			else
 				line=0;

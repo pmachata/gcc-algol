@@ -94,25 +94,13 @@ log_set_stream (logger_t * logger, FILE * stream)
 }
 
 int
-log_count_messages (logger_t * _logger, debug_level_t level)
+log_count_messages (logger_t const* _logger, debug_level_t level)
 {
   int ret = 0;
-  logger_rep_t * logger = (void*)_logger;
+  logger_rep_t const* logger = (void*)_logger;
 
   for (debug_level_t l = level; l < debug_level_t_count; ++l)
     ret += logger->ct[l];
-
-  return ret;
-}
-
-int
-log_count_pool_messages (debug_level_t level)
-{
-  int ret = 0;
-
-  for (logger_rep_t * logger = pool;
-       logger != NULL; logger = logger->next)
-    ret += log_count_messages ((void*)logger, level);
 
   return ret;
 }
@@ -168,7 +156,6 @@ main (void)
   assert (ret == 0);
 
   assert (log_count_messages (log_test, 0) == 5);
-  assert (log_count_pool_messages (0) == 5);
 
   delete_logger (log_test);
 

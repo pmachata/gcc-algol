@@ -147,7 +147,7 @@ yyerror (parser_rep_t * parser, const char *str)
 %%
 
 Program:
-  CompoundStatement EOFTOK
+  CompoundStatement SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
       parser->result = $<stmt>1;
@@ -255,6 +255,7 @@ DummyStatement:
 parser_t *
 new_parser (lexer_t * lexer, int manage)
 {
+  assert (lexer != NULL);
   parser_rep_t * ret = malloc (sizeof (parser_rep_t));
 
   ret->lexer = lexer;
@@ -276,14 +277,18 @@ new_parser (lexer_t * lexer, int manage)
 void
 delete_parser (parser_t * _parser)
 {
-  parser_rep_t * parser = (void*)_parser;
-  delete_logger (parser->log);
-  free (parser);
+  if (_parser != NULL)
+    {
+      parser_rep_t * parser = (void*)_parser;
+      delete_logger (parser->log);
+      free (parser);
+    }
 }
 
 statement_t *
 parser_parse (parser_t * _parser)
 {
+  assert (_parser != NULL);
   parser_rep_t * parser = (void*)_parser;
   log_printf (parser->log, ll_debug, "parser_parse: let's rock");
 
@@ -292,4 +297,12 @@ parser_parse (parser_t * _parser)
     return parser->result;
   else
     return NULL;
+}
+
+logger_t const*
+parser_log (parser_t * _parser)
+{
+  assert (_parser != NULL);
+  parser_rep_t * parser = (void*)_parser;
+  return parser->log;
 }

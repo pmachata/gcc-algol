@@ -48,6 +48,13 @@ main(int argc, char ** argv)
       stmt_dump (ast, stdout);
     }
 
+  int errors =
+    log_count_messages (lexer_log (lexer), ll_error)
+    + log_count_messages (parser_log (parser), ll_error);
+
+  if (errors)
+    fprintf (stderr, "%d errors encountered.\n", errors);
+
   delete_parser (parser);
-  return 0;
+  return errors;
 }

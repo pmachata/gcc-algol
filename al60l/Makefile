@@ -87,7 +87,7 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-parser-test: parser-test.c parser.o ast.o logger.o lexer.o cursor.o parser.h lexer.h estring.h pd.h
+parser-test: parser-test.c parser.o ast.o logger.o lexer.o cursor.o estring.o parser.h lexer.h estring.h pd.h
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o parser-test \
 		parser-test.c parser.o ast.o lexer.o cursor.o logger.o util.o estring.o
 

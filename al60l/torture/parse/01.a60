@@ -1,0 +1,21 @@
+'begin'
+ 'begin'
+  'begin'
+   'begin'
+    'comment' dummy ;
+   'end';
+   'comment' dummy ;
+  'end';
+  'comment' dummy ;
+ 'end';
+ 'begin'
+  'begin'
+   'comment' dummy ;
+  'end';
+  'comment' dummy ;
+ 'end';
+ 'begin'
+  'comment' dummy ;
+ 'end';
+ 'comment' dummy ;
+'end';

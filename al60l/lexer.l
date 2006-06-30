@@ -46,6 +46,7 @@ typedef struct struct_lexer_rep_t
 
 static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
 static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
+static token_kind_t private_lexer_got_eof_token (void * flex_scanner, char const* error);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
 
@@ -288,23 +289,38 @@ DIGIT		[0-9]
 
 
 
-<<EOF>>	{ return private_lexer_got_token (yyscanner, EOFTOK); }
+ /* Handle EOF token.  Check if we are not in the middle of something,
+    and produce an error if we are. */
+<COMMENT><<EOF>> {
+  return private_lexer_got_eof_token (yyscanner, "comment");
+}
+<END_COMMENT><<EOF>> {
+  return private_lexer_got_eof_token (yyscanner, "end-comment");
+}
+<STRING><<EOF>> {
+  return private_lexer_got_eof_token (yyscanner, "string");
+}
+<<EOF>> {
+  return private_lexer_got_eof_token (yyscanner, NULL);
+}
 
+
+ /* Whitespace */
 \n {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   cursor_nl (lexer->cursor);
 }
-
 " "+ {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   cursor_move (lexer->cursor, yyget_leng (yyscanner));
 }
-
 \t {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   cursor_tab (lexer->cursor, 8);
 }
 
+
+ /* Unmatched characters */
 . {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   cursor_move (lexer->cursor, 1);
@@ -363,18 +379,21 @@ new_lexer_filename (char const* filename)
 void
 delete_lexer (lexer_t * _lexer)
 {
-  lexer_rep_t * lexer = (void*)_lexer;
-  if (lexer->managed)
-    fclose (lexer->stream);
+  if (_lexer != NULL)
+    {
+      lexer_rep_t * lexer = (void*)_lexer;
+      if (lexer->managed)
+	fclose (lexer->stream);
 
-  if (yylex_destroy (lexer->flex_scanner))
-    perror ("yylex_destroy");
+      if (yylex_destroy (lexer->flex_scanner))
+	perror ("yylex_destroy");
 
-  delete_logger (lexer->log);
-  delete_cursor (lexer->cursor);
-  delete_estring (lexer->str_literal);
+      delete_logger (lexer->log);
+      delete_cursor (lexer->cursor);
+      delete_estring (lexer->str_literal);
 
-  free (lexer);
+      free (lexer);
+    }
 }
 
 /// Procedure to write out that bad character has been hit.
@@ -400,6 +419,19 @@ private_lexer_got_token (void * flex_scanner, token_kind_t token_kind)
 	      token_kind, lexeme, literal);
 
   return token_kind;
+}
+
+/// Process EOF token, i.e. write an error message if EOF was inside
+/// of something, and then push EOF token via private_lexer_got_token.
+static token_kind_t
+private_lexer_got_eof_token (void * flex_scanner, char const* error)
+{
+  if (error != NULL)
+    {
+      lexer_rep_t * lexer = yyget_extra (flex_scanner);
+      log_printf (lexer->log, ll_error, "EOF hit inside %s.", error);
+    }
+  return private_lexer_got_token (flex_scanner, EOFTOK);
 }
 
 
@@ -479,4 +511,12 @@ lexer_set_logging (lexer_t * _lexer, debug_level_t messages, int tokens)
     log_set_filter (lexer->toklog, ll_filter_nothing);
   else
     log_set_filter (lexer->toklog, ll_filter_all);
+}
+
+logger_t const*
+lexer_log (lexer_t * _lexer)
+{
+  assert (_lexer != NULL);
+  lexer_rep_t * lexer = (void*)_lexer;
+  return (logger_t const*)lexer->log;
 }

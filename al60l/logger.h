@@ -32,8 +32,7 @@ logger_t * new_logger (char const* name)
      ARG_NONNULL(1);
 
 /// Destroy the log.
-void delete_logger (logger_t * logger)
-     ARG_NONNULL(1);
+void delete_logger (logger_t * logger);
 
 
 /// This function is used for logging compiler messages.  Depending on
@@ -90,16 +89,7 @@ void log_set_stream (logger_t * logger, FILE * stream)
 /// \arg level The lower bound of severity of counted messages.
 ///
 /// \return Number of messages.
-int log_count_messages (logger_t * logger, debug_level_t level)
+int log_count_messages (logger_t const* logger, debug_level_t level)
      ARG_NONNULL(1);
-
-
-/// Like debug_count_above, except that it counts messages across the
-/// whole debugging pool.
-///
-/// \arg level The lower bound of severity of counted messages.
-///
-/// \return Number of messages.
-int log_count_pool_messages (debug_level_t level);
 
 #endif //_AL60L_DEBUG_H_

@@ -41,8 +41,7 @@ lexer_t * new_lexer_filename (char const* filename)
      ARG_NONNULL(1);
 
 /// Destroy a lexer.
-void delete_lexer (lexer_t * lexer)
-     ARG_NONNULL(1);
+void delete_lexer (lexer_t * lexer);
 
 /// Get a new token.  In contrast to the rest of interfaces, this
 /// modifies internal state instead of returning new object of type
@@ -85,6 +84,10 @@ long lexer_get_tok_integer (lexer_t * lexer)
 /// what error reporting is done.  `Tokens' controls whether debug
 /// info about processed tokens gets printed.
 void lexer_set_logging (lexer_t * lexer, debug_level_t messages, int tokens)
+     ARG_NONNULL(1);
+
+/// Get underlying logging device.
+logger_t const* lexer_log (lexer_t * lexer)
      ARG_NONNULL(1);
 
 #endif//_AL60L_LEXER_H_

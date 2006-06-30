@@ -190,7 +190,7 @@ private_delete_stmt_dummy (statement_rep_t * stmt)
 void
 private_dump_stmt_dummy (statement_rep_t * stmt, FILE * ofile, char const* padding)
 {
-  fprintf (ofile, "%scomment dummy ;\n", padding);
+  fprintf (ofile, "%s'comment' dummy ;\n", padding);
 }
 
 
