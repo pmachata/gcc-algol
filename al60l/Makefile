@@ -20,7 +20,9 @@ FILES = cursor.c cursor.h\
 	lexer.l lexer.h lexer-test.c\
 	parser.y parser.h\
 	estring.c estring.h\
-	ast.c ast.h\
+	ast.c ast.h ast-fwd.h\
+	symbol.c symbol.h\
+	type.c type.h\
 	Makefile
 
 .PHONY: all doc dist clean check tests
@@ -68,14 +70,34 @@ check-estring: estring.o estring.c estring.h Makefile
 	rm -f ./estring-test
 
 
-ast.o: ast.c ast.h estring.h pd.h Makefile
+ast.o: ast.c ast.h ast-fwd.h estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c
 
-check-ast: ast.o estring.o estring.h ast.c ast.h Makefile
+check-ast: ast.o estring.o estring.h ast.c ast.h ast-fwd.h Makefile
 	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o estring.o -o ast-test
 	./ast-test
 	rm -f ./ast-test
+
+
+symbol.o: symbol.c symbol.h estring.h ast-fwd.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c symbol.c
+
+check-symbol: symbol.o estring.o estring.h symbol.c symbol.h ast-fwd.h Makefile
+	@echo "============================================="
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST symbol.c symbol.o -o symbol-test
+	./symbol-test
+	rm -f ./symbol-test
+
+
+type.o: type.c type.h symbol.h ast-fwd.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c
+
+check-type: type.o estring.o estring.h type.c type.h ast-fwd.h Makefile
+	@echo "============================================="
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST type.c type.o -o type-test
+	./type-test
+	rm -f ./type-test
 
 
 parser.o: parser-tab.c Makefile
@@ -87,7 +109,8 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-parser-test: parser-test.c parser.o ast.o logger.o lexer.o cursor.o estring.o parser.h lexer.h estring.h pd.h
+parser-test: parser-test.c parser.o type.o ast.o logger.o lexer.o cursor.o estring.o\
+ parser.h lexer.h estring.h pd.h
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o parser-test \
 		parser-test.c parser.o ast.o lexer.o cursor.o logger.o util.o estring.o
 
@@ -128,7 +151,8 @@ $(ARCHIVE_NAME): $(FILES)
 clean:
 	rm -f *.o al60l
 
-check: check-util check-estring check-cursor check-logger check-lexer check-ast check-parser
+check: check-util check-estring check-cursor check-logger check-lexer \
+ check-type check-symbol check-ast check-parser
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="

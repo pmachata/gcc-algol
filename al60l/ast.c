@@ -46,7 +46,8 @@ struct stmt_block_rep
   struct struct_statement_rep_t * tail;
 
   /// Symbol table. @@@TODO
-  struct struct_symtab_e_rep_t * symtab;
+  symbol_t const** symtab;
+  symbol_t const** symtab_ptr;
 };
 
 /// Represents conditionals.
@@ -112,12 +113,13 @@ typedef struct struct_statement_rep_t
 typedef struct struct_type_rep_t {
 } type_rep_t;
 
-typedef struct struct_symtab_e_rep_t
+typedef struct struct_symbol_rep_t
 {
-  struct struct_symtab_e_rep_t * link;
+  struct struct_symbol_rep_t * link;
   estring_t const* name;
   type_rep_t const* type;
-} symtab_e_rep_t;
+  statement_rep_t const* stmt;
+} symbol_rep_t;
 
 
 
@@ -149,7 +151,8 @@ new_stmt_block (void)
 
   ret->u.block.stmts = NULL;
   ret->u.block.tail = NULL;
-  ret->u.block.symtab = NULL;
+  ret->u.block.symtab = malloc (1024); ///@FIXME
+  ret->u.block.symtab_ptr = ret->u.block.symtab;
 
   return (void*)ret;
 }
@@ -405,26 +408,31 @@ stmt_block_add_statement (statement_t * _block, statement_t * _stmt)
   stmt->parent = block;
 }
 
-symtab_e_t *
-stmt_block_add_decl (statement_t * _block, estring_t const* name, type_t * _type)
+void
+stmt_block_add_decl (statement_t * _block, symbol_t const* symbol)
 {
   assert (_block != NULL);
   statement_rep_t * block = (void*)_block;
   assert (block->kind == stmt_block);
 
-  assert (_type != NULL);
-  type_rep_t * type = (void*)_type;
-
-  symtab_e_rep_t * ret = malloc (sizeof (symtab_e_rep_t));
-  ret->name = clone_estring (name);
-  ret->type = type;
-
-  // symtab is linked list ATM, add new decl
-  ret->link = block->u.block.symtab;
-  block->u.block.symtab = ret->link;
-
-  return (void*)ret;
+  assert (*block->u.block.symtab_ptr = NULL);
+  *block->u.block.symtab_ptr++ = symbol;
 }
+
+void
+symbol_assign_statement (symbol_t * _symbol, statement_t * _stmt)
+{
+  assert (_symbol != NULL);
+  symbol_rep_t * symbol = (void*)_symbol;
+
+  assert (_stmt != NULL);
+  statement_rep_t * stmt = (void*)_stmt;
+
+  assert (symbol->stmt == NULL);
+
+  symbol->stmt = stmt;
+}
+
 
 
 #else /* SELF_TEST */
