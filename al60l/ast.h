@@ -19,6 +19,15 @@ statement_t * new_stmt_dummy (void);
 statement_t * new_stmt_block (void);
 void stmt_block_add_statement (statement_t * block, statement_t * stmt);
 
+/// Container is like block, but doesn't dump 'begin' and 'end'.  It's
+/// used to wrap all the program, including the procedures and outer
+/// labels, into single statement.
+statement_t * new_stmt_container (void);
+
+/// Convert void* to statement, if it is statement, or return NULL.
+statement_t * statement (void * ptr)
+     ARG_NONNULL(1);
+
 void stmt_block_add_decl (statement_t * block, symbol_t const* name);
 
 void delete_stmt (statement_t * stmt);

@@ -34,6 +34,10 @@ logger_t * new_logger (char const* name)
 /// Destroy the log.
 void delete_logger (logger_t * logger);
 
+/// Convert void* to logger, if it is logger, or return NULL.
+logger_t * logger (void * ptr)
+     ARG_NONNULL(1);
+
 
 /// This function is used for logging compiler messages.  Depending on
 /// designated severity and source and effective filtering rules, the

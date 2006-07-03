@@ -23,6 +23,8 @@ FILES = cursor.c cursor.h\
 	ast.c ast.h ast-fwd.h\
 	symbol.c symbol.h\
 	type.c type.h\
+	label.c label.h\
+	slist.c slist.h\
 	Makefile
 
 .PHONY: all doc dist clean check tests
@@ -38,6 +40,16 @@ check-util: util.o util.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST util.c util.o -o util-test
 	./util-test
 	rm -f ./util-test
+
+
+slist.o: slist.c slist.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c slist.c
+
+check-slist: slist.o pd.h Makefile
+	@echo "============================================="
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST slist.c slist.o -o slist-test
+	./slist-test
+	rm -f ./slist-test
 
 
 cursor.o: cursor.c cursor.h pd.h util.h Makefile
@@ -85,7 +97,7 @@ symbol.o: symbol.c symbol.h estring.h ast-fwd.h pd.h Makefile
 
 check-symbol: symbol.o estring.o estring.h symbol.c symbol.h ast-fwd.h Makefile
 	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST symbol.c symbol.o -o symbol-test
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST symbol.c symbol.o estring.o -o symbol-test
 	./symbol-test
 	rm -f ./symbol-test
 
@@ -93,11 +105,21 @@ check-symbol: symbol.o estring.o estring.h symbol.c symbol.h ast-fwd.h Makefile
 type.o: type.c type.h symbol.h ast-fwd.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c
 
-check-type: type.o estring.o estring.h type.c type.h ast-fwd.h Makefile
+check-type: type.o type.c type.h ast-fwd.h Makefile
 	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST type.c type.o -o type-test
 	./type-test
 	rm -f ./type-test
+
+
+label.o: label.c label.h estring.h ast-fwd.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c label.c
+
+check-label: label.o estring.o estring.h label.c label.h ast-fwd.h Makefile
+	@echo "============================================="
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST label.c label.o estring.o -o label-test
+	./label-test
+	rm -f ./label-test
 
 
 parser.o: parser-tab.c Makefile
@@ -109,10 +131,11 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-parser-test: parser-test.c parser.o type.o ast.o logger.o lexer.o cursor.o estring.o\
- parser.h lexer.h estring.h pd.h
+parser-test: parser-test.c parser.o type.o label.o symbol.o ast.o logger.o\
+ lexer.o cursor.o estring.o slist.o util.o parser.h lexer.h estring.h pd.h
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o parser-test \
-		parser-test.c parser.o ast.o lexer.o cursor.o logger.o util.o estring.o
+		parser-test.c parser.o type.o label.o symbol.o ast.o logger.o\
+		lexer.o cursor.o estring.o slist.o util.o
 
 check-parser: parser-test Makefile
 	@echo "============================================="
@@ -151,8 +174,8 @@ $(ARCHIVE_NAME): $(FILES)
 clean:
 	rm -f *.o al60l
 
-check: check-util check-estring check-cursor check-logger check-lexer \
- check-type check-symbol check-ast check-parser
+check: check-util check-slist check-estring check-cursor check-logger \
+ check-lexer check-type check-symbol check-label check-ast check-parser
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="

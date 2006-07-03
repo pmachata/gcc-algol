@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <string.h>
 
+static char const* private_statement_signature = "statement";
+
 /// Represents dummy statements.
 struct stmt_dummy_rep
 {
@@ -89,6 +91,8 @@ struct stmt_call_rep
 /// Internal representation for statements.
 typedef struct struct_statement_rep_t
 {
+  char const* signature;
+
   /// For linking statements into a list.
   struct struct_statement_rep_t * link;
 
@@ -110,42 +114,28 @@ typedef struct struct_statement_rep_t
   } u;
 } statement_rep_t;
 
-typedef struct struct_type_rep_t {
-} type_rep_t;
-
-typedef struct struct_symbol_rep_t
-{
-  struct struct_symbol_rep_t * link;
-  estring_t const* name;
-  type_rep_t const* type;
-  statement_rep_t const* stmt;
-} symbol_rep_t;
 
 
-
-statement_rep_t *
+/// Boilerplate code for creating new statement.
+static statement_rep_t *
 private_new_stmt (statement_kind_t kind)
 {
   statement_rep_t * ret = malloc (sizeof (statement_rep_t));
   if (ret == NULL)
     return NULL;
 
+  ret->signature = private_statement_signature;
   ret->kind = kind;
   ret->link = NULL;
   ret->parent = NULL;
   return ret;
 }
 
-statement_t *
-new_stmt_dummy (void)
+/// Boilerplate code for creating blocks and containers.
+static statement_t *
+private_new_stmt_block_or_container (statement_kind_t kind)
 {
-  return (statement_t *)private_new_stmt (stmt_dummy);
-}
-
-statement_t *
-new_stmt_block (void)
-{
-  statement_rep_t * ret = private_new_stmt (stmt_block);
+  statement_rep_t * ret = private_new_stmt (kind);
   if (ret == NULL)
     return NULL;
 
@@ -155,6 +145,26 @@ new_stmt_block (void)
   ret->u.block.symtab_ptr = ret->u.block.symtab;
 
   return (void*)ret;
+}
+
+
+
+statement_t *
+new_stmt_dummy (void)
+{
+  return (statement_t *)private_new_stmt (stmt_dummy);
+}
+
+statement_t *
+new_stmt_container (void)
+{
+  return private_new_stmt_block_or_container (stmt_container);
+}
+
+statement_t *
+new_stmt_block (void)
+{
+  return private_new_stmt_block_or_container (stmt_block);
 }
 
 statement_kind_t
@@ -177,7 +187,7 @@ private_indent (char const* padding)
 
 
 // forward...
-void private_stmt_dump (statement_rep_t * stmt, FILE * ofile, char const* padding);
+static void private_stmt_dump (statement_rep_t * stmt, FILE * ofile, char const* padding);
 
 
 // ------------------------------------
@@ -198,25 +208,42 @@ private_dump_stmt_dummy (statement_rep_t * stmt, FILE * ofile, char const* paddi
 
 
 // ------------------------------------
-//   BLOCK STMT
+//   CONTAINER STMT
 // ------------------------------------
 
 void
-private_delete_stmt_block (statement_rep_t * stmt)
+private_delete_stmt_container (statement_rep_t * stmt)
 {
-  // delete statements in block
+  // delete statements
   for (statement_rep_t * it = stmt->u.block.stmts;
        it != NULL; it = it->link)
     delete_stmt ((statement_t*)it);
 }
 
 void
+private_dump_stmt_container (statement_rep_t * stmt, FILE * ofile, char const* padding)
+{
+  for (statement_rep_t * it = stmt->u.block.stmts;
+       it != NULL; it = it->link)
+    private_stmt_dump (it, ofile, padding);
+}
+
+
+// ------------------------------------
+//   BLOCK STMT
+// ------------------------------------
+
+void
+private_delete_stmt_block (statement_rep_t * stmt)
+{
+  private_delete_stmt_container (stmt);
+}
+
+void
 private_dump_stmt_block (statement_rep_t * stmt, FILE * ofile, char const* padding)
 {
   fprintf (ofile, "%s'begin'\n", padding);
-  for (statement_rep_t * it = stmt->u.block.stmts;
-       it != NULL; it = it->link)
-    private_stmt_dump (it, ofile, private_indent (padding));
+  private_dump_stmt_container (stmt, ofile, private_indent (padding));
   fprintf (ofile, "%s'end';\n", padding);
 }
 
@@ -315,6 +342,7 @@ private_dump_stmt_call (statement_rep_t * stmt, FILE * ofile, char const* paddin
 
 void(*stmt_dtor_tab[])(statement_rep_t*) = {
   private_delete_stmt_dummy,
+  private_delete_stmt_container,
   private_delete_stmt_block,
   private_delete_stmt_goto,
   private_delete_stmt_assign,
@@ -325,6 +353,7 @@ void(*stmt_dtor_tab[])(statement_rep_t*) = {
 
 void (*stmt_dump_tab[])(statement_rep_t * stmt, FILE * ofile, char const* ) = {
   private_dump_stmt_dummy,
+  private_dump_stmt_container,
   private_dump_stmt_block,
   private_dump_stmt_goto,
   private_dump_stmt_assign,
@@ -335,6 +364,7 @@ void (*stmt_dump_tab[])(statement_rep_t * stmt, FILE * ofile, char const* ) = {
 
 char const* stmt_label_tab[] = {
   "dummy",
+  "container",
   "block",
   "goto",
   "assign",
@@ -382,6 +412,15 @@ stmt_label (statement_t * _stmt)
   return stmt_label_tab[stmt->kind];
 }
 
+statement_t *
+statement (void * ptr)
+{
+  if (((statement_rep_t*)ptr)->signature == private_statement_signature)
+    return ptr;
+  else
+    return NULL;
+}
+
 
 void
 stmt_block_add_statement (statement_t * _block, statement_t * _stmt)
@@ -391,7 +430,8 @@ stmt_block_add_statement (statement_t * _block, statement_t * _stmt)
   statement_rep_t * block = (void*)_block;
   statement_rep_t * stmt = (void*)_stmt;
 
-  assert (block->kind == stmt_block);
+  assert (block->kind == stmt_block
+	  || block->kind == stmt_container);
   assert (stmt->parent == NULL);
   assert (stmt->link == NULL);
 
@@ -413,24 +453,11 @@ stmt_block_add_decl (statement_t * _block, symbol_t const* symbol)
 {
   assert (_block != NULL);
   statement_rep_t * block = (void*)_block;
-  assert (block->kind == stmt_block);
+  assert (block->kind == stmt_block
+	  || block->kind == stmt_container);
 
   assert (*block->u.block.symtab_ptr = NULL);
   *block->u.block.symtab_ptr++ = symbol;
-}
-
-void
-symbol_assign_statement (symbol_t * _symbol, statement_t * _stmt)
-{
-  assert (_symbol != NULL);
-  symbol_rep_t * symbol = (void*)_symbol;
-
-  assert (_stmt != NULL);
-  statement_rep_t * stmt = (void*)_stmt;
-
-  assert (symbol->stmt == NULL);
-
-  symbol->stmt = stmt;
 }
 
 
@@ -446,10 +473,15 @@ main (void)
 {
   statement_t * stmt = new_stmt_dummy ();
   assert (stmt_kind (stmt) == stmt_dummy);
+  assert (statement (stmt));
+
   statement_t * block = new_stmt_block ();
   assert (stmt_kind (block) == stmt_block);
+  assert (statement (block));
   stmt_block_add_statement (block, stmt);
+
   statement_t * block2 = new_stmt_block ();
+  assert (statement (block2));
   stmt_block_add_statement (block2, block);
 
   stmt_dump (block2, stdout);

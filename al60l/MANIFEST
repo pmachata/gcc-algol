@@ -8,6 +8,8 @@ incl. unit test
 util.c, util.h: various supporting functions that don't fit elsewhere;
 incl. unit test
 
+slist.c slist.h: singly-linked list; incl. unit test
+
 pd.h: platform-dependent definitions.  Currently contains some
 gcc-specific declarations that could improve generated code.
 
@@ -21,3 +23,15 @@ hacky test to prove the basic interface of parser works.  Bison
 generates pure (reentrant) parser for us, so it's possible to bind it
 into ubiquitious objective model: new_parser, delete_parser,
 parser_parse, etc.  parser.y and parser.h contain that stuff.
+
+ast-fwd.h: AST types.  Includes type declarations for types, symbols,
+ast nodes, etc.  This header is included across the AST code.
+
+type.c, type.h: representation, construction and querying of types;
+incl. unit test
+
+symbol.c, symbol.h: symbols, i.e. bindings name->object; incl. small
+unit test
+
+ast.c, ast.h: the AST handling itself.  Allows creation and management
+of AST nodes, expressions, statements, tree traversal, dumps, etc.

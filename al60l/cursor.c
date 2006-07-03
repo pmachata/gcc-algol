@@ -12,8 +12,12 @@
 #include <string.h>
 #include <stdio.h>
 
+static char const* private_cursor_signature = "cursor";
+
 typedef struct struct_cursor_rep_t
 {
+  char const* signature;
+
   int offset;
   int line;
   int column;
@@ -26,6 +30,7 @@ new_cursor (char const* filename)
 {
   cursor_rep_t * ret = malloc (sizeof (cursor_rep_t));
 
+  ret->signature = private_cursor_signature;
   ret->offset = ret->line = ret->column = 0;
 
   ret->fnlen = strlen (filename);
@@ -56,6 +61,15 @@ delete_cursor (cursor_t * _cursor)
       free (cursor->filename);
       free (cursor);
     }
+}
+
+cursor_t *
+cursor (void * ptr)
+{
+  if (((cursor_rep_t*)ptr)->signature == private_cursor_signature)
+    return ptr;
+  else
+    return NULL;
 }
 
 void
@@ -145,6 +159,7 @@ int
 main (void)
 {
   cursor_t * c = new_cursor ("<stdin>");
+  assert (cursor (c));
   cursor_t * c1 = NULL;
   int line = 0;
   static char * str = "0123456701234\nhallo\tworld\nhi\tworld\nhallo   world\n";
@@ -159,7 +174,10 @@ main (void)
 
 	  // all lines have the same length
 	  if (c1 == NULL)
-	    c1 = new_cursor_copy (c);
+	    {
+	      c1 = new_cursor_copy (c);
+	      assert (cursor (c1));
+	    }
 	  else
 	    assert (cursor_column (c) == cursor_column (c1));
 

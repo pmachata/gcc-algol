@@ -6,7 +6,12 @@
 #ifndef _AL60L_LEXER_H_
 #define _AL60L_LEXER_H_
 
-#include "ast.h" //for references in parser-tab.h
+//for references in parser-tab.h
+#include "ast.h"
+#include "label.h"
+#include "slist.h"
+
+// direct includes
 #include "parser-tab.h"
 #include "pd.h"
 #include "estring.h"
@@ -42,6 +47,11 @@ lexer_t * new_lexer_filename (char const* filename)
 
 /// Destroy a lexer.
 void delete_lexer (lexer_t * lexer);
+
+/// Convert void* to lexer, if it is lexer, or return NULL.
+lexer_t * lexer (void * ptr)
+     ARG_NONNULL(1);
+
 
 /// Get a new token.  In contrast to the rest of interfaces, this
 /// modifies internal state instead of returning new object of type

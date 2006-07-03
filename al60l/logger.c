@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char const* private_logger_signature = "logger";
+
 char const* debug_level_str[debug_level_t_count] = {
   "debug",
   "info",
@@ -23,6 +25,8 @@ char const* debug_level_str[debug_level_t_count] = {
 
 typedef struct struct_logger_rep_t
 {
+  char const* signature;
+
   struct struct_logger_rep_t * next;
   char * name;
   FILE * stream;
@@ -37,6 +41,7 @@ new_logger (char const* name)
 {
   logger_rep_t * ret = malloc (sizeof (logger_rep_t));
 
+  ret->signature = private_logger_signature;
   ret->next = pool;
   pool = ret;
 
@@ -57,6 +62,15 @@ delete_logger (logger_t * _logger)
       free (logger->name);
       free (logger);
     }
+}
+
+logger_t *
+logger (void * ptr)
+{
+  if (((logger_rep_t*)ptr)->signature == private_logger_signature)
+    return ptr;
+  else
+    return NULL;
 }
 
 int
@@ -115,6 +129,8 @@ int
 main (void)
 {
   logger_t * log_test = new_logger ("test");
+  assert (logger (log_test));
+
   int ret;
 
   ret = log_printf (log_test, ll_debug,
@@ -164,4 +180,3 @@ main (void)
 }
 
 #endif
-/**/

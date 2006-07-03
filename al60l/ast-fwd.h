@@ -14,6 +14,7 @@ typedef struct struct_statement_t { } statement_t;
 typedef enum enum_statement_kind_t
 {
   stmt_dummy,
+  stmt_container,
   stmt_block,
   stmt_goto,
   stmt_assign,
@@ -78,20 +79,6 @@ typedef enum enum_ternary_op_t
 } ternary_op_t;
 
 typedef struct struct_type_t { } type_t;
-
-typedef enum enum_type_kind_t
-{
-  t_unknown,
-  t_any,
-  t_int,
-  t_real,
-  t_string,
-  t_bool,
-  t_procedure,
-  t_label,
-  t_array,
-  type_kind_t_count
-} type_kind_t;
 
 typedef struct struct_symbol_t { } symbol_t;
 

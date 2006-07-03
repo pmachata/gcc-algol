@@ -18,8 +18,12 @@
 #include <math.h>
 #include <limits.h>
 
+static char const* private_lexer_signature = "lexer";
+
 typedef struct struct_lexer_rep_t
 {
+  char const* signature;
+
   logger_t * log;
   logger_t * toklog;
   cursor_t * cursor;
@@ -47,6 +51,7 @@ typedef struct struct_lexer_rep_t
 static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
 static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
 static token_kind_t private_lexer_got_eof_token (void * flex_scanner, char const* error);
+static token_kind_t private_lexer_got_number (void * flex_scanner);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
 
@@ -67,73 +72,209 @@ DIGIT		[0-9]
 %%
 
  /* arithmetic operators */
-"+" { return private_lexer_got_token (yyscanner, AOPADD); }
-"-" { return private_lexer_got_token (yyscanner, AOPSUB); }
-"*" { return private_lexer_got_token (yyscanner, AOPMUL); }
-"/" { return private_lexer_got_token (yyscanner, AOPRDIV); }
-"'div'" { return private_lexer_got_token (yyscanner, AOPIDIV); }
-"**" { return private_lexer_got_token (yyscanner, AOPPOW); }
+"'PLUS'"|"'plus'"|"+" {
+  return private_lexer_got_token (yyscanner, AOPADD);
+}
+
+"'MINUS'"|"'minus'"|"-" {
+  return private_lexer_got_token (yyscanner, AOPSUB);
+}
+
+"'TIMES'"|"'times'"|"*" {
+  return private_lexer_got_token (yyscanner, AOPMUL);
+}
+
+"'OVER'"|"'over'"|"/" {
+  return private_lexer_got_token (yyscanner, AOPRDIV);
+}
+
+"'DIV'"|"'div'" {
+  return private_lexer_got_token (yyscanner, AOPIDIV);
+}
+
+"'POW'"|"'pow'"|"**" {
+  return private_lexer_got_token (yyscanner, AOPPOW);
+}
 
  /* relational operators */
-"<"  { return private_lexer_got_token (yyscanner, ROPLT); }
-"<=" { return private_lexer_got_token (yyscanner, ROPLTE); }
-"="  { return private_lexer_got_token (yyscanner, ROPEQ); }
-">=" { return private_lexer_got_token (yyscanner, ROPGTE); }
-">"  { return private_lexer_got_token (yyscanner, ROPGT); }
-"!=" { return private_lexer_got_token (yyscanner, ROPNEQ); }
+"'LESS'"|"'less'"|"<"  {
+  return private_lexer_got_token (yyscanner, ROPLT);
+}
+
+"'NOTGREATER'"|"'notgreater'"|"<=" {
+  return private_lexer_got_token (yyscanner, ROPLTE);
+}
+
+"'EQUAL'"|"'equal'"|"="  {
+  return private_lexer_got_token (yyscanner, ROPEQ);
+}
+
+"'NOTLESS'"|"'notless'"|">=" {
+  return private_lexer_got_token (yyscanner, ROPGTE);
+}
+
+"'GREATER'"|"'greater'"|">"  {
+  return private_lexer_got_token (yyscanner, ROPGT);
+}
+
+"'NOTEQUAL'"|"'notequal'"|"!=" {
+  return private_lexer_got_token (yyscanner, ROPNEQ);
+}
 
  /* logical operators */
-"==" { return private_lexer_got_token (yyscanner, LOPEQ); }
-"=>" { return private_lexer_got_token (yyscanner, LOPIMP); }
-"||" { return private_lexer_got_token (yyscanner, LOPOR); }
-"&&" { return private_lexer_got_token (yyscanner, LOPAND); }
-"!"  { return private_lexer_got_token (yyscanner, LOPNOT); }
+"'EQUIV'"|"'equiv'"|"==" {
+  return private_lexer_got_token (yyscanner, LOPEQ);
+}
+
+"'IMPL'"|"'impl'"|"=>" {
+  return private_lexer_got_token (yyscanner, LOPIMP);
+}
+
+"'OR'"|"'or'"|"||" {
+  return private_lexer_got_token (yyscanner, LOPOR);
+}
+
+"'AND'"|"'and'"|"&&" {
+  return private_lexer_got_token (yyscanner, LOPAND);
+}
+
+"'NOT'"|"'not'"|"!"  {
+  return private_lexer_got_token (yyscanner, LOPNOT);
+}
 
  /* brackets */
-"(" { return private_lexer_got_token (yyscanner, SEPLPAREN); }
-")" { return private_lexer_got_token (yyscanner, SEPRPAREN); }
-"[" { return private_lexer_got_token (yyscanner, SEPLBRACK); }
-"]" { return private_lexer_got_token (yyscanner, SEPRBRACK); }
+"(" {
+  return private_lexer_got_token (yyscanner, SEPLPAREN);
+}
+
+")" {
+  return private_lexer_got_token (yyscanner, SEPRPAREN);
+}
+
+"[" {
+  return private_lexer_got_token (yyscanner, SEPLBRACK);
+}
+
+"]" {
+  return private_lexer_got_token (yyscanner, SEPRBRACK);
+}
 
  /* separators */
-"," { return private_lexer_got_token (yyscanner, SEPCOMMA); }
-":" { return private_lexer_got_token (yyscanner, SEPCOLON); }
-":=" { return private_lexer_got_token (yyscanner, SEPASSIGN); }
-";" { return private_lexer_got_token (yyscanner, SEPSEMICOLON); }
+"," {
+  return private_lexer_got_token (yyscanner, SEPCOMMA);
+}
+
+":" {
+  return private_lexer_got_token (yyscanner, SEPCOLON);
+}
+
+":=" {
+  return private_lexer_got_token (yyscanner, SEPASSIGN);
+}
+
+";" {
+  return private_lexer_got_token (yyscanner, SEPSEMICOLON);
+}
 
  /* keywords */
-"'array'" { return private_lexer_got_token (yyscanner, KWARRAY); }
-"'begin'" { return private_lexer_got_token (yyscanner, KWBEGIN); }
-"'Boolean'" { return private_lexer_got_token (yyscanner, KWBOOLEAN); }
-"'do'"   { return private_lexer_got_token (yyscanner, KWDO); }
-"'else'" { return private_lexer_got_token (yyscanner, KWELSE); }
-"'end'" {
+"'ARRAY'"|"'array'" {
+  return private_lexer_got_token (yyscanner, KWARRAY);
+}
+
+"'BEGIN'"|"'begin'" {
+  return private_lexer_got_token (yyscanner, KWBEGIN);
+}
+
+"'BOOLEAN'"|"'Boolean'"|"'boolean'" {
+  return private_lexer_got_token (yyscanner, KWBOOLEAN);
+}
+
+"'DO'"|"'do'" {
+  return private_lexer_got_token (yyscanner, KWDO);
+}
+
+"'ELSE'"|"'else'" {
+  return private_lexer_got_token (yyscanner, KWELSE);
+}
+
+"'END'"|"'end'" {
   BEGIN END_COMMENT;
   return private_lexer_got_token (yyscanner, KWEND);
 }
-"'false'" { return private_lexer_got_token (yyscanner, KWFALSE); }
-"'for'"  { return private_lexer_got_token (yyscanner, KWFOR); }
-"'goto'" { return private_lexer_got_token (yyscanner, KWGOTO); }
-"'if'"   { return private_lexer_got_token (yyscanner, KWIF); }
-"'integer'" { return private_lexer_got_token (yyscanner, KWINTEGER); }
-"'label'" { return private_lexer_got_token (yyscanner, KWLABEL); }
-"'own'" { return private_lexer_got_token (yyscanner, KWOWN); }
-"'procedure'" { return private_lexer_got_token (yyscanner, KWPROCEDURE); }
-"'true'"  { return private_lexer_got_token (yyscanner, KWTRUE); }
-"'real'" { return private_lexer_got_token (yyscanner, KWREAL); }
-"'step'" { return private_lexer_got_token (yyscanner, KWSTEP); }
-"'string'" { return private_lexer_got_token (yyscanner, KWSTRING); }
-"'switch'" { return private_lexer_got_token (yyscanner, KWSWITCH); }
-"'then'" { return private_lexer_got_token (yyscanner, KWTHEN); }
-"'until'" { return private_lexer_got_token (yyscanner, KWUNTIL); }
-"'value'" { return private_lexer_got_token (yyscanner, KWVALUE); }
-"'while'" { return private_lexer_got_token (yyscanner, KWWHILE); }
+
+"'FALSE'"|"'false'" {
+  return private_lexer_got_token (yyscanner, KWFALSE);
+}
+
+"'FOR'"|"'for'" {
+  return private_lexer_got_token (yyscanner, KWFOR);
+}
+
+"'GOTO'"|"'goto'" {
+  return private_lexer_got_token (yyscanner, KWGOTO);
+}
+
+"'IF'"|"'if'" {
+  return private_lexer_got_token (yyscanner, KWIF);
+}
+
+"'INTEGER'"|"'integer'" {
+  return private_lexer_got_token (yyscanner, KWINTEGER);
+}
+
+"'LABEL'"|"'label'" {
+  return private_lexer_got_token (yyscanner, KWLABEL);
+}
+
+"'OWN'"|"'own'" {
+  return private_lexer_got_token (yyscanner, KWOWN);
+}
+
+"'PROCEDURE'"|"'procedure'" {
+  return private_lexer_got_token (yyscanner, KWPROCEDURE);
+}
+
+"'TRUE'"|"'true'"  {
+  return private_lexer_got_token (yyscanner, KWTRUE);
+}
+
+"'REAL'"|"'real'" {
+  return private_lexer_got_token (yyscanner, KWREAL);
+}
+
+"'STEP'"|"'step'" {
+  return private_lexer_got_token (yyscanner, KWSTEP);
+}
+
+"'STRING'"|"'string'" {
+  return private_lexer_got_token (yyscanner, KWSTRING);
+}
+
+"'SWITCH'"|"'switch'" {
+  return private_lexer_got_token (yyscanner, KWSWITCH);
+}
+
+"'THEN'"|"'then'" {
+  return private_lexer_got_token (yyscanner, KWTHEN);
+}
+
+"'UNTIL'"|"'until'" {
+  return private_lexer_got_token (yyscanner, KWUNTIL);
+}
+
+"'VALUE'"|"'value'" {
+  return private_lexer_got_token (yyscanner, KWVALUE);
+}
+
+"'WHILE'"|"'while'" {
+  return private_lexer_got_token (yyscanner, KWWHILE);
+}
+
 
  /* strings */
- /* Parsing string literal is somewhat kinky in ALGOL 60, for it
-    allows nested forms.  Thus we have to count opening `s and closing
-    's, and collect everything that's inbetween to
-    lexer->str_literal. */
+ /* Parsing string literal is somewhat kinky in ALGOL 60, as it allows
+    nested forms.  Thus we have to count opening `s and closing 's,
+    and collect everything that's inbetween to lexer->str_literal. */
 
 "`" {
   BEGIN STRING;
@@ -178,7 +319,7 @@ DIGIT		[0-9]
     or semicolon, whichever comes first.  Thes is <END_COMMENT>
     part. */
 
-"'comment'" {
+"'COMMENT'"|"'comment'" {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
 
   switch (lexer->prev_tok) {
@@ -200,11 +341,11 @@ DIGIT		[0-9]
   // ignore for now
 }
 
-<END_COMMENT>"'else'" {
+<END_COMMENT>("'ELSE'"|"'else'") {
   BEGIN INITIAL;
   return private_lexer_got_token (yyscanner, KWELSE);
 }
-<END_COMMENT>"'end'" {
+<END_COMMENT>("'END'"|"'end'") {
   return private_lexer_got_token (yyscanner, KWEND);
 }
 <END_COMMENT>"'"[^\' ]*"'" {
@@ -219,7 +360,7 @@ DIGIT		[0-9]
   return private_lexer_got_token (yyscanner, SEPSEMICOLON);
 }
 <END_COMMENT>[^\';]+ {
-  // ignore for now
+  // ignore for now, later we may collect comments
 }
 
 
@@ -239,34 +380,29 @@ DIGIT		[0-9]
   private_lexer_invalid_character (lexer, *yyget_text (yyscanner));
 }
 
-([0-9]+"."[0-9]*)|([0-9]*"."[0-9]+)|([0-9]*"'e'"[+-]?[0-9]+)|([0-9]+"."[0-9]*"'e'"[+-]?[0-9]+)|([0-9]*"."[0-9]+"'e'"[+-]?[0-9]+) {
-  lexer_rep_t * lexer = yyget_extra (yyscanner);
-  char * lit = yyget_text (yyscanner);
-  char * pos;
+ /* Real numbers take up many different forms in ALGOL.  For the sake
+    of clarity, the rule was broken to several instances, covering the
+    various formats.  The action taken was moved to function
+    private_lexer_got_number, where further parsing takes place.*/
 
-  if ((pos = strstr (lit, "'e'")) != NULL)
-    {
-      *pos = 0; // trim original literal
-      pos += 3; // move pointer to beginning of exponential part
-      // ugly, but safe
-      sprintf (lit, "%se%s", ((*lit == 0)?"1":lit), pos);
-    }
-
-  double value = strtod (lit, &pos);
-
-  if ((value == +HUGE_VAL
-       || value == -HUGE_VAL)
-      && errno == ERANGE)
-    log_printf (lexer->log, ll_warning, "Too big a number: `%s'", lit);
-
-  if (*pos != 0)
-    log_printf (lexer->log, ll_error, "Invalid number: `%s'", lit);
-
-  lexer->num_literal = value;
-
-  return private_lexer_got_token (yyscanner, LITFLOAT);
+([0-9]+"."[0-9]*) {
+  return private_lexer_got_number (yyscanner);
+}
+([0-9]*"."[0-9]+) {
+  return private_lexer_got_number (yyscanner);
+}
+([0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
+  return private_lexer_got_number (yyscanner);
+}
+([0-9]+"."[0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
+  return private_lexer_got_number (yyscanner);
+}
+([0-9]*"."[0-9]+("'E'"|"'e'")[+-]?[0-9]+) {
+  return private_lexer_got_number (yyscanner);
 }
 
+ /* Integer numbers, on the other hand, are quite simple.  We don't
+    allow C-ish 0x form, but we may allow it sometime in future. */
 [0-9]+ {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   char * lit = yyget_text (yyscanner);
@@ -338,6 +474,8 @@ new_lexer (FILE * stream, char const* filename, int manage)
 
   if (setjmp (buf) == 0)
     {
+      ret->signature = private_lexer_signature;
+
       guard_ptr (buf, 1, ret->toklog = new_logger ("token"));
       guard_ptr (buf, 1, ret->log = new_logger ("lexer"));
       guard_ptr (buf, 1, ret->cursor = new_cursor (filename));
@@ -396,6 +534,15 @@ delete_lexer (lexer_t * _lexer)
     }
 }
 
+lexer_t *
+lexer (void * ptr)
+{
+  if (((lexer_rep_t*)ptr)->signature == private_lexer_signature)
+    return ptr;
+  else
+    return NULL;
+}
+
 /// Procedure to write out that bad character has been hit.
 /// Bad characters are considered errors.
 static void
@@ -432,6 +579,36 @@ private_lexer_got_eof_token (void * flex_scanner, char const* error)
       log_printf (lexer->log, ll_error, "EOF hit inside %s.", error);
     }
   return private_lexer_got_token (flex_scanner, EOFTOK);
+}
+
+static token_kind_t
+private_lexer_got_number (void * flex_scanner)
+{
+  lexer_rep_t * lexer = yyget_extra (flex_scanner);
+  char * lit = yyget_text (flex_scanner);
+  char * pos;
+
+  if ((pos = strstr (lit, "'e'")) != NULL)
+    {
+      *pos = 0; // trim original literal
+      pos += 3; // move pointer to beginning of exponential part
+      // ugly, but safe
+      sprintf (lit, "%se%s", ((*lit == 0)?"1":lit), pos);
+    }
+
+  double value = strtod (lit, &pos);
+
+  if ((value == +HUGE_VAL
+       || value == -HUGE_VAL)
+      && errno == ERANGE)
+    log_printf (lexer->log, ll_warning, "Too big a number: `%s'", lit);
+
+  if (*pos != 0)
+    log_printf (lexer->log, ll_error, "Invalid number: `%s'", lit);
+
+  lexer->num_literal = value;
+
+  return private_lexer_got_token (flex_scanner, LITFLOAT);
 }
 
 

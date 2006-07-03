@@ -23,6 +23,10 @@ cursor_t * new_cursor_copy (cursor_t * cursor)
 void delete_cursor (cursor_t * cursor)
      ARG_NONNULL(1);
 
+/// Convert void* to cursor, if it is cursor, or return NULL.
+cursor_t * cursor (void * ptr)
+     ARG_NONNULL(1);
+
 /// Move the point the cursor points to `offset' characters ahead.
 void cursor_move (cursor_t * cursor, int offset)
      ARG_NONNULL(1);

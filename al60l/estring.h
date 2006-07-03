@@ -24,10 +24,6 @@
 typedef struct struct_estring_t { } estring_t;
 
 
-/// Debugging info for estring.
-void estr_stats (estring_t * dest)
-     ARG_NONNULL(1);
-
 /// Create empty new string. Please note, that such a string has to be
 /// released with estr_delete(). Returns NULL if error is something ill
 /// happens.
@@ -49,6 +45,10 @@ estring_t * clone_estring (estring_t const* src)
 /// Release memory allocated for string.
 void delete_estring (estring_t * str);
 
+/// Convert void* to estring, if it is estring, or return NULL.
+estring_t * estring (void * ptr)
+     ARG_NONNULL(1);
+
 /// Assign a new value to given string. Returns 0 on success or -1 if
 /// something failed. In such a case, original string is left intact.
 /// This clones body of string, thus 'src' is usable after this call.
@@ -57,7 +57,7 @@ int estr_assign_cstr (estring_t * dest, char const* src)
      ARG_NONNULL(2);
 
 /// Like estr_assign_cstr, but for estring.
-int estr_assign (estring_t * dest, estring_t * src)
+int estr_assign (estring_t * dest, estring_t const* src)
      ARG_NONNULL(1)
      ARG_NONNULL(2);
 
@@ -73,7 +73,7 @@ void estr_clear (estring_t * dest)
 /// another Str_* functions. Some string handling functions may require
 /// the string to grow, and reallocating memory needed for string data
 /// may invalidate value returned by this function.
-char const* estr_cstr (estring_t * str)
+char const* estr_cstr (estring_t const* str)
      ARG_NONNULL(1);
 
 /// Convert estring to lower case.
@@ -81,11 +81,11 @@ void estr_tolcase (estring_t * str)
      ARG_NONNULL(1);
 
 /// Give back numerical value of string, with base 10.
-long estr_tonumber (estring_t * str)
+long estr_tonumber (estring_t const* str)
      ARG_NONNULL(1);
 
 /// Like tonumber, but returns a double.
-double estr_tofloat(estring_t * str);
+double estr_tofloat(estring_t const* str);
 
 /// Append contents of 'src' to the end of 'dest'.  Return 0 if all
 /// goes fine, or -1 if something went wrong.
@@ -113,18 +113,18 @@ int estr_pop (estring_t * dest);
 /// Compare two estrings.  It returns an integer less than, equal to, or
 /// greater than zero if src1 is found, respectively, to be less than,
 /// to match, or be greater than src2.
-int estr_compare (estring_t * src1, estring_t * src2);
+int estr_compare (estring_t const* src1, estring_t const* src2);
 
 /// Compare estring with cstr.
-int estr_compare_cstr (estring_t * src1, char const * src2);
+int estr_compare_cstr (estring_t const* src1, char const* src2);
 
 /// Return length of string 'src'.  Note that this is a constant-time
 /// operation, as estrings remember their length.
-size_t estr_length (estring_t * src);
+size_t estr_length (estring_t const* src);
 
 /// Give back char at 'position'-th position of string 'src'.  Return
 /// EOF for characters off the boundaries.
-char estr_at (estring_t * src, int position);
+char estr_at (estring_t const* src, int position);
 
 /// Write a char to given location.
 void estr_write (estring_t * src, char c, int position);

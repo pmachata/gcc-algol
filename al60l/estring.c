@@ -15,8 +15,12 @@
 
 #include "estring.h"
 
+static char const* private_estring_signature = "estring";
+
 typedef struct struct_estring_rep_t
 {
+  char const* signature;
+
   /// actual length of string - number of used chars, not including
   /// terminating \0
   size_t length;
@@ -65,16 +69,6 @@ private_estr_grow (estring_rep_t * dest)
   return private_estr_realloc (dest, dest->limit + 128);
 }
 
-void
-estr_stats (estring_t * _dest)
-{
-  estring_rep_t * dest = (void*)_dest;
-  printf("estr_stats(%p)\n", (void*)dest);
-  printf("  body:\t%p\n",   dest->body);
-  printf("  length:\t%i\n", dest->length);
-  printf("  limit:\t%i\n",  dest->limit);
-}
-
 estring_t *
 new_estring (void)
 {
@@ -82,6 +76,7 @@ new_estring (void)
   if (ret == NULL)
     return NULL;
 
+  ret->signature = private_estring_signature;
   ret->body = NULL;
   ret->length = 0;
   ret->limit = 0;
@@ -128,6 +123,15 @@ delete_estring (estring_t * _dest)
   free (dest);
 }
 
+estring_t *
+estring (void * ptr)
+{
+  if (((estring_rep_t*)ptr)->signature == private_estring_signature)
+    return ptr;
+  else
+    return NULL;
+}
+
 int
 estr_assign_cstr (estring_t * _dest, char const* src)
 {
@@ -147,13 +151,12 @@ estr_assign_cstr (estring_t * _dest, char const* src)
 }
 
 int
-estr_assign (estring_t * dest, estring_t * _src)
+estr_assign (estring_t * dest, estring_t const* _src)
 {
   assert (_src != NULL);
   assert (dest != NULL);
 
-  estring_rep_t * src = (void*)_src;
-  return estr_assign_cstr (dest, src->body);
+  return estr_assign_cstr (dest, estr_cstr (_src));
 }
 
 void
@@ -167,10 +170,10 @@ estr_clear (estring_t * _dest)
 }
 
 char const*
-estr_cstr (estring_t * _dest)
+estr_cstr (estring_t const* _dest)
 {
   assert (_dest != NULL);
-  estring_rep_t * dest = (void*)_dest;
+  estring_rep_t const* dest = (void const*)_dest;
   return dest->body;
 }
 
@@ -191,19 +194,19 @@ estr_tolcase (estring_t * _dest)
 }
 
 long
-estr_tonumber (estring_t * _dest)
+estr_tonumber (estring_t const* _dest)
 {
   assert (_dest != 0);
-  estring_rep_t * dest = (void*)_dest;
+  estring_rep_t const* dest = (void const*)_dest;
 
   return atol (dest->body);
 }
 
 double
-estr_tofloat (estring_t * _dest)
+estr_tofloat (estring_t const* _dest)
 {
   assert (_dest != 0);
-  estring_rep_t * dest = (void*)_dest;
+  estring_rep_t const* dest = (void const*)_dest;
   return atof (dest->body);
 }
 
@@ -247,7 +250,7 @@ estr_append (estring_t * _dest, estring_t const* _src)
   assert (_src != NULL);
   assert (_dest != NULL);
   estring_rep_t * dest = (void*)_dest;
-  estring_rep_t const* src = (void*)_src;
+  estring_rep_t const* src = (void const*)_src;
 
   return private_estr_nappend (dest, src->body, src->length);
 }
@@ -335,37 +338,36 @@ estr_pop (estring_t * _dest)
 }
 
 int
-estr_compare (estring_t * _src1, estring_t * _src2)
+estr_compare (estring_t const* _src1, estring_t const* _src2)
 {
+  assert (_src1 != NULL);
   assert (_src2 != NULL);
-  estring_rep_t * src2 = (void*)_src2;
 
-  return estr_compare_cstr (_src1, src2->body);
+  return estr_compare_cstr (_src1, estr_cstr (_src2));
 }
 
 int
-estr_compare_cstr (estring_t * _src1, char const * src2)
+estr_compare_cstr (estring_t const* _src1, char const * src2)
 {
   assert (_src1 != NULL);
   assert (src2 != NULL);
-  estring_rep_t * src1 = (void*)_src1;
 
-  return strcmp (src1->body, src2);
+  return strcmp (estr_cstr (_src1), src2);
 }
 
 size_t
-estr_length (estring_t * _dest)
+estr_length (estring_t const* _dest)
 {
   assert (_dest != NULL);
-  estring_rep_t * dest = (void*)_dest;
+  estring_rep_t const* dest = (void const*)_dest;
   return dest->length;
 }
 
 char
-estr_at (estring_t * _dest, int position)
+estr_at (estring_t const* _dest, int position)
 {
   assert (_dest != NULL);
-  estring_rep_t * dest = (void*)_dest;
+  estring_rep_t const* dest = (void const*)_dest;
 
   if (position < 0
       || position >= dest->length)
@@ -393,22 +395,25 @@ estr_write (estring_t * _dest, char c, int position)
 int
 main (void)
 {
-  printf ("new/clone test.\n");
+  printf (" + new/clone test.\n");
   estring_t * str1 = new_estring_from ("ahoj svete");
+  assert (estring (str1));
   assert (estr_compare (str1, str1) == 0);
 
   estring_t * str2 = new_estring_from ("ahoj svete");
+  assert (estring (str2));
   assert (estr_length (str1) == strlen ("ahoj svete"));
   assert (estr_compare (str1, str2) == 0);
 
   estring_t * str3 = clone_estring (str1);
+  assert (estring (str3));
   delete_estring (str1);
   assert (estr_compare (str2, str3) == 0);
   estr_append (str2, str3);
   estr_append (str3, str3);
   assert (estr_compare (str2, str3) == 0);
 
-  printf ("push/pop test.\n");
+  printf (" + push/pop test.\n");
   estring_t * str4 = new_estring ();
   int c;
   while ((c = estr_pop (str3)) != EOF)
@@ -419,14 +424,14 @@ main (void)
   delete_estring (str3);
   delete_estring (str4);
 
-  printf ("append/prepend:\n");
+  printf (" + append/prepend:\n");
   int (*functions[])(estring_t *, estring_t const*) = {estr_append, estr_prepend, NULL};
 
   for (int (**it)(estring_t *, estring_t const*) = &functions[0];
        *it != NULL;
        it++)
     {
-      printf (" + test...\n");
+      printf ("   + test...\n");
       estring_t * str5 = new_estring_from ("ab");
       assert (estr_length (str5) == 2);
       for (int i = 0; i < 20; ++i)

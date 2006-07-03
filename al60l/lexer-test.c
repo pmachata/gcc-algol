@@ -7,7 +7,7 @@
 int
 main(void)
 {
-  printf ("checking simple tokens\n");
+  printf (" + simple tokens\n");
   {
     int filedes[2] = {};
     int tst = pipe(filedes);
@@ -16,7 +16,8 @@ main(void)
     FILE * out = fdopen (filedes[0], "r");
     FILE * in = fdopen (filedes[1], "w");
 
-    lexer_t * lexer = new_lexer (out, "inmem_stream.a60", 1);
+    lexer_t * a_lexer = new_lexer (out, "inmem_stream.a60", 1);
+    assert (lexer (a_lexer));
 
     char * buffer =
       "'true'  'false' 'true''false' \n"
@@ -42,16 +43,16 @@ main(void)
 
     for (token_kind_t * it = tokens; *it != -1; ++it)
       {
-	lexer_next_tok (lexer);
-	int tok = lexer_get_tok_kind (lexer);
+	lexer_next_tok (a_lexer);
+	int tok = lexer_get_tok_kind (a_lexer);
 	assert (tok == *it);
       }
 
-    delete_lexer (lexer);
+    delete_lexer (a_lexer);
   }
 
 
-  printf ("checking strings and identifiers\n");
+  printf (" + strings and identifiers\n");
   {
     int filedes[2] = {};
     int tst = pipe(filedes);
@@ -60,7 +61,8 @@ main(void)
     FILE * out = fdopen (filedes[0], "r");
     FILE * in = fdopen (filedes[1], "w");
 
-    lexer_t * lexer = new_lexer (out, "inmem_stream_2.a60", 1);
+    lexer_t * a_lexer = new_lexer (out, "inmem_stream_2.a60", 1);
+    assert (lexer (a_lexer));
 
     char * buffer =
       "`hallo `world'!' \n"
@@ -99,13 +101,13 @@ main(void)
     token_kind_t * itk = tokens;
     for (; *it != NULL; ++it, ++itk)
       {
-	lexer_next_tok (lexer);
-	token_kind_t tk = lexer_get_tok_kind (lexer);
+	lexer_next_tok (a_lexer);
+	token_kind_t tk = lexer_get_tok_kind (a_lexer);
 	assert (tk == *itk);
 	if (tk == LITSTRING
 	    || tk == IDENTIFIER)
 	  {
-	    estring_t * lit = lexer_get_tok_literal (lexer);
+	    estring_t * lit = lexer_get_tok_literal (a_lexer);
 	    assert (estr_compare_cstr (lit, *it) == 0);
 	  }
 	else
@@ -115,11 +117,11 @@ main(void)
 	  }
       }
 
-    delete_lexer (lexer);
+    delete_lexer (a_lexer);
   }
 
 
-  printf ("checking floating numbers\n");
+  printf (" + floating numbers\n");
   {
     int filedes[2] = {};
     int tst = pipe(filedes);
@@ -128,7 +130,8 @@ main(void)
     FILE * out = fdopen (filedes[0], "r");
     FILE * in = fdopen (filedes[1], "w");
 
-    lexer_t * lexer = new_lexer (out, "inmem_stream_3.a60", 1);
+    lexer_t * a_lexer = new_lexer (out, "inmem_stream_3.a60", 1);
+    assert (lexer (a_lexer));
 
     char * buffer =
       "1. .1 1'e'1  1'e'+1  1'e'-1 1'e'+1 'e'+10\n"
@@ -147,11 +150,11 @@ main(void)
 
     for (double * it = numbers; !isnan (*it); ++it)
       {
-	lexer_next_tok (lexer);
-	token_kind_t tk = lexer_get_tok_kind (lexer);
+	lexer_next_tok (a_lexer);
+	token_kind_t tk = lexer_get_tok_kind (a_lexer);
 	if (tk == LITFLOAT)
 	  {
-	    double val = lexer_get_tok_number (lexer);
+	    double val = lexer_get_tok_number (a_lexer);
 	    assert (val == *it);
 	  }
 	else
@@ -161,11 +164,11 @@ main(void)
 	  }
       }
 
-    delete_lexer (lexer);
+    delete_lexer (a_lexer);
   }
 
 
-  printf ("checking integer numbers\n");
+  printf (" + integer numbers\n");
   {
     int filedes[2] = {};
     int tst = pipe(filedes);
@@ -174,7 +177,8 @@ main(void)
     FILE * out = fdopen (filedes[0], "r");
     FILE * in = fdopen (filedes[1], "w");
 
-    lexer_t * lexer = new_lexer (out, "inmem_stream_4.a60", 1);
+    lexer_t * a_lexer = new_lexer (out, "inmem_stream_4.a60", 1);
+    assert (lexer (a_lexer));
 
     char * buffer =
       "1 10 100 10000 01 09 15\n";
@@ -189,11 +193,11 @@ main(void)
 
     for (long * it = numbers; *it != 0; ++it)
       {
-	lexer_next_tok (lexer);
-	token_kind_t tk = lexer_get_tok_kind (lexer);
+	lexer_next_tok (a_lexer);
+	token_kind_t tk = lexer_get_tok_kind (a_lexer);
 	if (tk == LITINTEGER)
 	  {
-	    long val = lexer_get_tok_integer (lexer);
+	    long val = lexer_get_tok_integer (a_lexer);
 	    assert (val == *it);
 	  }
 	else
@@ -203,7 +207,7 @@ main(void)
 	  }
       }
 
-    delete_lexer (lexer);
+    delete_lexer (a_lexer);
   }
 
   printf ("All passed.\n");

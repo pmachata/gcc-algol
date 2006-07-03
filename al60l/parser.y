@@ -1,15 +1,20 @@
 %{
 #include "ast.h"
+#include "label.h"
 #include "logger.h"
 #include "lexer.h"
 #include "parser.h"
+#include "slist.h"
 
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 
+static char const* private_parser_signature = "parser";
+
 typedef struct struct_parser_rep_t
 {
+  char const* signature;
   lexer_t * lexer;
   logger_t * log;
   int manage;
@@ -47,6 +52,8 @@ yyerror (parser_rep_t * parser, const char *str)
   int un_i;
   float un_f;
   statement_t * stmt;
+  slist_t * lst;
+  label_t * lbl;
 }
 
 %pure-parser
@@ -139,45 +146,42 @@ yyerror (parser_rep_t * parser, const char *str)
 %type <stmt> DummyStatement
 %type <stmt> Block
 %type <stmt> BasicStatement
-%type <stmt> CompoundStatement
 %type <stmt> UnconditionalStatement
 %type <stmt> Statement
 %type <stmt> StatementList
+%type <lst> LabelList
+%type <lbl> Label
 
 %%
 
 Program:
-  CompoundStatement SEPSEMICOLON EOFTOK
+  {$<stmt>$ = new_stmt_container ();} LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
+      stmt_block_add_statement ($<stmt>1, $<stmt>3);
       parser->result = $<stmt>1;
       YYACCEPT;
-    }
-
-
-CompoundStatement:
-  LabelList Block
-    {
-      log_printf (parser->log, ll_debug, "CompoundStatement -> LabelList Block");
-      // @@@TODO: add block to $0
-      $$ = $2;
     }
 
 LabelList:
   /*epsilon*/
     {
       log_printf (parser->log, ll_debug, "LabelList -> <eps>");
+      $$ = new_slist ();
     }
   |
   Label LabelList
     {
       log_printf (parser->log, ll_debug, "LabelList -> Label LabelList");
+      slist_pushfront ($2, $1);
+      $$ = $2;
     }
 
 Label:
   LabelIdentifier SEPCOLON
     {
       log_printf (parser->log, ll_debug, "Label -> LabelIdentifier SEPCOLON");
+      $$ = new_label ();
     }
 
 LabelIdentifier:
@@ -223,10 +227,10 @@ Statement:
     }
 
 UnconditionalStatement:
-  CompoundStatement
+  LabelList Block
     {
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
-      $$ = $1;
+      $$ = $2;
     }
   |
   BasicStatement
@@ -236,11 +240,11 @@ UnconditionalStatement:
     }
 
 BasicStatement:
-  LabelList {COPY_BLOCK($<stmt>$, $<stmt>0);} DummyStatement
+  LabelList DummyStatement
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
       // TODO: use $0 to access symtab and add labels pointing to $2 there
-      $$ = $3;
+      $$ = $2;
     }
 
 DummyStatement:
@@ -258,6 +262,7 @@ new_parser (lexer_t * lexer, int manage)
   assert (lexer != NULL);
   parser_rep_t * ret = malloc (sizeof (parser_rep_t));
 
+  ret->signature = private_parser_signature;
   ret->lexer = lexer;
   ret->manage = manage;
   ret->result = NULL;
@@ -283,6 +288,15 @@ delete_parser (parser_t * _parser)
       delete_logger (parser->log);
       free (parser);
     }
+}
+
+parser_t *
+parser (void * ptr)
+{
+  if (((parser_rep_t*)ptr)->signature == private_parser_signature)
+    return ptr;
+  else
+    return NULL;
 }
 
 statement_t *

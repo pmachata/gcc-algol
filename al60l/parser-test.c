@@ -37,24 +37,30 @@ main(int argc, char ** argv)
       dump = strchr (argparam, 'd');
     }
 
-  lexer_t * lexer = new_lexer_filename (filename);
-  lexer_set_logging (lexer, ll_warning, 1);
+  lexer_t * a_lexer = new_lexer_filename (filename);
+  assert (lexer (a_lexer));
+  assert (logger ((void*)lexer_log (a_lexer)));
+  lexer_set_logging (a_lexer, ll_warning, 1);
 
-  parser_t * parser = new_parser (lexer, 1);
+  parser_t * a_parser = new_parser (a_lexer, 1);
+  assert (parser (a_parser));
+  assert (logger ((void*)parser_log (a_parser)));
 
-  statement_t * ast = parser_parse (parser);
+  statement_t * ast = parser_parse (a_parser);
+  assert (statement (ast));
+
   if (dump && ast)
     {
       stmt_dump (ast, stdout);
     }
 
   int errors =
-    log_count_messages (lexer_log (lexer), ll_error)
-    + log_count_messages (parser_log (parser), ll_error);
+    log_count_messages (lexer_log (a_lexer), ll_error)
+    + log_count_messages (parser_log (a_parser), ll_error);
 
   if (errors)
     fprintf (stderr, "%d errors encountered.\n", errors);
 
-  delete_parser (parser);
+  delete_parser (a_parser);
   return errors;
 }
