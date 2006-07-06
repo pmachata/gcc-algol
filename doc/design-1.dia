@@ -7353,7 +7353,7 @@ looping as such.#</dia:string>
       <dia:attribute name="attributes">
         <dia:composite type="umlattribute">
           <dia:attribute name="name">
-            <dia:string>#elmt#</dia:string>
+            <dia:string>#host#</dia:string>
           </dia:attribute>
           <dia:attribute name="type">
             <dia:string>#TypeIntrinsic#</dia:string>
