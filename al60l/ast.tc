@@ -1,0 +1,93 @@
+/*
+ * Copyright (c) 2006 Petr Machata
+ * All rights reserved.
+ */
+
+%option lang = "C"
+%option reentrant
+
+%decls %{
+#include <stdio.h>
+#include "slist.h"
+%}
+
+%{
+#include "ast-tab.h"
+%}
+
+%{
+char const*
+padding (int level)
+{
+  static char const* padding =
+    "                                                            "
+    "                                                            "
+    "                                                            "
+    "                                                            "
+    "                                                            ";
+  if (level > 300)
+    level = 300;
+  return padding + 300 - level;
+}
+%}
+
+%node statement %abstract %typedef = {
+}
+
+%operation void dump_statement (statement * stmt, FILE * ofile, int level)
+
+
+
+%node stmt_dummy statement = {
+}
+
+dump_statement (stmt_dummy)
+{
+  fprintf (ofile, "%s'comment' dummy ;\n", padding (level));
+}
+
+
+%node stmt_container statement = {
+  slist_t * commands;
+}
+
+%operation void add_command (stmt_container * block)
+
+%{
+void
+private_dump_container (slist_t * commands, FILE * ofile, int level)
+{
+  slist_it_t * it;
+  for (it = slist_iter (commands); slist_it_has (it); slist_it_next (it))
+    dump_statement (slist_it_get (it), ofile, level + 1);
+  delete_slist_it (it);
+}
+%}
+
+dump_statement (stmt_container)
+{
+  private_dump_container (stmt->commands, ofile, level);
+}
+
+add_command (stmt_container)
+{
+}
+
+
+%node stmt_block stmt_container = {
+}
+
+dump_statement (stmt_block)
+{
+  fprintf (ofile, "%s'begin'\n", padding (level));
+  private_dump_container (stmt->commands, ofile, level);
+  fprintf (ofile, "%s'end'\n", padding (level));
+}
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */

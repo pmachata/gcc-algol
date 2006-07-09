@@ -159,6 +159,19 @@ check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
 	rm -f ./check-lexer
 
 
+ast-tab.c: ast.tc Makefile
+	treecc -o ast-tab.c -h ast-tab.h ast.tc
+
+ast-tab.h: ast-tab.c Makefile
+	[ -f ./ast-tab.h ]
+
+ast-tab.o: ast-tab.c ast-tab.h slist.h
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-tab.c -c -o ast-tab.o
+
+ast-new: ast-tab.o slist.o ast-test.c Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-test.c ast-tab.o slist.o -o ast-new
+
+
 al60l: parser-test
 
 dist: $(ARCHIVE_NAME)
