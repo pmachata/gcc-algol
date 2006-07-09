@@ -1,13 +1,14 @@
 #ifndef _AL60L_TYPE_H_
 #define _AL60L_TYPE_H_
 
-#include "symbol.h"
 #include "pd.h"
 
 /// \file
 /// In this module, all type_<kind> procedures yield shared copies of
 /// data structures.  This means that asking twice for array of ints
 /// will yield the same datum each time.
+
+typedef struct struct_type_t { } type_t;
 
 /// Return shared rep of unknown type.  Unknown types may be used as a
 /// fallback type in situation where the type has to be determined,

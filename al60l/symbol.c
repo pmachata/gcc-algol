@@ -6,7 +6,7 @@
 #ifndef SELF_TEST
 
 #include "estring.h"
-#include "ast-fwd.h"
+#include "symbol.h"
 #include <assert.h>
 
 static char const* private_symbol_signature = "symbol";

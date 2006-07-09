@@ -7,6 +7,7 @@
 
 #include "type.h"
 #include <assert.h>
+#include <stdlib.h>
 
 static char const* private_type_signature = "type";
 

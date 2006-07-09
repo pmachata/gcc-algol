@@ -6,6 +6,7 @@
 #ifndef SELF_TEST
 
 #include "ast.h"
+#include "slist.h"
 #include <assert.h>
 #include <string.h>
 
@@ -40,12 +41,8 @@ struct stmt_assign_rep
 /// Represents blocks and compounds.
 struct stmt_block_rep
 {
-  /// Pointer to head of linked list of statements.
-  struct struct_statement_rep_t * stmts;
-
-  /// Pointer to tail of linked list of statements, for easy
-  /// appending.
-  struct struct_statement_rep_t * tail;
+  /// Pointer to list of statements.
+  slist_t * stmts;
 
   /// Symbol table. @@@TODO
   symbol_t const** symtab;
@@ -139,8 +136,7 @@ private_new_stmt_block_or_container (statement_kind_t kind)
   if (ret == NULL)
     return NULL;
 
-  ret->u.block.stmts = NULL;
-  ret->u.block.tail = NULL;
+  ret->u.block.stmts = new_slist ();
   ret->u.block.symtab = malloc (1024); ///@FIXME
   ret->u.block.symtab_ptr = ret->u.block.symtab;
 
@@ -212,20 +208,42 @@ private_dump_stmt_dummy (statement_rep_t * stmt, FILE * ofile, char const* paddi
 // ------------------------------------
 
 void
+private_delete_block_single_stmt (slist_t * list ARG_UNUSED, void * _stmt, void * userdata)
+{
+  statement_t * stmt = statement (_stmt);
+  assert (stmt != NULL);
+  assert (userdata == NULL);
+  delete_stmt (stmt);
+}
+
+struct private_dump_file_and_padding {
+    FILE * ofile;
+    char const* padding;
+};
+
+void
+private_dump_block_single_stmt (slist_t * list ARG_UNUSED, void * _stmt, void * _userdata)
+{
+  statement_rep_t * stmt = (statement_rep_t*)statement (_stmt);
+  assert (stmt != NULL);
+
+  struct private_dump_file_and_padding * userdata = _userdata;
+  assert (userdata != NULL);
+
+  private_stmt_dump (stmt, userdata->ofile, userdata->padding);
+}
+
+void
 private_delete_stmt_container (statement_rep_t * stmt)
 {
-  // delete statements
-  for (statement_rep_t * it = stmt->u.block.stmts;
-       it != NULL; it = it->link)
-    delete_stmt ((statement_t*)it);
+  slist_each (stmt->u.block.stmts, private_delete_block_single_stmt, NULL);
 }
 
 void
 private_dump_stmt_container (statement_rep_t * stmt, FILE * ofile, char const* padding)
 {
-  for (statement_rep_t * it = stmt->u.block.stmts;
-       it != NULL; it = it->link)
-    private_stmt_dump (it, ofile, padding);
+  struct private_dump_file_and_padding userdata = {ofile, padding};
+  slist_each (stmt->u.block.stmts, private_dump_block_single_stmt, &userdata);
 }
 
 
@@ -433,18 +451,8 @@ stmt_block_add_statement (statement_t * _block, statement_t * _stmt)
   assert (block->kind == stmt_block
 	  || block->kind == stmt_container);
   assert (stmt->parent == NULL);
-  assert (stmt->link == NULL);
 
-  if (block->u.block.tail == NULL)
-    {
-      assert (block->u.block.stmts == NULL);
-      block->u.block.tail = block->u.block.stmts = stmt;
-    }
-  else
-    {
-      block->u.block.tail->link = stmt;
-      block->u.block.tail = stmt;
-    }
+  slist_pushback (block->u.block.stmts, stmt);
   stmt->parent = block;
 }
 

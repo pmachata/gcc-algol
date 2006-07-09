@@ -33,7 +33,7 @@ all: al60l
 
 
 util.o: util.c util.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c util.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c util.c -o util.o
 
 check-util: util.o util.c Makefile
 	@echo "============================================="
@@ -43,7 +43,7 @@ check-util: util.o util.c Makefile
 
 
 slist.o: slist.c slist.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c slist.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c slist.c -o slist.o
 
 check-slist: slist.o pd.h Makefile
 	@echo "============================================="
@@ -53,7 +53,7 @@ check-slist: slist.o pd.h Makefile
 
 
 cursor.o: cursor.c cursor.h pd.h util.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c cursor.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c cursor.c -o cursor.o
 
 check-cursor: cursor.o util.o cursor.c Makefile
 	@echo "============================================="
@@ -63,7 +63,7 @@ check-cursor: cursor.o util.o cursor.c Makefile
 
 
 logger.o: logger.c logger.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c logger.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c logger.c -o logger.o
 
 check-logger: logger.o util.o logger.c Makefile
 	@echo "============================================="
@@ -73,7 +73,7 @@ check-logger: logger.o util.o logger.c Makefile
 
 
 estring.o: estring.c estring.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c estring.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c estring.c -o estring.o
 
 check-estring: estring.o estring.c estring.h Makefile
 	@echo "============================================="
@@ -83,17 +83,17 @@ check-estring: estring.o estring.c estring.h Makefile
 
 
 ast.o: ast.c ast.h ast-fwd.h estring.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c -o ast.o
 
-check-ast: ast.o estring.o estring.h ast.c ast.h ast-fwd.h Makefile
+check-ast: ast.o ast.c ast.h ast-fwd.h slist.o slist.h estring.o estring.h Makefile
 	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o estring.o -o ast-test
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o estring.o slist.o -o ast-test
 	./ast-test
 	rm -f ./ast-test
 
 
 symbol.o: symbol.c symbol.h estring.h ast-fwd.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c symbol.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c symbol.c -o symbol.o
 
 check-symbol: symbol.o estring.o estring.h symbol.c symbol.h ast-fwd.h Makefile
 	@echo "============================================="
@@ -103,7 +103,7 @@ check-symbol: symbol.o estring.o estring.h symbol.c symbol.h ast-fwd.h Makefile
 
 
 type.o: type.c type.h symbol.h ast-fwd.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c -o type.o
 
 check-type: type.o type.c type.h ast-fwd.h Makefile
 	@echo "============================================="
@@ -113,7 +113,7 @@ check-type: type.o type.c type.h ast-fwd.h Makefile
 
 
 label.o: label.c label.h estring.h ast-fwd.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c label.c
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c label.c -o label.o
 
 check-label: label.o estring.o estring.h label.c label.h ast-fwd.h Makefile
 	@echo "============================================="

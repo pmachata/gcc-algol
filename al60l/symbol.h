@@ -10,6 +10,8 @@
 #include "type.h"
 #include "estring.h"
 
+typedef struct struct_symbol_t { } symbol_t;
+
 /// Name is cloned for use in symtab.
 symbol_t * new_symbol (estring_t const* name)
      MALLOC_LIKE;

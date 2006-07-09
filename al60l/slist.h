@@ -9,9 +9,27 @@
 #include "pd.h"
 
 typedef struct struct_slist_t { } slist_t;
+typedef struct struct_slist_it_t { } slist_it_t;
 
 /// Create fresh linked list.
 slist_t * new_slist (void);
+
+/// Create a linked list that keeps track of the type of objects that
+/// are put inside.  The `test' parameter is function that takes void*
+/// argument, and answers NULL if the object isn't of required type.
+/// If the test doesn't pass on object creation time, an assertion
+/// fails.  The `userdata' parameter is passed verbatim to `test'.
+/// In NDEBUG mode, typed lists are the same as untyped, with no extra
+/// overhead, both memory and time.
+slist_t * new_slist_typed (void* (*test)(void * obj, void * user), void * userdata);
+
+/// For purposes of testing type, this adaptor is provided.  The
+/// `test' has to be something*(*test)(whatever*), but is declared as
+/// mere void* to make it possible to pass over functions operating
+/// over various somthings and whatevers.  `obj' is object that's
+/// passed to the testing function.
+/// Usage: new_slist_typed (adapt_test, my_test);
+void * adapt_test (void * obj, void * test);
 
 /// Destroy label list.  Doesn't touch the objects collected inside,
 /// just the list.
@@ -56,5 +74,21 @@ slist_t * slist_filter (
    slist_t * list,
    int (*pred)(slist_t * /*list*/, void * /*object*/, void * /*userdata*/),
    void * userdata);
+
+/// Get iterator.  For explicit iteration over the list.
+slist_it_t * slist_iter (slist_t * list);
+
+/// Query the validity of the iterator.  Return non-zero when the
+/// iterator points to the list, or zero when the iteration ended.
+int slist_it_has (slist_it_t * it);
+
+/// Get the object that it pointed to by this iterator.
+void * slist_it_get (slist_it_t * it);
+
+/// Advance to next item.
+void slist_it_next (slist_it_t * it);
+
+/// Destroy the iterator.
+void delete_slist_it (slist_it_t * it);
 
 #endif//_AL60L_SLIST_H_

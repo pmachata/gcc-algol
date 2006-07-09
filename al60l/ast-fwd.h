@@ -78,8 +78,4 @@ typedef enum enum_ternary_op_t
   op_ter_cond,
 } ternary_op_t;
 
-typedef struct struct_type_t { } type_t;
-
-typedef struct struct_symbol_t { } symbol_t;
-
 #endif//_AL60L_AST_FWD_H_
