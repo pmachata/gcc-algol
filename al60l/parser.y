@@ -1,5 +1,5 @@
 %{
-#include "ast.h"
+#include "ast-tab.h"
 #include "label.h"
 #include "logger.h"
 #include "lexer.h"
@@ -18,7 +18,8 @@ typedef struct struct_parser_rep_t
   lexer_t * lexer;
   logger_t * log;
   int manage;
-  statement_t * result;
+  statement * result;
+  ast_state_t * ast;
 } parser_rep_t;
 
 // call lexer
@@ -44,14 +45,13 @@ yyerror (parser_rep_t * parser, const char *str)
 /// Note: The assertion: If it's not a statement at all, odds are good
 /// it'll fail due to sigsegv, or due to internal assertion in stmt_kind.
 #define COPY_BLOCK(tgt,src) \
-    assert (stmt_kind (src) == stmt_block); tgt = src
-
+  assert (ast_isa (src, stmt_block)); tgt = src
 %}
 
 %union {
   int un_i;
   float un_f;
-  statement_t * stmt;
+  statement * stmt;
   slist_t * lst;
   label_t * lbl;
 }
@@ -155,10 +155,10 @@ yyerror (parser_rep_t * parser, const char *str)
 %%
 
 Program:
-  {$<stmt>$ = new_stmt_container ();} LabelList Block SEPSEMICOLON EOFTOK
+  {$<stmt>$ = stmt_container_create (parser->ast);} LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
-      stmt_block_add_statement ($<stmt>1, $<stmt>3);
+      container_add_stmt (ast_as (stmt_container, $<stmt>1), $<stmt>3);
       parser->result = $<stmt>1;
       YYACCEPT;
     }
@@ -196,7 +196,7 @@ LabelIdentifier:
     }
 
 Block:
-  KWBEGIN {$<stmt>$ = new_stmt_block ();} StatementList KWEND
+  KWBEGIN {$<stmt>$ = stmt_block_create (parser->ast);} StatementList KWEND
     {
       //allow DeclarationList after KWBEGIN
       log_printf (parser->log, ll_debug, "Block -> KWBEGIN DeclarationList StatementList KWEND");
@@ -208,14 +208,14 @@ StatementList:
   StatementList SEPSEMICOLON {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> StatementList SEPSEMICOLON Statement");
-      stmt_block_add_statement ($<stmt>3, $4);
+      container_add_stmt (ast_as (stmt_container, $<stmt>3), $4);
       $$ = $<stmt>3;
     }
   |
   Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> Statement");
-      stmt_block_add_statement ($<stmt>0, $1);
+      container_add_stmt (ast_as (stmt_container, $<stmt>0), $1);
       $$ = $<stmt>0;
     }
 
@@ -251,7 +251,7 @@ DummyStatement:
   /*epsilon*/
     {
       log_printf (parser->log, ll_debug, "DummyStatement -> <eps>");
-      $$ = new_stmt_dummy ();
+      $$ = stmt_dummy_create (parser->ast);
     }
 
 %%
@@ -267,10 +267,19 @@ new_parser (lexer_t * lexer, int manage)
   ret->manage = manage;
   ret->result = NULL;
 
+  ret->ast = new_ast_state ();
+  if (ret->ast == NULL)
+    {
+      perror ("malloc");
+      free (ret);
+      return NULL;
+    }
+
   ret->log = new_logger ("parser");
   if (ret->log == NULL)
     {
       perror ("malloc");
+      delete_ast_state (ret->ast);
       free (ret);
       return NULL;
     }
@@ -299,7 +308,7 @@ parser (void * ptr)
     return NULL;
 }
 
-statement_t *
+statement *
 parser_parse (parser_t * _parser)
 {
   assert (_parser != NULL);

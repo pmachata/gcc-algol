@@ -6,7 +6,7 @@
 #ifndef _AL60L_SYMBOL_H_
 #define _AL60L_SYMBOL_H_
 
-#include "ast-fwd.h"
+#include "ast-tab.h"
 #include "type.h"
 #include "estring.h"
 
@@ -27,7 +27,7 @@ symbol_t * symbol (void * ptr)
 /// Assign a statement to a symbol.  stmt must be non-NULL.  Once a
 /// statement is assigned, it's not possible to assign other
 /// statement.
-void symbol_assign_stmt (symbol_t * symbol, statement_t * stmt);
+void symbol_assign_stmt (symbol_t * symbol, statement * stmt);
 
 /// Assign a type to a symbol.  type must be non-NULL.  It's not
 /// possible to reassign once assigned type.
@@ -40,7 +40,7 @@ estring_t const* symbol_name (symbol_t * symbol);
 type_t const* symbol_type (symbol_t * symbol);
 
 /// Query the symbol's assigned statement.
-statement_t const* symbol_stmt (symbol_t * symbol);
+statement const* symbol_stmt (symbol_t * symbol);
 
 
 #endif//_AL60L_SYMBOL_H_

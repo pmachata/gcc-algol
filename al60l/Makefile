@@ -20,7 +20,7 @@ FILES = cursor.c cursor.h\
 	lexer.l lexer.h lexer-test.c\
 	parser.y parser.h\
 	estring.c estring.h\
-	ast.c ast.h ast-fwd.h\
+	ast.tc\
 	symbol.c symbol.h\
 	type.c type.h\
 	label.c label.h\
@@ -82,47 +82,53 @@ check-estring: estring.o estring.c estring.h Makefile
 	rm -f ./estring-test
 
 
-ast.o: ast.c ast.h ast-fwd.h estring.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c ast.c -o ast.o
+ast-tab.c: ast.tc Makefile
+	treecc -o ast-tab.c -h ast-tab.h ast.tc
 
-check-ast: ast.o ast.c ast.h ast-fwd.h slist.o slist.h estring.o estring.h Makefile
+ast-tab.h: ast-tab.c Makefile
+	[ -f ./ast-tab.h ]
+
+ast.o: ast-tab.c ast-tab.h slist.h
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-tab.c -c -o ast.o
+
+check-ast: ast-tab.o slist.o logger.o util.o ast-test.c Makefile
 	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST ast.c ast.o estring.o slist.o -o ast-test
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-test.c ast-tab.o slist.o logger.o util.o -o ast-test
 	./ast-test
 	rm -f ./ast-test
 
 
-symbol.o: symbol.c symbol.h estring.h ast-fwd.h pd.h Makefile
+symbol.o: symbol.c symbol.h estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c symbol.c -o symbol.o
 
-check-symbol: symbol.o estring.o estring.h symbol.c symbol.h ast-fwd.h Makefile
+check-symbol: symbol.o estring.o estring.h symbol.c symbol.h Makefile
 	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST symbol.c symbol.o estring.o -o symbol-test
 	./symbol-test
 	rm -f ./symbol-test
 
 
-type.o: type.c type.h symbol.h ast-fwd.h pd.h Makefile
+type.o: type.c type.h symbol.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c -o type.o
 
-check-type: type.o type.c type.h ast-fwd.h Makefile
+check-type: type.o type.c type.h Makefile
 	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST type.c type.o -o type-test
 	./type-test
 	rm -f ./type-test
 
 
-label.o: label.c label.h estring.h ast-fwd.h pd.h Makefile
+label.o: label.c label.h estring.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c label.c -o label.o
 
-check-label: label.o estring.o estring.h label.c label.h ast-fwd.h Makefile
+check-label: label.o estring.o estring.h label.c label.h Makefile
 	@echo "============================================="
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST label.c label.o estring.o -o label-test
 	./label-test
 	rm -f ./label-test
 
 
-parser.o: parser-tab.c Makefile
+parser.o: parser-tab.c ast.o Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c parser-tab.c -o parser.o
 
 parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
@@ -157,19 +163,6 @@ check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
 		lexer-test.c lexer.o cursor.o logger.o util.o estring.o
 	./check-lexer
 	rm -f ./check-lexer
-
-
-ast-tab.c: ast.tc Makefile
-	treecc -o ast-tab.c -h ast-tab.h ast.tc
-
-ast-tab.h: ast-tab.c Makefile
-	[ -f ./ast-tab.h ]
-
-ast-tab.o: ast-tab.c ast-tab.h slist.h
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-tab.c -c -o ast-tab.o
-
-ast-new: ast-tab.o slist.o ast-test.c Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-test.c ast-tab.o slist.o -o ast-new
 
 
 al60l: parser-test

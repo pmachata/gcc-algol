@@ -1,32 +1,20 @@
 #include "ast-tab.h"
 #include <stdlib.h>
-
-void
-yynodefailed (YYNODESTATE * state)
-{
-  abort ();
-}
-
-char*
-yycurrfilename (YYNODESTATE * state)
-{
-  return "gothic-bold.net";
-}
-
-long
-yycurrlinenum (YYNODESTATE * state)
-{
-  return 4;
-}
+#include <assert.h>
 
 int
 main (void)
 {
-  YYNODESTATE ast;
-  slist_t * cmds = new_slist ();
-  slist_pushback (cmds, stmt_dummy_create (&ast));
-  slist_pushback (cmds, stmt_dummy_create (&ast));
-  statement * s = stmt_block_create (&ast, cmds);
-  dump_statement (s, stdout, 0);
+  ast_state_t * ast = new_ast_state ();
+  statement * c1 = stmt_block_create (ast);
+  assert (ast_as (stmt_block, c1));
+  assert (ast_as (stmt_container, c1));
+  assert (ast_as (statement, c1));
+  assert (!ast_as (stmt_dummy, c1));
+  container_add_stmt (ast_as (stmt_container, c1), stmt_dummy_create (ast));
+  container_add_stmt (ast_as (stmt_container, c1), stmt_dummy_create (ast));
+  statement * toplev = stmt_container_create (ast);
+  container_add_stmt (ast_as (stmt_container, toplev), c1);
+  statement_dump (toplev, stdout, 0);
   return 0;
 }

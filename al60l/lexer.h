@@ -7,7 +7,7 @@
 #define _AL60L_LEXER_H_
 
 //for references in parser-tab.h
-#include "ast.h"
+#include "ast-tab.h"
 #include "label.h"
 #include "slist.h"
 

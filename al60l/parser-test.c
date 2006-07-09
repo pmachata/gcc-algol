@@ -1,6 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
-#include "ast.h"
+#include "ast-tab.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
@@ -46,12 +46,12 @@ main(int argc, char ** argv)
   assert (parser (a_parser));
   assert (logger ((void*)parser_log (a_parser)));
 
-  statement_t * ast = parser_parse (a_parser);
-  assert (statement (ast));
+  statement * ast = parser_parse (a_parser);
+  assert (ast_isa (ast, statement));
 
   if (dump && ast)
     {
-      stmt_dump (ast, stdout);
+      statement_dump (ast, stdout, 0);
     }
 
   int errors =

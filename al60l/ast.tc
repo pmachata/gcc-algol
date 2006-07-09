@@ -5,17 +5,83 @@
 
 %option lang = "C"
 %option reentrant
+%option prefix = "ast_"
+%option state_type = "ast_state_t"
+%option no_track_lines
+
+// ------------------------------------
+//   HEADER FILE STUFF
+// ------------------------------------
 
 %decls %{
 #include <stdio.h>
 #include "slist.h"
 %}
 
-%{
-#include "ast-tab.h"
+%decls %end %{
+/// Allocate new AST state.  This state is used as an argument across
+/// AST calls.
+ast_state_t * new_ast_state (void)
+  MALLOC_LIKE;
+
+/// Destroy AST state.  This implements `free' semantics, so it's safe
+/// to pass NULL.
+void delete_ast_state (ast_state_t * state);
+
+/// Safe dynamic cast of NODE to CLASS.
+#define ast_as(CLASS, NODE) (ast_isa ((NODE), CLASS) ? ((CLASS*)(NODE)) : NULL)
 %}
 
+
+// ------------------------------------
+//   CODE FILE STUFF
+// ------------------------------------
+
 %{
+#include "ast-tab.h"
+#include "logger.h"
+#include <string.h>
+
+/// Rerturn padding apropriate for given level.
+static char const* padding (int level);
+%}
+
+%end %{
+/// The type used for ast_state_t with some extre internal fields.
+typedef struct ast_state_rep_t
+{
+  ast_state_t treecc_internal_state_data;
+  logger_t * logger;
+} ast_state_rep_t;
+
+void
+ast_nodefailed (ast_state_t * _state)
+{
+  ast_state_rep_t * state = (void*)_state;
+  log_printf (state->logger, ll_fatal_error, "out of memory during node allocation");
+}
+
+ast_state_t *
+new_ast_state (void)
+{
+  ast_state_rep_t * ret = malloc (sizeof (ast_state_rep_t));
+  memset (ret, 0, sizeof (ast_state_t));
+  ret->logger = new_logger ("ast");
+  return (void*)ret;
+}
+
+void
+delete_ast_state (ast_state_t * _state)
+{
+  ast_state_rep_t * state = (void*)_state;
+  if (state != NULL)
+    {
+      delete_logger (state->logger);
+      free (state);
+    }
+}
+
+
 char const*
 padding (int level)
 {
@@ -29,29 +95,48 @@ padding (int level)
     level = 300;
   return padding + 300 - level;
 }
+
 %}
 
+
+
+// ------------------------------------
+//   ROOT STATEMENT NODE
+// ------------------------------------
+
+/// Root AST node for statements.
 %node statement %abstract %typedef = {
 }
 
-%operation void dump_statement (statement * stmt, FILE * ofile, int level)
+/// Dump (i.e. rewrite from AST back to code) the tree to given file
+/// `ofile' with basic indentation of `level' spaces.
+%operation void statement_dump (statement* stmt, FILE * ofile, int level)
 
 
+
+// ------------------------------------
+//   DUMMY STATEMENT NODE
+// ------------------------------------
 
 %node stmt_dummy statement = {
 }
 
-dump_statement (stmt_dummy)
+statement_dump (stmt_dummy)
 {
   fprintf (ofile, "%s'comment' dummy ;\n", padding (level));
 }
 
 
+// ------------------------------------
+//   CONTAINER STATEMENT NODE
+// ------------------------------------
+
 %node stmt_container statement = {
-  slist_t * commands;
+  %nocreate slist_t * commands = { new_slist () };
 }
 
-%operation void add_command (stmt_container * block)
+/// Add new command into container.
+%operation void container_add_stmt (stmt_container * container, statement * stmt)
 
 %{
 void
@@ -59,29 +144,34 @@ private_dump_container (slist_t * commands, FILE * ofile, int level)
 {
   slist_it_t * it;
   for (it = slist_iter (commands); slist_it_has (it); slist_it_next (it))
-    dump_statement (slist_it_get (it), ofile, level + 1);
+    statement_dump (slist_it_get (it), ofile, level);
   delete_slist_it (it);
 }
 %}
 
-dump_statement (stmt_container)
+statement_dump (stmt_container)
 {
   private_dump_container (stmt->commands, ofile, level);
 }
 
-add_command (stmt_container)
+container_add_stmt (stmt_container)
 {
+  slist_pushback (container->commands, stmt);
 }
 
+
+// ------------------------------------
+//   BLOCK STATEMENT NODE
+// ------------------------------------
 
 %node stmt_block stmt_container = {
 }
 
-dump_statement (stmt_block)
+statement_dump (stmt_block)
 {
   fprintf (ofile, "%s'begin'\n", padding (level));
-  private_dump_container (stmt->commands, ofile, level);
-  fprintf (ofile, "%s'end'\n", padding (level));
+  private_dump_container (stmt->commands, ofile, level+1);
+  fprintf (ofile, "%s'end';\n", padding (level));
 }
 
 

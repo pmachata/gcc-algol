@@ -7,6 +7,7 @@
 
 #include "estring.h"
 #include "symbol.h"
+#include "type.h"
 #include <assert.h>
 
 static char const* private_symbol_signature = "symbol";
@@ -15,7 +16,7 @@ typedef struct struct_symbol_rep_t
 {
   char const* signature;
   estring_t * name;
-  statement_t * stmt;
+  statement * stmt;
   type_t const* type;
 } symbol_rep_t;
 
@@ -56,7 +57,7 @@ symbol (void * ptr)
 }
 
 void
-symbol_assign_stmt (symbol_t * _symbol, statement_t * stmt)
+symbol_assign_stmt (symbol_t * _symbol, statement * stmt)
 {
   assert (_symbol != NULL);
   symbol_rep_t * symbol = (void*)_symbol;
@@ -91,7 +92,7 @@ symbol_type (symbol_t * _symbol)
   return (void*)symbol->type;
 }
 
-statement_t const*
+statement const*
 symbol_stmt (symbol_t * _symbol)
 {
   assert (_symbol != NULL);
