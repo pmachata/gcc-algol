@@ -8,7 +8,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
-
+#include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -98,6 +98,59 @@ new_estring_from (char const* src)
   return ret;
 }
 
+int
+private_printf_to_string (estring_rep_t * dest, char const* fmt, va_list ap)
+{
+  private_estr_realloc (dest, 5 * strlen (fmt)); // a wild guess
+
+  while (1)
+    {
+      size_t len = dest->limit;
+      va_list aq;
+      va_copy(aq, ap);
+      int n = vsnprintf (dest->body, len, fmt, aq);
+      va_end(aq);
+
+      // If that worked, finalize and return the string.
+      if (n > -1 && n < len)
+	{
+	  dest->length = n;
+	  return 0;
+	}
+
+      // Else try again with more space.
+      // glibc 2.1: n is precisely what is needed
+      if (n > -1)
+	{
+	  if (private_estr_realloc (dest, n+1) != 0)
+	    return -1;
+	}
+      // glibc 2.0: n only signals failure
+      else
+	{
+	  if (private_estr_grow (dest) != 0)
+	    return -1;
+	}
+    }
+}
+
+estring_t *
+new_estring_fmt (char const* fmt, ...)
+{
+  // almost pure cut'n'paste from printf man page...
+  estring_rep_t * ret = (void*)new_estring ();
+  va_list ap;
+  va_start(ap, fmt);
+  int status = private_printf_to_string (ret, fmt, ap);
+  va_end(ap);
+  if (status != 0)
+    {
+      delete_estring ((void*)ret);
+      return NULL;
+    }
+  return (void*)ret;
+}
+
 estring_t *
 clone_estring (estring_t const* src)
 {
@@ -157,6 +210,20 @@ estr_assign (estring_t * dest, estring_t const* _src)
   assert (dest != NULL);
 
   return estr_assign_cstr (dest, estr_cstr (_src));
+}
+
+int
+estr_printf (estring_t * _dest, char const* fmt, ...)
+{
+  assert (_dest != NULL);
+  estring_rep_t * dest = (void*)_dest;
+
+  va_list ap;
+  va_start (ap, fmt);
+  int stat = private_printf_to_string (dest, fmt, ap);
+  va_end (ap);
+
+  return stat;
 }
 
 void
@@ -450,6 +517,25 @@ main (void)
       assert (estr_at (str5, estr_length (str5)) == EOF);
       delete_estring (str5);
     }
+
+
+  printf (" + formatting\n");
+  estring_t * s = new_estring_fmt ("%s %s%s", "ahoj", "svete", "!");
+  assert (estr_compare_cstr (s, "ahoj svete!") == 0);
+
+  estr_printf (s, "%sX%dX%sX%dX%s",
+	          "this is first string, whose length is above average",
+		  12345678,
+	          "this is second string, whose length is above average",
+		  87654321,
+		  "this is third string, whose length is above average");
+  assert (estr_compare_cstr (s,
+		  "this is first string, whose length is above averageX"
+		  "12345678X"
+		  "this is second string, whose length is above averageX"
+		  "87654321X"
+		  "this is third string, whose length is above average") == 0);
+  delete_estring (s);
 
   printf ("All passed.\n");
   return 0;

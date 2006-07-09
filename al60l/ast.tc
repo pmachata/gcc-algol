@@ -8,6 +8,7 @@
 %option prefix = "ast_"
 %option state_type = "ast_state_t"
 %option no_track_lines
+%option force
 
 // ------------------------------------
 //   HEADER FILE STUFF
@@ -16,6 +17,9 @@
 %decls %{
 #include <stdio.h>
 #include "slist.h"
+#include "estring.h"
+// include ast parts with -i, to avoid include loops
+#include "type.h"
 %}
 
 %decls %end %{
@@ -41,6 +45,7 @@ void delete_ast_state (ast_state_t * state);
 #include "ast-tab.h"
 #include "logger.h"
 #include <string.h>
+#include <assert.h>
 
 /// Rerturn padding apropriate for given level.
 static char const* padding (int level);
@@ -101,16 +106,115 @@ padding (int level)
 
 
 // ------------------------------------
+//   LABEL
+// ------------------------------------
+
+%node label %abstract %typedef = {
+}
+
+/// Return string representation of the label (for debugging and
+/// dumping) purposes.  Buffer `buf' may be NULL, in which case new
+/// buffer will be allocated, or it can be preallocated buffer, in
+/// which case it will be overwritten.  Return value is passed-in
+/// buffer, or newly allocated buffer it that was NULL.  NULL is
+/// returned if something goes wrong (usually allocation).
+%operation estring_t * label_str (label * self, estring_t * buf) = { NULL };
+
+/// Compare two labels.
+%operation int label_eq ([label * lhs], [label * rhs]) = {0}
+
+%node label_int label = {
+  int id;
+}
+
+label_str (label_int)
+{
+  if (buf == NULL)
+    return new_estring_fmt ("%d", self->id);
+  else
+    {
+      if (estr_printf (buf, "%d", self->id) != 0)
+	return NULL;
+      else
+	return buf;
+    }
+}
+
+%node label_id label = {
+  estring_t * id;
+}
+
+label_str (label_id)
+{
+  if (buf == NULL)
+    return clone_estring (self->id);
+  else
+    {
+       if (estr_assign (buf, self->id) != 0)
+	 return NULL;
+       else
+	 return buf;
+    }
+}
+
+
+label_eq (label_int, label_int)
+{
+  return lhs->id == rhs->id;
+}
+
+label_eq (label_id, label_id)
+{
+  return estr_compare (lhs->id, rhs->id) == 0;
+}
+
+
+label_eq (label_int, label_id),
+label_eq (label_id, label_int)
+{
+  return 0;
+}
+
+
+
+// ------------------------------------
+//   SYMBOL
+// ------------------------------------
+
+%node symbol %typedef = {
+  label * lbl;
+  %nocreate statement * stmt = { NULL };
+  %nocreate type_t const* type = { NULL };
+}
+
+%operation void symbol_set_type (symbol * self, type_t const* type)
+%operation void symbol_set_stmt (symbol * self, statement * stmt)
+
+symbol_set_type (symbol)
+{
+  assert (self->type == NULL);
+  self->type = type;
+}
+
+symbol_set_stmt (symbol)
+{
+  assert (self->stmt == NULL);
+  self->stmt = stmt;
+}
+
+
+// ------------------------------------
 //   ROOT STATEMENT NODE
 // ------------------------------------
 
 /// Root AST node for statements.
 %node statement %abstract %typedef = {
+  %nocreate stmt_container * parent = { NULL };
 }
 
 /// Dump (i.e. rewrite from AST back to code) the tree to given file
 /// `ofile' with basic indentation of `level' spaces.
-%operation void statement_dump (statement* stmt, FILE * ofile, int level)
+%operation void statement_dump (statement * self, FILE * ofile, int level)
 
 
 
@@ -123,7 +227,7 @@ padding (int level)
 
 statement_dump (stmt_dummy)
 {
-  fprintf (ofile, "%s'comment' dummy ;\n", padding (level));
+  fprintf (ofile, "%s;\n", padding (level));
 }
 
 
@@ -133,32 +237,104 @@ statement_dump (stmt_dummy)
 
 %node stmt_container statement = {
   %nocreate slist_t * commands = { new_slist () };
+  %nocreate slist_t * symtab = { new_slist () };
 }
 
 /// Add new command into container.
-%operation void container_add_stmt (stmt_container * container, statement * stmt)
+%operation void container_add_stmt (stmt_container * self, statement * stmt)
+
+/// Add given symbol to the container and return 0.  It there already
+/// is other symbol with the same name, do nothing and return -1.
+%operation int container_add_symbol (stmt_container * self, symbol * sym) = { 0 }
+
+/// Lookup given symbol in the container.
+%operation symbol * container_find_name ([stmt_container * self], label * lbl) = { NULL }
+
+/// Lookup given symbol in the container, and if it fails,
+/// recursively in all parental containers.
+%operation symbol * container_find_name_rec ([stmt_container * self], label * lbl) = { NULL }
+
 
 %{
 void
-private_dump_container (slist_t * commands, FILE * ofile, int level)
+private_dump_container (stmt_container * self, FILE * ofile, int level)
 {
-  slist_it_t * it;
-  for (it = slist_iter (commands); slist_it_has (it); slist_it_next (it))
-    statement_dump (slist_it_get (it), ofile, level);
+  estring_t * buf = new_estring ();
+  slist_it_t * it = slist_iter (self->commands);
+  for (;slist_it_has (it);)
+    {
+      statement * stmt = slist_it_get (it);
+
+      // look for any labels pointing to this command
+      slist_it_t * lt = slist_iter (self->symtab);
+      for (; slist_it_has (lt); slist_it_next (lt))
+	{
+	  symbol * sym = slist_it_get (lt);
+	  if (sym->type == type_label ()
+	      && sym->stmt == stmt)
+	    {
+	      label_str (sym->lbl, buf);
+	      fprintf (ofile, "%s%s:\n", padding (level), estr_cstr (buf));
+	    }
+	}
+      delete_slist_it (lt);
+
+      slist_it_next (it);
+
+      // dump the statement itself.  Don't dump it, if there are no
+      // more statements in container (i.e. `stmt' is last statement)
+      // and `stmt' is dummy statement.
+      if (slist_it_has (it) || !ast_isa (stmt, stmt_dummy))
+	statement_dump (stmt, ofile, level);
+      else
+	break;
+    }
   delete_slist_it (it);
+  delete_estring (buf);
 }
 %}
 
 statement_dump (stmt_container)
 {
-  private_dump_container (stmt->commands, ofile, level);
+  // container doesn't render 'begin'-'end' enclosing, thus not level+1
+  private_dump_container (self, ofile, level);
 }
 
 container_add_stmt (stmt_container)
 {
-  slist_pushback (container->commands, stmt);
+  slist_pushback (self->commands, stmt);
+  stmt->parent = self;
 }
 
+container_add_symbol (stmt_container)
+{
+  if (container_find_name (self, sym->lbl) != NULL)
+    return -1;
+
+  slist_pushback (self->symtab, sym);
+  return 0;
+}
+
+container_find_name (stmt_container)
+{
+  slist_it_t * it;
+  for (it = slist_iter (self->symtab); slist_it_has (it); slist_it_next (it))
+    {
+      symbol * sym = slist_it_get (it);
+      if (label_eq (sym->lbl, lbl))
+	return sym;
+    }
+  return NULL;
+}
+
+container_find_name_rec (stmt_container)
+{
+  symbol * sym = container_find_name (self, lbl);
+  if (sym == NULL && self->parent != NULL)
+    return container_find_name_rec (self->parent, lbl);
+  else
+    return NULL;
+}
 
 // ------------------------------------
 //   BLOCK STATEMENT NODE
@@ -170,7 +346,7 @@ container_add_stmt (stmt_container)
 statement_dump (stmt_block)
 {
   fprintf (ofile, "%s'begin'\n", padding (level));
-  private_dump_container (stmt->commands, ofile, level+1);
+  private_dump_container (ast_as (stmt_container, self), ofile, level+1);
   fprintf (ofile, "%s'end';\n", padding (level));
 }
 

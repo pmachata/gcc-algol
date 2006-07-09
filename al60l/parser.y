@@ -1,6 +1,5 @@
 %{
 #include "ast-tab.h"
-#include "label.h"
 #include "logger.h"
 #include "lexer.h"
 #include "parser.h"
@@ -37,6 +36,14 @@ yyerror (parser_rep_t * parser, const char *str)
   log_printf (parser->log, ll_error, "yyerror: %s", str);
 }
 
+void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
+
+/// Take all labels in `slist', make symbols from them, bind these
+/// symbols with command `target', and add them to symbol table of
+/// containing block `cont'.
+void private_add_labels_to_symtab (parser_rep_t * parser, stmt_container * cont,
+				   slist_t * slist, statement * target);
+
 /// $0 in statement parts is used for referring to containing block of
 /// given statement.  This auxiliary macro is used to do copying of
 /// containing block to $0 for rules that require it.  Typically, you
@@ -51,9 +58,13 @@ yyerror (parser_rep_t * parser, const char *str)
 %union {
   int un_i;
   float un_f;
-  statement * stmt;
+  estring_t * un_s;
+
   slist_t * lst;
-  label_t * lbl;
+
+  statement * stmt;
+  stmt_container * cont;
+  label * lbl;
 }
 
 %pure-parser
@@ -142,7 +153,7 @@ yyerror (parser_rep_t * parser, const char *str)
 %left AOPMUL AOPRDIV AOPIDIV
 %left AOPPOW
 
-%type <stmt> Program
+%type <cont> Program
 %type <stmt> DummyStatement
 %type <stmt> Block
 %type <stmt> BasicStatement
@@ -151,15 +162,19 @@ yyerror (parser_rep_t * parser, const char *str)
 %type <stmt> StatementList
 %type <lst> LabelList
 %type <lbl> Label
+%type <lbl> LabelIdentifier
 
 %%
 
 Program:
-  {$<stmt>$ = stmt_container_create (parser->ast);} LabelList Block SEPSEMICOLON EOFTOK
+  {$<cont>$ = ast_as (stmt_container, stmt_container_create (parser->ast));}
+  LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
-      container_add_stmt (ast_as (stmt_container, $<stmt>1), $<stmt>3);
-      parser->result = $<stmt>1;
+      private_dump_log_labels (parser, $2);
+      private_add_labels_to_symtab (parser, $<cont>1, $2, $3);
+      container_add_stmt ($<cont>1, $<stmt>3);
+      parser->result = ast_as (statement, $<cont>1);
       YYACCEPT;
     }
 
@@ -181,18 +196,22 @@ Label:
   LabelIdentifier SEPCOLON
     {
       log_printf (parser->log, ll_debug, "Label -> LabelIdentifier SEPCOLON");
-      $$ = new_label ();
+      $$ = $1;
     }
 
 LabelIdentifier:
   IDENTIFIER
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
+      estring_t * lit = clone_estring (lexer_get_tok_literal (parser->lexer));
+      $$ = label_id_create (parser->ast, lit);
     }
   |
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> LITINTEGER");
+      long lit = lexer_get_tok_integer (parser->lexer);
+      $$ = label_int_create (parser->ast, lit);
     }
 
 Block:
@@ -230,6 +249,8 @@ UnconditionalStatement:
   LabelList Block
     {
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
+      private_dump_log_labels (parser, $1);
+      private_add_labels_to_symtab (parser, $<cont>0, $1, $2);
       $$ = $2;
     }
   |
@@ -243,7 +264,8 @@ BasicStatement:
   LabelList DummyStatement
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
-      // TODO: use $0 to access symtab and add labels pointing to $2 there
+      private_dump_log_labels (parser, $1);
+      private_add_labels_to_symtab (parser, $<cont>0, $1, $2);
       $$ = $2;
     }
 
@@ -328,4 +350,36 @@ parser_log (parser_t * _parser)
   assert (_parser != NULL);
   parser_rep_t * parser = (void*)_parser;
   return parser->log;
+}
+
+void
+private_dump_log_labels (parser_rep_t * parser, slist_t * slist)
+{
+  slist_it_t * it = slist_iter (slist);
+  estring_t * lstr = new_estring ();
+  if (slist_it_has (it))
+    log_printf (parser->log, ll_debug, " this block has following labels:");
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      label_str (slist_it_get (it), lstr);
+      log_printf (parser->log, ll_debug, "  %s", estr_cstr (lstr));
+    }
+  delete_estring (lstr);
+  delete_slist_it (it);
+}
+
+void
+private_add_labels_to_symtab (parser_rep_t * parser, stmt_container * cont,
+			      slist_t * slist, statement * target)
+{
+  slist_it_t * it = slist_iter (slist);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      label * lbl = slist_it_get (it);
+      symbol * sym = symbol_create (parser->ast, lbl);
+      container_add_symbol (cont, sym);
+      symbol_set_stmt (sym, target);
+      symbol_set_type (sym, type_label ());
+    }
+  delete_slist_it (it);
 }

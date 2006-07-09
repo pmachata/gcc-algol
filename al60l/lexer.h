@@ -8,7 +8,6 @@
 
 //for references in parser-tab.h
 #include "ast-tab.h"
-#include "label.h"
 #include "slist.h"
 
 // direct includes

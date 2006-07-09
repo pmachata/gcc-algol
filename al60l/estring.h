@@ -36,6 +36,12 @@ estring_t * new_estring_from (char const* src)
      ARG_NONNULL(1)
      MALLOC_LIKE;
 
+/// Create new string by sprintfing according to format `fmt'.  See
+/// also estr_sprintf.
+estring_t * new_estring_fmt (char const* fmt, ...)
+     PRINTF_LIKE(1,2)
+     MALLOC_LIKE;
+
 /// Create a string as 1:1 copy of another string. Returns NULL if
 /// something fails.
 estring_t * clone_estring (estring_t const* src)
@@ -60,6 +66,14 @@ int estr_assign_cstr (estring_t * dest, char const* src)
 int estr_assign (estring_t * dest, estring_t const* src)
      ARG_NONNULL(1)
      ARG_NONNULL(2);
+
+/// Assign contents to string by sprintfing according to format `fmt'.
+/// Returns 0 on success or -1 if something failed.  In case of
+/// failure, the body might have been modified.
+int estr_printf (estring_t * dest, char const* fmt, ...)
+     ARG_NONNULL(1)
+     ARG_NONNULL(2)
+     PRINTF_LIKE(2,3);
 
 /// Clear a string - won't release memory, just truncates the string
 /// body.

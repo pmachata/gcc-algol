@@ -2,6 +2,7 @@ CC      := gcc
 #CC      := gcc-4.1-rh
 BISON   := bison
 FLEX    := flex
+TREECC  := treecc
 DEBUG   := -ggdb3 -Wall -fno-inline
 #DEBUG   := -Wall -DNDEBUG
 #PROFILE := -pg
@@ -21,7 +22,6 @@ FILES = cursor.c cursor.h\
 	parser.y parser.h\
 	estring.c estring.h\
 	ast.tc\
-	symbol.c symbol.h\
 	type.c type.h\
 	label.c label.h\
 	slist.c slist.h\
@@ -83,32 +83,23 @@ check-estring: estring.o estring.c estring.h Makefile
 
 
 ast-tab.c: ast.tc Makefile
-	treecc -o ast-tab.c -h ast-tab.h ast.tc
+	$(TREECC) -o ast-tab.c -h ast-tab.h ast.tc
 
-ast-tab.h: ast-tab.c Makefile
-	[ -f ./ast-tab.h ]
+ast-tab.h: ast.tc ast-tab.c Makefile
+	[ -f ast-tab.h ]
 
 ast.o: ast-tab.c ast-tab.h slist.h
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-tab.c -c -o ast.o
 
-check-ast: ast-tab.o slist.o logger.o util.o ast-test.c Makefile
+check-ast: ast-tab.o slist.o logger.o util.o estring.o type.o ast-test.c Makefile
 	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-test.c ast-tab.o slist.o logger.o util.o -o ast-test
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-test.c ast-tab.o slist.o logger.o \
+		util.o estring.o type.o -o ast-test
 	./ast-test
 	rm -f ./ast-test
 
 
-symbol.o: symbol.c symbol.h estring.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c symbol.c -o symbol.o
-
-check-symbol: symbol.o estring.o estring.h symbol.c symbol.h Makefile
-	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST symbol.c symbol.o estring.o -o symbol-test
-	./symbol-test
-	rm -f ./symbol-test
-
-
-type.o: type.c type.h symbol.h pd.h Makefile
+type.o: type.c type.h pd.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c -o type.o
 
 check-type: type.o type.c type.h Makefile
@@ -137,10 +128,10 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-parser-test: parser-test.c parser.o type.o label.o symbol.o ast.o logger.o\
+parser-test: parser-test.c parser.o type.o label.o ast.o logger.o\
  lexer.o cursor.o estring.o slist.o util.o parser.h lexer.h estring.h pd.h
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o parser-test \
-		parser-test.c parser.o type.o label.o symbol.o ast.o logger.o\
+		parser-test.c parser.o type.o label.o ast.o logger.o\
 		lexer.o cursor.o estring.o slist.o util.o
 
 check-parser: parser-test Makefile
@@ -181,7 +172,7 @@ clean:
 	rm -f *.o al60l
 
 check: check-util check-slist check-estring check-cursor check-logger \
- check-lexer check-type check-symbol check-label check-ast check-parser
+ check-lexer check-type check-label check-ast check-parser
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="
