@@ -7,9 +7,6 @@ DEBUG   := -ggdb3 -Wall -fno-inline
 #DEBUG   := -Wall -DNDEBUG
 #PROFILE := -pg
 CFLAGS  := -std=c99 -O0
-#-ftree-vectorize -m3dnow -mmmx -march=i686 -mtune=athlon-tbird
-#-fbranch-probabilities
-#-fprofile-arcs
 
 ARCHIVE_NAME = xmacha31.zip
 ARCHIVE_SUBDIR =
