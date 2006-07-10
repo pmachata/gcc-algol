@@ -41,7 +41,7 @@ void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
 /// Take all labels in `slist', make symbols from them, bind these
 /// symbols with command `target', and add them to symbol table of
 /// containing block `cont'.
-void private_add_labels_to_symtab (parser_rep_t * parser, stmt_container * cont,
+void private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
 				   slist_t * slist, statement * target);
 
 /// $0 in statement parts is used for referring to containing block of
@@ -63,7 +63,7 @@ void private_add_labels_to_symtab (parser_rep_t * parser, stmt_container * cont,
   slist_t * lst;
 
   statement * stmt;
-  stmt_container * cont;
+  container * cont;
   label * lbl;
 }
 
@@ -167,7 +167,7 @@ void private_add_labels_to_symtab (parser_rep_t * parser, stmt_container * cont,
 %%
 
 Program:
-  {$<cont>$ = ast_as (stmt_container, stmt_container_create (parser->ast));}
+  {$<cont>$ = ast_as (container, stmt_toplev_create (parser->ast));}
   LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
@@ -227,14 +227,14 @@ StatementList:
   StatementList SEPSEMICOLON {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> StatementList SEPSEMICOLON Statement");
-      container_add_stmt (ast_as (stmt_container, $<stmt>3), $4);
+      container_add_stmt (ast_as (container, $<stmt>3), $4);
       $$ = $<stmt>3;
     }
   |
   Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> Statement");
-      container_add_stmt (ast_as (stmt_container, $<stmt>0), $1);
+      container_add_stmt (ast_as (container, $<stmt>0), $1);
       $$ = $<stmt>0;
     }
 
@@ -369,7 +369,7 @@ private_dump_log_labels (parser_rep_t * parser, slist_t * slist)
 }
 
 void
-private_add_labels_to_symtab (parser_rep_t * parser, stmt_container * cont,
+private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
 			      slist_t * slist, statement * target)
 {
   slist_it_t * it = slist_iter (slist);

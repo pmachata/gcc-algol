@@ -209,7 +209,7 @@ symbol_set_stmt (symbol)
 
 /// Root AST node for statements.
 %node statement %abstract %typedef = {
-  %nocreate stmt_container * parent = { NULL };
+  %nocreate container * parent = { NULL };
 }
 
 /// Dump (i.e. rewrite from AST back to code) the tree to given file
@@ -232,32 +232,32 @@ statement_dump (stmt_dummy)
 
 
 // ------------------------------------
-//   CONTAINER STATEMENT NODE
+//   CONTAINER ROOT NODE
 // ------------------------------------
 
-%node stmt_container statement = {
+%node container statement %abstract = {
   %nocreate slist_t * commands = { new_slist () };
   %nocreate slist_t * symtab = { new_slist () };
 }
 
 /// Add new command into container.
-%operation void container_add_stmt (stmt_container * self, statement * stmt)
+%operation void container_add_stmt (container * self, statement * stmt)
 
 /// Add given symbol to the container and return 0.  It there already
 /// is other symbol with the same name, do nothing and return -1.
-%operation int container_add_symbol (stmt_container * self, symbol * sym) = { 0 }
+%operation int container_add_symbol (container * self, symbol * sym) = { 0 }
 
 /// Lookup given symbol in the container.
-%operation symbol * container_find_name ([stmt_container * self], label * lbl) = { NULL }
+%operation symbol * container_find_name ([container * self], label * lbl) = { NULL }
 
 /// Lookup given symbol in the container, and if it fails,
 /// recursively in all parental containers.
-%operation symbol * container_find_name_rec ([stmt_container * self], label * lbl) = { NULL }
+%operation symbol * container_find_name_rec ([container * self], label * lbl) = { NULL }
 
 
 %{
 void
-private_dump_container (stmt_container * self, FILE * ofile, int level)
+private_dump_container (container * self, FILE * ofile, int level)
 {
   estring_t * buf = new_estring ();
   slist_it_t * it = slist_iter (self->commands);
@@ -294,19 +294,19 @@ private_dump_container (stmt_container * self, FILE * ofile, int level)
 }
 %}
 
-statement_dump (stmt_container)
+statement_dump (container)
 {
   // container doesn't render 'begin'-'end' enclosing, thus not level+1
   private_dump_container (self, ofile, level);
 }
 
-container_add_stmt (stmt_container)
+container_add_stmt (container)
 {
   slist_pushback (self->commands, stmt);
   stmt->parent = self;
 }
 
-container_add_symbol (stmt_container)
+container_add_symbol (container)
 {
   if (container_find_name (self, sym->lbl) != NULL)
     return -1;
@@ -315,7 +315,7 @@ container_add_symbol (stmt_container)
   return 0;
 }
 
-container_find_name (stmt_container)
+container_find_name (container)
 {
   slist_it_t * it;
   for (it = slist_iter (self->symtab); slist_it_has (it); slist_it_next (it))
@@ -327,7 +327,7 @@ container_find_name (stmt_container)
   return NULL;
 }
 
-container_find_name_rec (stmt_container)
+container_find_name_rec (container)
 {
   symbol * sym = container_find_name (self, lbl);
   if (sym == NULL && self->parent != NULL)
@@ -340,14 +340,27 @@ container_find_name_rec (stmt_container)
 //   BLOCK STATEMENT NODE
 // ------------------------------------
 
-%node stmt_block stmt_container = {
+%node stmt_block container = {
 }
 
 statement_dump (stmt_block)
 {
   fprintf (ofile, "%s'begin'\n", padding (level));
-  private_dump_container (ast_as (stmt_container, self), ofile, level+1);
+  private_dump_container (ast_as (container, self), ofile, level+1);
   fprintf (ofile, "%s'end';\n", padding (level));
+}
+
+
+// ------------------------------------
+//   TOPLEV CONTAINER NODE
+// ------------------------------------
+
+%node stmt_toplev container = {
+}
+
+statement_dump (stmt_toplev)
+{
+  private_dump_container (ast_as (container, self), ofile, level);
 }
 
 
