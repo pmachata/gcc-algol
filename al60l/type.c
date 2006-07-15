@@ -22,6 +22,7 @@ typedef enum enum_type_kind_t
   t_procedure,
   t_label,
   t_array,
+  t_own,
   type_kind_t_count
 } type_kind_t;
 
@@ -139,6 +140,32 @@ type_array (type_t const* _host)
 }
 
 type_t const*
+type_own (type_t const* _host)
+{
+  assert (_host != NULL);
+  type_rep_t const* host = (void*)_host;
+  assert (host->kind != t_own);
+
+  type_rep_t * ret = private_alloc_type (t_own);
+  ret->host = host;
+
+  static type_rep_t const* types = NULL;
+  for (type_rep_t const* it = types;
+       it != NULL; it = it->link)
+    {
+      if (types_same ((void*)it, (void*)ret))
+	{
+	  private_delete_type (ret);
+	  return (void*)it;
+	}
+    }
+
+  ret->link = types;
+  types = ret;
+  return (void*)ret;
+}
+
+type_t const*
 type_proc (type_t const* return_type, ...)
 {
   return NULL;
@@ -151,6 +178,65 @@ type (void const* ptr)
     return ptr;
   else
     return NULL;
+}
+
+estring_t *
+type_str (type_t const* _type, estring_t * buf)
+{
+  assert (_type != NULL);
+  type_rep_t const* type = (void*)_type;
+
+  if (buf == NULL)
+    buf = new_estring ();
+
+  switch (type->kind) {
+  case t_unknown:
+    estr_assign_cstr (buf, "'unknown'");
+    return buf;
+
+  case t_any:
+    estr_assign_cstr (buf, "'any'");
+    return buf;
+
+  case t_int:
+    estr_assign_cstr (buf, "'integer'");
+    return buf;
+
+  case t_real:
+    estr_assign_cstr (buf, "'real'");
+    return buf;
+
+  case t_string:
+    estr_assign_cstr (buf, "'string'");
+    return buf;
+
+  case t_bool:
+    estr_assign_cstr (buf, "'Boolean'");
+    return buf;
+
+  case t_procedure:
+    estr_assign_cstr (buf, "<proc>-NYI");
+    return buf;
+
+  case t_label:
+    estr_assign_cstr (buf, "<label>");
+    return buf;
+
+  case t_array:
+    type_str ((type_t const*)type->host, buf);
+    estr_append_cstr (buf, " 'array'");
+    return buf;
+
+  case t_own:
+    type_str ((type_t const*)type->host, buf);
+    estr_prepend_cstr (buf, "'own' ");
+    return buf;
+
+  case type_kind_t_count:
+    ;
+  };
+  assert (!"should never get there!");
+  return NULL;
 }
 
 int

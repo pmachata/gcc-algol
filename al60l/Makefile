@@ -96,12 +96,12 @@ check-ast: ast-tab.o slist.o logger.o util.o estring.o type.o ast-test.c Makefil
 	rm -f ./ast-test
 
 
-type.o: type.c type.h pd.h Makefile
+type.o: type.c type.h pd.h estring.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c type.c -o type.o
 
-check-type: type.o type.c type.h Makefile
+check-type: type.o type.c type.h estring.h Makefile
 	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST type.c type.o -o type-test
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST type.c type.o estring.o -o type-test
 	./type-test
 	rm -f ./type-test
 
@@ -141,6 +141,8 @@ lexer.o: lexer-tab.c Makefile
 
 lexer-tab.c: lexer.l lexer.h parser-tab.h estring.h logger.h pd.h cursor.h Makefile
 	$(FLEX) -R -o lexer-tab.c --header-file=lexer-tab.h lexer.l
+	sed -i -e '1s/^/#define _POSIX_SOURCE\n/'\
+	       -e '/static void yyunput/s/;/__attribute__((unused));/' lexer-tab.c
 
 lexer-tab.h: lexer-tab.c
 	[ -f ./lexer-tab.h ]

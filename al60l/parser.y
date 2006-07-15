@@ -4,10 +4,12 @@
 #include "lexer.h"
 #include "parser.h"
 #include "slist.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 static char const* private_parser_signature = "parser";
 
@@ -19,6 +21,9 @@ typedef struct struct_parser_rep_t
   int manage;
   statement * result;
   ast_state_t * ast;
+
+  slist_t * blockstack;
+  container * block;
 } parser_rep_t;
 
 // call lexer
@@ -44,6 +49,9 @@ void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
 void private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
 				   slist_t * slist, statement * target);
 
+void private_open_block (parser_rep_t * parser, container * cont);
+container * private_close_block (parser_rep_t * parser);
+
 /// $0 in statement parts is used for referring to containing block of
 /// given statement.  This auxiliary macro is used to do copying of
 /// containing block to $0 for rules that require it.  Typically, you
@@ -65,6 +73,8 @@ void private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
   statement * stmt;
   container * cont;
   label * lbl;
+  symbol * sym;
+  type_t const* type;
 }
 
 %pure-parser
@@ -159,22 +169,26 @@ void private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
 %type <stmt> BasicStatement
 %type <stmt> UnconditionalStatement
 %type <stmt> Statement
-%type <stmt> StatementList
 %type <lst> LabelList
 %type <lbl> Label
 %type <lbl> LabelIdentifier
+%type <type> IntrinsicType
+%type <type> Type
+%type <lst> IdentifierList
 
 %%
 
 Program:
-  {$<cont>$ = ast_as (container, stmt_toplev_create (parser->ast));}
+  {private_open_block (parser, ast_as (container, stmt_toplev_create (parser->ast)));
+   log_printf (parser->log, ll_debug, "block=%p", parser->block);}
   LabelList Block SEPSEMICOLON EOFTOK
     {
+      log_printf (parser->log, ll_debug, "block=%p", parser->block);
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
       private_dump_log_labels (parser, $2);
-      private_add_labels_to_symtab (parser, $<cont>1, $2, $3);
-      container_add_stmt ($<cont>1, $<stmt>3);
-      parser->result = ast_as (statement, $<cont>1);
+      private_add_labels_to_symtab (parser, parser->block, $2, $3);
+      container_add_stmt (parser->block, $3);
+      parser->result = ast_as (statement, private_close_block (parser));
       YYACCEPT;
     }
 
@@ -215,27 +229,107 @@ LabelIdentifier:
     }
 
 Block:
-  KWBEGIN {$<stmt>$ = stmt_block_create (parser->ast);} StatementList KWEND
+  KWBEGIN
+  { private_open_block (parser, ast_as (container, stmt_block_create (parser->ast)));}
+  DeclarationsList StatementList
+  KWEND
     {
-      //allow DeclarationList after KWBEGIN
       log_printf (parser->log, ll_debug, "Block -> KWBEGIN DeclarationList StatementList KWEND");
-      $$ = $<stmt>2;
+      $$ = ast_as (statement, private_close_block (parser));
+    }
+
+DeclarationsList:
+  /*epsilon*/
+    {
+      log_printf (parser->log, ll_debug, "DeclarationList -> <eps>");
+    }
+  |
+  Declarations SEPSEMICOLON DeclarationsList
+    {
+      log_printf (parser->log, ll_debug, "DeclarationList -> Declaration DeclarationList");
+    }
+
+Declarations:
+  Type IdentifierList
+    {
+      slist_it_t * it;
+      for (it = slist_iter ($2); slist_it_has (it); slist_it_next (it))
+	{
+	  estring_t * id = estring (slist_it_get (it));
+	  label * lbl = label_id_create (parser->ast, id);
+	  symbol * sym = symbol_create (parser->ast, lbl);
+	  symbol_set_type (sym, $1);
+	  int conflict = container_add_symbol (parser->block, sym);
+	  if (conflict)
+	    log_printf (parser->log, ll_error, "Duplicate identifier `%s'.", estr_cstr (id));
+	}
+      delete_slist_it (it);
+    }
+
+Type:
+  IntrinsicType
+    {
+      log_printf (parser->log, ll_debug, "Type -> IntrinsicType");
+      $$ = $1;
+    }
+  |
+  KWOWN IntrinsicType
+    {
+      log_printf (parser->log, ll_debug, "Type -> KWOWN IntrinsicType");
+      $$ = type_own ($2);
+    }
+
+IntrinsicType:
+  KWBOOLEAN
+    {
+      log_printf (parser->log, ll_debug, "IntrinsicType -> KWBOOLEAN");
+      $$ = type_bool ();
+    }
+  |
+  KWINTEGER
+    {
+      log_printf (parser->log, ll_debug, "IntrinsicType -> KWINTEGER");
+      $$ = type_int ();
+    }
+  |
+  KWREAL
+    {
+      log_printf (parser->log, ll_debug, "IntrinsicType -> KWREAL");
+      $$ = type_real ();
+    }
+  |
+  KWSTRING
+    {
+      log_printf (parser->log, ll_debug, "IntrinsicType -> KWSTRING");
+      // @@TODO; note, this is invalid for local variables
+      $$ = type_string ();
+    }
+
+IdentifierList:
+  IDENTIFIER
+    {
+      $$ = new_slist ();
+      slist_pushfront ($$, clone_estring (lexer_get_tok_literal (parser->lexer)));
+    }
+  |
+  IdentifierList SEPCOMMA IDENTIFIER
+    {
+      slist_pushfront ($1, clone_estring (lexer_get_tok_literal (parser->lexer)));
+      $$ = $1;
     }
 
 StatementList:
   //SEPSEMICOLON StatementList {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
-  StatementList SEPSEMICOLON {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
+  StatementList SEPSEMICOLON Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> StatementList SEPSEMICOLON Statement");
-      container_add_stmt (ast_as (container, $<stmt>3), $4);
-      $$ = $<stmt>3;
+      container_add_stmt (parser->block, $3);
     }
   |
   Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> Statement");
-      container_add_stmt (ast_as (container, $<stmt>0), $1);
-      $$ = $<stmt>0;
+      container_add_stmt (parser->block, $1);
     }
 
 Statement:
@@ -250,7 +344,7 @@ UnconditionalStatement:
     {
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
       private_dump_log_labels (parser, $1);
-      private_add_labels_to_symtab (parser, $<cont>0, $1, $2);
+      private_add_labels_to_symtab (parser, parser->block, $1, $2);
       $$ = $2;
     }
   |
@@ -265,7 +359,7 @@ BasicStatement:
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
       private_dump_log_labels (parser, $1);
-      private_add_labels_to_symtab (parser, $<cont>0, $1, $2);
+      private_add_labels_to_symtab (parser, parser->block, $1, $2);
       $$ = $2;
     }
 
@@ -283,31 +377,25 @@ new_parser (lexer_t * lexer, int manage)
 {
   assert (lexer != NULL);
   parser_rep_t * ret = malloc (sizeof (parser_rep_t));
+  memset (ret, 0, sizeof (parser_rep_t));
 
-  ret->signature = private_parser_signature;
-  ret->lexer = lexer;
-  ret->manage = manage;
-  ret->result = NULL;
-
-  ret->ast = new_ast_state ();
-  if (ret->ast == NULL)
+  jmp_buf buf;
+  if (setjmp (buf) == 0)
     {
-      perror ("malloc");
-      free (ret);
+      ret->signature = private_parser_signature;
+      ret->lexer = lexer;
+      ret->manage = manage;
+      guard_ptr (buf, 1, ret->ast = new_ast_state ());
+      guard_ptr (buf, 1, ret->log = new_logger ("parser"));
+      log_set_filter (ret->log, ll_debug);
+      guard_ptr (buf, 1, ret->blockstack = new_slist ());
+      return (void*)ret;
+    }
+  else
+    {
+      delete_parser ((parser_t*)ret);
       return NULL;
     }
-
-  ret->log = new_logger ("parser");
-  if (ret->log == NULL)
-    {
-      perror ("malloc");
-      delete_ast_state (ret->ast);
-      free (ret);
-      return NULL;
-    }
-  log_set_filter (ret->log, ll_debug);
-
-  return (void*)ret;
 }
 
 void
@@ -316,7 +404,9 @@ delete_parser (parser_t * _parser)
   if (_parser != NULL)
     {
       parser_rep_t * parser = (void*)_parser;
+      delete_ast_state (parser->ast);
       delete_logger (parser->log);
+      delete_slist (parser->blockstack);
       free (parser);
     }
 }
@@ -382,4 +472,21 @@ private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
       symbol_set_type (sym, type_label ());
     }
   delete_slist_it (it);
+}
+
+void
+private_open_block (parser_rep_t * parser, container * cont)
+{
+  assert (cont != NULL);
+  slist_pushfront (parser->blockstack, parser->block);
+  parser->block = cont;
+}
+
+container *
+private_close_block (parser_rep_t * parser)
+{
+  assert (!slist_empty (parser->blockstack));
+  container * cont = parser->block;
+  parser->block = slist_popfront (parser->blockstack);
+  return cont;
 }

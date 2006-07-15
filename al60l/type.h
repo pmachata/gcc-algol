@@ -2,6 +2,7 @@
 #define _AL60L_TYPE_H_
 
 #include "pd.h"
+#include "estring.h"
 
 /// \file
 /// In this module, all type_<kind> procedures yield shared copies of
@@ -37,6 +38,9 @@ type_t const* type_label (void);
 /// Create a type representing array of given type.
 type_t const* type_array (type_t const* host);
 
+/// Create an `own' representation of given type.
+type_t const* type_own (type_t const* host);
+
 /// @@@FIXME.  This will be able to build procedure type from return
 /// type and types and names of parameters.  For the time being, there
 /// is a mere '...' where the real parameters will eventually go.
@@ -45,6 +49,14 @@ type_t const* type_proc (type_t const* return_type, ...);
 /// Convert void* to type, if it is type, or return NULL.
 type_t const* type (void const* ptr)
      ARG_NONNULL(1);
+
+/// Return string representation of the type (for debugging and
+/// dumping purposes).  Buffer `buf' may be NULL, in which case new
+/// buffer will be allocated, or it can be preallocated buffer, in
+/// which case it will be overwritten.  Return value is passed-in
+/// buffer, or newly allocated buffer it that was NULL.  NULL is
+/// returned if something goes wrong (usually allocation).
+estring_t * type_str (type_t const* type, estring_t * buf);
 
 
 /// Answers 1 or 0, depending on whether the two types are the same.

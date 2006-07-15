@@ -1,0 +1,15 @@
+'begin'
+ 'integer' a;
+ 'Boolean' b;
+ 'own' 'real' g;
+ 'own' 'integer' k;
+ 'begin'
+  'own' 'integer' h;
+  ;
+  'begin'
+   'integer' a;
+   ;
+  'end';
+  ;
+ 'end';
+'end';

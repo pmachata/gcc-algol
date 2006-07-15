@@ -47,11 +47,12 @@ main(int argc, char ** argv)
   assert (logger ((void*)parser_log (a_parser)));
 
   statement * ast = parser_parse (a_parser);
-  assert (ast_isa (ast, statement));
 
-  if (dump && ast)
+  if (ast)
     {
-      statement_dump (ast, stdout, 0);
+      assert (ast_isa (ast, statement));
+      if (dump)
+	statement_dump (ast, stdout, 0);
     }
 
   int errors =

@@ -16,5 +16,10 @@ main (void)
   statement * toplev = stmt_toplev_create (ast);
   container_add_stmt (ast_as (container, toplev), c1);
   statement_dump (toplev, stdout, 0);
+
+  label * l = label_int_create (ast, 4);
+  assert (ast_as (label, l));
+  assert (!ast_as (statement, l));
+  assert (!ast_as (symbol, l));
   return 0;
 }

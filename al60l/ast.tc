@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include "slist.h"
 #include "estring.h"
-// include ast parts with -i, to avoid include loops
 #include "type.h"
 %}
 
@@ -33,9 +32,12 @@ ast_state_t * new_ast_state (void)
 void delete_ast_state (ast_state_t * state);
 
 /// Safe dynamic cast of NODE to CLASS.
-#define ast_as(CLASS, NODE) (ast_isa ((NODE), CLASS) ? ((CLASS*)(NODE)) : NULL)
-%}
+#define ast_as(CLASS, NODE) ((CLASS*)ast_as__ ((NODE), ast_kindof(CLASS)))
 
+/// Do internal checking and see if kinds match.  Return NULL if they
+/// don't, otherwise return original `node' pointer.
+void * ast_as__ (void * node, int kind);
+%}
 
 // ------------------------------------
 //   CODE FILE STUFF
@@ -86,6 +88,15 @@ delete_ast_state (ast_state_t * _state)
     }
 }
 
+void *
+ast_as__ (void * node, int kind)
+{
+  if (ast_isa__ (node, kind))
+    return node;
+  else
+    return NULL;
+}
+
 
 char const*
 padding (int level)
@@ -113,7 +124,7 @@ padding (int level)
 }
 
 /// Return string representation of the label (for debugging and
-/// dumping) purposes.  Buffer `buf' may be NULL, in which case new
+/// dumping purposes).  Buffer `buf' may be NULL, in which case new
 /// buffer will be allocated, or it can be preallocated buffer, in
 /// which case it will be overwritten.  Return value is passed-in
 /// buffer, or newly allocated buffer it that was NULL.  NULL is
@@ -260,7 +271,24 @@ void
 private_dump_container (container * self, FILE * ofile, int level)
 {
   estring_t * buf = new_estring ();
-  slist_it_t * it = slist_iter (self->commands);
+
+  // dump all variables but labels
+  slist_it_t * it = slist_iter (self->symtab);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      symbol * sym = slist_it_get (it);
+      if (sym->type == type_label ())
+	continue;
+
+      type_str (sym->type, buf);
+      fprintf (ofile, "%s%s", padding (level), estr_cstr (buf));
+      label_str (sym->lbl, buf);
+      fprintf (ofile, " %s;\n", estr_cstr (buf));
+    }
+  delete_slist_it (it);
+
+  // dump all statemenets
+  it = slist_iter (self->commands);
   for (;slist_it_has (it);)
     {
       statement * stmt = slist_it_get (it);
@@ -290,6 +318,7 @@ private_dump_container (container * self, FILE * ofile, int level)
 	break;
     }
   delete_slist_it (it);
+
   delete_estring (buf);
 }
 %}
