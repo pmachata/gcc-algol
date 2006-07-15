@@ -75,8 +75,19 @@ int types_same (type_t const* lhs, type_t const* rhs);
 ///  any     ~~ unknown
 ///  unknown !~ unknown
 ///
+/// Other rules include `own' handling:
+///
+///  'own' X ~~ X;   X ~~ 'own' X
+///
 /// The relation 'matches' is commutative.  It's not transitive:
 /// unknown~~any, any~~any, any~~unknown, but unknown!~unknown.
 int types_match (type_t const* lhs, type_t const* rhs);
+
+/// Answer root type.  Root type is the type at the very end of
+/// hosting chain.  E.g. 'own array of array of int' has root type
+/// 'int'.  This may also be a procedure or structured type.  This
+/// procedure effectively strips any 'own' and 'array' garbage around
+/// the type.
+type_t const* type_get_root (type_t const* type);
 
 #endif//_AL60L_TYPE_H_

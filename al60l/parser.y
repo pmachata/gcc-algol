@@ -24,6 +24,8 @@ typedef struct struct_parser_rep_t
 
   slist_t * blockstack;
   container * block;
+
+  estring_t * tmp;
 } parser_rep_t;
 
 // call lexer
@@ -231,25 +233,25 @@ LabelIdentifier:
 Block:
   KWBEGIN
   { private_open_block (parser, ast_as (container, stmt_block_create (parser->ast)));}
-  DeclarationsList StatementList
+  BlockDeclarationsList StatementList
   KWEND
     {
-      log_printf (parser->log, ll_debug, "Block -> KWBEGIN DeclarationList StatementList KWEND");
+      log_printf (parser->log, ll_debug, "Block -> KWBEGIN BlockDeclarationList StatementList KWEND");
       $$ = ast_as (statement, private_close_block (parser));
     }
 
-DeclarationsList:
+BlockDeclarationsList:
   /*epsilon*/
     {
-      log_printf (parser->log, ll_debug, "DeclarationList -> <eps>");
+      log_printf (parser->log, ll_debug, "BlockDeclarationList -> <eps>");
     }
   |
-  Declarations SEPSEMICOLON DeclarationsList
+  BlockDeclarations SEPSEMICOLON BlockDeclarationsList
     {
-      log_printf (parser->log, ll_debug, "DeclarationList -> Declaration DeclarationList");
+      log_printf (parser->log, ll_debug, "BlockDeclarationList -> BlockDeclaration BlockDeclarationList");
     }
 
-Declarations:
+BlockDeclarations:
   Type IdentifierList
     {
       slist_it_t * it;
@@ -258,6 +260,18 @@ Declarations:
 	  estring_t * id = estring (slist_it_get (it));
 	  label * lbl = label_id_create (parser->ast, id);
 	  symbol * sym = symbol_create (parser->ast, lbl);
+
+	  // Classic algol only allows in this context:
+	  // ['own'] {'integer'|'real'|'Boolean'} ['array']
+	  type_t const* rt = type_get_root ($1);
+	  if (rt != type_int ()
+	      && rt != type_real ()
+	      && rt != type_bool ())
+	    log_printf (parser->log, ll_error,
+			"Type %s is invalid in this context.",
+			estr_cstr (type_str ($1, parser->tmp)));
+
+	  // Setup symbol and add to table.
 	  symbol_set_type (sym, $1);
 	  int conflict = container_add_symbol (parser->block, sym);
 	  if (conflict)
@@ -389,6 +403,7 @@ new_parser (lexer_t * lexer, int manage)
       guard_ptr (buf, 1, ret->log = new_logger ("parser"));
       log_set_filter (ret->log, ll_debug);
       guard_ptr (buf, 1, ret->blockstack = new_slist ());
+      guard_ptr (buf, 1, ret->tmp = new_estring ());
       return (void*)ret;
     }
   else
@@ -407,6 +422,7 @@ delete_parser (parser_t * _parser)
       delete_ast_state (parser->ast);
       delete_logger (parser->log);
       delete_slist (parser->blockstack);
+      delete_estring (parser->tmp);
       free (parser);
     }
 }

@@ -284,6 +284,16 @@ types_match (type_t const* _lhs, type_t const* _rhs)
       || rhs->kind == t_unknown)
     return 0;
 
+  // strip `own'
+  if (lhs->kind == t_own)
+    lhs = lhs->host;
+  if (rhs->kind == t_own)
+    rhs = rhs->host;
+  assert (lhs != NULL);
+  assert (lhs->kind != t_own);
+  assert (rhs != NULL);
+  assert (rhs->kind != t_own);
+
   // two arrays match, if their hosting types match
   if (lhs->kind == t_array
       && rhs->kind == t_array)
@@ -302,6 +312,21 @@ types_match (type_t const* _lhs, type_t const* _rhs)
   // see if it holds
   return types_same (_lhs, _rhs);
 }
+
+type_t const*
+type_get_root (type_t const* _type)
+{
+  assert (_type != NULL);
+  type_rep_t const* type = (void*)_type;
+
+  while (type->kind == t_array
+	 || type->kind == t_own)
+    type = type->host;
+
+  assert (type != NULL);
+  return (void*)type;
+}
+
 
 #else /* SELF_TEST */
 
@@ -537,6 +562,20 @@ main (void)
   assert (t8a != t9a);
   assert (!types_same (t8a, t9a));
   assert (types_match (t8a, t9a)); // match ANY
+
+  printf (" + own\n");
+  type_t const* tA1a = type_own (t8a);
+  type_t const* tA1b = type_own (type_int ());
+  type_t const* tA1c = type_own (type_array (type_int ()));
+  type_t const* tA1d = type_own (t81a);
+  assert (types_match (tA1a, t8a));
+  assert (types_match (tA1b, type_own (type_int ())));
+  assert (types_match (tA1c, type_own (type_array (type_int ()))));
+  assert (types_match (tA1d, type_own (t81a)));
+  assert (!types_same (tA1a, t8a));
+  assert (!types_same (tA1b, type_array (type_int ())));
+  assert (!types_same (tA1c, type_array (type_array (type_int ()))));
+  assert (!types_same (tA1d, t81a));
 
   printf ("All passed.\n");
   return 0;
