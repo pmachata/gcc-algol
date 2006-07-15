@@ -12,16 +12,19 @@ echo "---------- testing uncompilable ----------"
 for file in fail/$mask; do
 	if [ -e $file ]; then
 		echo $file;
-		result="1";
-		sfile=`echo $file | sed 's/\.[^/.]*$//'`".out"
-		$compiler $file >/dev/null 2>/dev/null && result="0"
+		$compiler $file &>/dev/null
+		result=$?
 
-		if [ "$result" != "1" ]; then
+		if   [ $result = "139" ]; then
+		        echo -e "\tunexpected: sigsegv";
+			all_ok=0;
+		elif [ $result = "134" ]; then
+		    	echo -e "\tunexpected: sigabrt";
+			all_ok=0;
+		elif [ $result != "1" ]; then
 			echo -e "\tunexpected: successfully compiled";
 			all_ok=0;
-		fi;
-
-		rm $sfile
+		fi
 	fi;
 done;
 

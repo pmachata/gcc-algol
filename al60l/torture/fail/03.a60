@@ -1,0 +1,4 @@
+'begin'
+ 'integer' a, b, c, d;
+ 'real' a;
+'end';
