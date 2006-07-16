@@ -148,7 +148,7 @@ container * private_close_block (parser_rep_t * parser);
 
 %token IDENTIFIER
 
-%token LITFLOAT
+%token LITREAL
 %token LITINTEGER
 %token LITSTRING
 
@@ -180,7 +180,7 @@ container * private_close_block (parser_rep_t * parser);
 %type <bnds> BoundsPair
 %type <lst> BoundsPairList
 %type <lst> OptBoundsPairList
-%type <expr> ArithExpression
+%type <expr> Expression
 
 %%
 
@@ -430,16 +430,51 @@ BoundsPairList:
     }
 
 BoundsPair:
-  ArithExpression SEPCOLON ArithExpression
+  Expression SEPCOLON Expression
     {
-      log_printf (parser->log, ll_debug, "BoundsPair -> LITINTEGER SEPCOLON LITINTEGER");
-      $$ = boundspair_create (parser->ast, $1, $3);
+      log_printf (parser->log, ll_debug, "BoundsPair -> Expression SEPCOLON Expression");
+
+      expression * lb = $1;
+      type_t const* lt = expr_type (lb);
+      if (!types_match (lt, type_int ()))
+	{
+	  log_printf (parser->log, ll_error,
+		      "invalid type `%s' in array bounds",
+		      estr_cstr (type_to_str (lt, parser->tmp)));
+	  lb = expr_int_create (parser->ast, 0);
+	}
+
+      expression * hb = $3;
+      type_t const* ht = expr_type (hb);
+      if (!types_match (ht, type_int ()))
+	{
+	  log_printf (parser->log, ll_error,
+		      "invalid type `%s' in array bounds",
+		      estr_cstr (type_to_str (ht, parser->tmp)));
+	  hb = expr_int_create (parser->ast, 0);
+	}
+
+      /* @TODO: if it's possible to evaluate expression in place, do
+	 it, and check that the boundaries make sense: A:B, A<B.  Also
+	 it will be necessary to generate runtime tests for that. */
+      $$ = boundspair_create (parser->ast, lb, hb);
     }
 
-ArithExpression:
+Expression:
   LITINTEGER
     {
       $$ = expr_int_create (parser->ast, lexer_get_tok_integer (parser->lexer));
+    }
+  |
+  LITREAL
+    {
+      $$ = expr_real_create (parser->ast, lexer_get_tok_real (parser->lexer));
+    }
+  |
+  LITSTRING
+    {
+      $$ = expr_string_create (
+	parser->ast, clone_estring (lexer_get_tok_literal (parser->lexer)));
     }
 
 StatementList:

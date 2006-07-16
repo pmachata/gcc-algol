@@ -1,0 +1,4 @@
+'begin'
+ 'integer' 'array' a[1.5:2];
+ 'integer' 'array' b[1:2.5];
+'end';

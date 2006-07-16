@@ -29,7 +29,7 @@ main(void)
       "; 'comment' blah blah blah blah ; 'Boolean'\n";
     token_kind_t tokens[] =
       {KWTRUE, KWFALSE, KWTRUE, KWFALSE,
-       LITINTEGER, LITFLOAT, LITFLOAT, LITFLOAT, LITFLOAT, LITFLOAT, LITFLOAT,
+       LITINTEGER, LITREAL, LITREAL, LITREAL, LITREAL, LITREAL, LITREAL,
        AOPADD, AOPSUB, AOPMUL, AOPRDIV, AOPIDIV, AOPPOW,
        KWBEGIN,
        KWEND, SEPSEMICOLON,
@@ -152,9 +152,9 @@ main(void)
       {
 	lexer_next_tok (a_lexer);
 	token_kind_t tk = lexer_get_tok_kind (a_lexer);
-	if (tk == LITFLOAT)
+	if (tk == LITREAL)
 	  {
-	    double val = lexer_get_tok_number (a_lexer);
+	    double val = lexer_get_tok_real (a_lexer);
 	    assert (val == *it);
 	  }
 	else

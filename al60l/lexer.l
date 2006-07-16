@@ -51,7 +51,7 @@ typedef struct struct_lexer_rep_t
 static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
 static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
 static token_kind_t private_lexer_got_eof_token (void * flex_scanner, char const* error);
-static token_kind_t private_lexer_got_number (void * flex_scanner);
+static token_kind_t private_lexer_got_real (void * flex_scanner);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
 
@@ -386,19 +386,19 @@ DIGIT		[0-9]
     private_lexer_got_number, where further parsing takes place.*/
 
 ([0-9]+"."[0-9]*) {
-  return private_lexer_got_number (yyscanner);
+  return private_lexer_got_real (yyscanner);
 }
 ([0-9]*"."[0-9]+) {
-  return private_lexer_got_number (yyscanner);
+  return private_lexer_got_real (yyscanner);
 }
 ([0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_number (yyscanner);
+  return private_lexer_got_real (yyscanner);
 }
 ([0-9]+"."[0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_number (yyscanner);
+  return private_lexer_got_real (yyscanner);
 }
 ([0-9]*"."[0-9]+("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_number (yyscanner);
+  return private_lexer_got_real (yyscanner);
 }
 
  /* Integer numbers, on the other hand, are quite simple.  We don't
@@ -589,7 +589,7 @@ private_lexer_got_eof_token (void * flex_scanner, char const* error)
 }
 
 static token_kind_t
-private_lexer_got_number (void * flex_scanner)
+private_lexer_got_real (void * flex_scanner)
 {
   lexer_rep_t * lexer = yyget_extra (flex_scanner);
   char * lit = yyget_text (flex_scanner);
@@ -615,7 +615,7 @@ private_lexer_got_number (void * flex_scanner)
 
   lexer->num_literal = value;
 
-  return private_lexer_got_token (flex_scanner, LITFLOAT);
+  return private_lexer_got_token (flex_scanner, LITREAL);
 }
 
 
@@ -666,11 +666,11 @@ lexer_get_tok_literal (lexer_t * _lexer)
 }
 
 double
-lexer_get_tok_number (lexer_t * _lexer)
+lexer_get_tok_real (lexer_t * _lexer)
 {
   assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
-  assert (lexer->current_tok == LITFLOAT || !"current token is not LITFLOAT");
+  assert (lexer->current_tok == LITREAL || !"current token is not LITREAL");
 
   return lexer->num_literal;
 }

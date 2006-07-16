@@ -82,7 +82,7 @@ int lexer_get_tok_lexeme_len (lexer_t * lexer)
 /// Answer the number associated with the previous token, if there is
 /// any.  The function checks whether last token held number at all,
 /// and an assertion fails if not.
-double lexer_get_tok_number (lexer_t * lexer)
+double lexer_get_tok_real (lexer_t * lexer)
      ARG_NONNULL(1);
 
 /// Similar to lexer_get_tok_number, but for integer values.

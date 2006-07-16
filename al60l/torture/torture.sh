@@ -23,7 +23,7 @@ for file in fail/$mask; do
 		elif [ $result = "134" ]; then
 		    	echo -e "\tunexpected: sigabrt";
 			all_ok=0;
-		elif [ $result != "1" ]; then
+		elif [ $result = "0" ]; then
 			echo -e "\tunexpected: successfully compiled";
 			all_ok=0;
 		fi
