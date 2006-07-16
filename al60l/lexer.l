@@ -457,6 +457,13 @@ DIGIT		[0-9]
 
 
  /* Unmatched characters */
+"'"[^\']+"'" {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  log_printf (lexer->log, ll_error,
+	      "probably misspelled keyword: %s",
+	      yyget_text (yyscanner));
+}
+
 . {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   cursor_move (lexer->cursor, 1);

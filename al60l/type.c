@@ -181,11 +181,8 @@ type (void const* ptr)
 }
 
 estring_t *
-type_str (type_t const* _type, estring_t * buf)
+private_dump_type (type_rep_t const* type, estring_t * buf, int canon)
 {
-  assert (_type != NULL);
-  type_rep_t const* type = (void*)_type;
-
   if (buf == NULL)
     buf = new_estring ();
 
@@ -223,12 +220,14 @@ type_str (type_t const* _type, estring_t * buf)
     return buf;
 
   case t_array:
-    type_str ((type_t const*)type->host, buf);
-    estr_append_cstr (buf, " 'array'");
+    private_dump_type (type->host, buf, canon);
+    if (canon == 0
+	|| type->host->kind != t_array)
+      estr_append_cstr (buf, " 'array'");
     return buf;
 
   case t_own:
-    type_str ((type_t const*)type->host, buf);
+    private_dump_type (type->host, buf, canon);
     estr_prepend_cstr (buf, "'own' ");
     return buf;
 
@@ -237,6 +236,31 @@ type_str (type_t const* _type, estring_t * buf)
   };
   assert (!"should never get there!");
   return NULL;
+}
+
+estring_t *
+type_str (type_t const* _type, estring_t * buf)
+{
+  assert (_type != NULL);
+  type_rep_t const* type = (void*)_type;
+  return private_dump_type (type, buf, 0);
+}
+
+estring_t *
+type_str_canon (type_t const* _type, estring_t * buf)
+{
+  assert (_type != NULL);
+  type_rep_t const* type = (void*)_type;
+  return private_dump_type (type, buf, 1);
+}
+
+
+int
+type_is_own (type_t const* _type)
+{
+  assert (_type != NULL);
+  type_rep_t const* type = (void*)_type;
+  return type->kind == t_own;
 }
 
 int

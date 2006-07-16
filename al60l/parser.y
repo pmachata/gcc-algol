@@ -24,7 +24,6 @@ typedef struct struct_parser_rep_t
 
   slist_t * blockstack;
   container * block;
-
   estring_t * tmp;
 } parser_rep_t;
 
@@ -66,17 +65,14 @@ container * private_close_block (parser_rep_t * parser);
 %}
 
 %union {
-  int un_i;
-  float un_f;
-  estring_t * un_s;
-
+  int flag;
   slist_t * lst;
-
   statement * stmt;
   container * cont;
   label * lbl;
   symbol * sym;
   type_t const* type;
+  boundspair * bnds;
 }
 
 %pure-parser
@@ -174,18 +170,23 @@ container * private_close_block (parser_rep_t * parser);
 %type <lst> LabelList
 %type <lbl> Label
 %type <lbl> LabelIdentifier
+%type <sym> Identifier
 %type <type> IntrinsicType
+%type <type> OptIntrinsicType
 %type <type> Type
 %type <lst> IdentifierList
+%type <flag> OptOwn
+%type <bnds> BoundsPair
+%type <lst> BoundsPairList
+%type <lst> OptBoundsPairList
+%type <flag> ArithExpression /*oh well, hack...*/
 
 %%
 
 Program:
-  {private_open_block (parser, ast_as (container, stmt_toplev_create (parser->ast)));
-   log_printf (parser->log, ll_debug, "block=%p", parser->block);}
+  {private_open_block (parser, ast_as (container, stmt_toplev_create (parser->ast)));}
   LabelList Block SEPSEMICOLON EOFTOK
     {
-      log_printf (parser->log, ll_debug, "block=%p", parser->block);
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
       private_dump_log_labels (parser, $2);
       private_add_labels_to_symtab (parser, parser->block, $2, $3);
@@ -230,6 +231,17 @@ LabelIdentifier:
       $$ = label_int_create (parser->ast, lit);
     }
 
+Identifier:
+  IDENTIFIER
+    {
+      log_printf (parser->log, ll_debug, "Identifier -> IDENTIFIER");
+      estring_t * lit = lexer_get_tok_literal (parser->lexer);
+      label * lbl = label_id_create (parser->ast, clone_estring (lit));
+      symbol * sym = symbol_create (parser->ast, lbl);
+      $$ = sym;
+    }
+
+
 Block:
   KWBEGIN
   { private_open_block (parser, ast_as (container, stmt_block_create (parser->ast)));}
@@ -257,9 +269,7 @@ BlockDeclarations:
       slist_it_t * it;
       for (it = slist_iter ($2); slist_it_has (it); slist_it_next (it))
 	{
-	  estring_t * id = estring (slist_it_get (it));
-	  label * lbl = label_id_create (parser->ast, id);
-	  symbol * sym = symbol_create (parser->ast, lbl);
+	  symbol * sym = ast_as (symbol, slist_it_get (it));
 
 	  // Classic algol only allows in this context:
 	  // ['own'] {'integer'|'real'|'Boolean'} ['array']
@@ -271,26 +281,79 @@ BlockDeclarations:
 			"Type %s is invalid in this context.",
 			estr_cstr (type_str ($1, parser->tmp)));
 
+	  // If it was array, see if identifier has dimensions and
+	  // mangle `rt' to reflect number of dimensions.  Note that
+	  // 'own' doesn't influence matching.
+	  if (types_match ($1, type_array (type_any ())))
+	    {
+	      if (sym->arr_bd_list == NULL)
+		log_printf (parser->log, ll_error,
+			    "Identifier `%s' needs array bounds.",
+			    estr_cstr (label_str (sym->lbl, parser->tmp)));
+	      else
+		{
+		  assert (!slist_empty (sym->arr_bd_list));
+		  slist_it_t * jt = slist_iter (sym->arr_bd_list);
+		  while (slist_it_has (jt))
+		    {
+		      rt = type_array (rt);
+		      slist_it_next (jt);
+		    }
+		  delete_slist_it (jt);
+		}
+	    }
+
+	  // If original type is `own', make also this type `own'.
+	  if (type_is_own ($1))
+	    rt = type_own (rt);
+
 	  // Setup symbol and add to table.
-	  symbol_set_type (sym, $1);
+	  symbol_set_type (sym, rt);
 	  int conflict = container_add_symbol (parser->block, sym);
 	  if (conflict)
-	    log_printf (parser->log, ll_error, "Duplicate identifier `%s'.", estr_cstr (id));
+	    log_printf (parser->log, ll_error,
+			"Duplicate identifier `%s'.",
+			estr_cstr (label_str (sym->lbl, parser->tmp)));
 	}
       delete_slist_it (it);
     }
 
 Type:
-  IntrinsicType
+  OptOwn IntrinsicType
     {
-      log_printf (parser->log, ll_debug, "Type -> IntrinsicType");
-      $$ = $1;
+      log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
+      if ($1)
+	$$ = type_own ($2);
+      else
+	$$ = $2;
     }
   |
-  KWOWN IntrinsicType
+  OptOwn OptIntrinsicType KWARRAY
     {
-      log_printf (parser->log, ll_debug, "Type -> KWOWN IntrinsicType");
-      $$ = type_own ($2);
+      log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
+      // if no type declarator is given the type 'real' is understood
+      type_t const* t = type_array (($2 != NULL) ? $2 : type_real ());
+      if ($1)
+	t = type_own (t);
+      $$ = t;
+    }
+
+OptOwn:
+  /*eps*/ { $$ = 0; }
+  |
+  KWOWN   { $$ = 1; }
+
+OptIntrinsicType:
+  /* epsilon */
+    {
+      log_printf (parser->log, ll_debug, "OptIntrinsicType -> epsilon");
+      $$ = NULL;
+    }
+  |
+  IntrinsicType
+    {
+      log_printf (parser->log, ll_debug, "OptIntrinsicType -> IntrinsicType");
+      $$ = $1;
     }
 
 IntrinsicType:
@@ -320,20 +383,65 @@ IntrinsicType:
     }
 
 IdentifierList:
-  IDENTIFIER
+  Identifier OptBoundsPairList
     {
+      log_printf (parser->log, ll_debug, "IdentifierList -> Identifier OptBoundsPairList");
       $$ = new_slist ();
-      slist_pushfront ($$, clone_estring (lexer_get_tok_literal (parser->lexer)));
+      $1->arr_bd_list = $2;
+      slist_pushfront ($$, $1);
     }
   |
-  IdentifierList SEPCOMMA IDENTIFIER
+  IdentifierList SEPCOMMA Identifier OptBoundsPairList
     {
-      slist_pushfront ($1, clone_estring (lexer_get_tok_literal (parser->lexer)));
+      log_printf (parser->log, ll_debug,
+		  "IdentifierList -> IdentifierList SEPCOMMA Identifier OptBoundsPairList");
+      $3->arr_bd_list = $4;
+      slist_pushfront ($1, $3);
       $$ = $1;
     }
 
+OptBoundsPairList:
+  /* epsilon */
+    {
+      log_printf (parser->log, ll_debug, "OptBoundsPairList -> epsilon");
+      $$ = NULL;
+    }
+  |
+  SEPLBRACK BoundsPairList SEPRBRACK
+    {
+      log_printf (parser->log, ll_debug, "OptBoundsPairList -> SEPRBRACK BoundsPairList SEPRBRACK");
+      $$ = $2;
+    }
+
+BoundsPairList:
+  BoundsPair
+    {
+      log_printf (parser->log, ll_debug, "BoundsPairList -> BoundsPair");
+      $$ = new_slist ();
+      slist_pushback ($$, $1);
+    }
+  |
+  BoundsPairList SEPCOMMA BoundsPair
+    {
+      log_printf (parser->log, ll_debug, "BoundsPairList -> BoundsPairList SEPCOMMA BoundsPair");
+      slist_pushback ($1, $3);
+      $$ = $1;
+    }
+
+BoundsPair:
+  ArithExpression SEPCOLON ArithExpression
+    {
+      log_printf (parser->log, ll_debug, "BoundsPair -> LITINTEGER SEPCOLON LITINTEGER");
+      $$ = boundspair_create (parser->ast, $1, $3);
+    }
+
+ArithExpression:
+  LITINTEGER
+    {
+      $$ = lexer_get_tok_integer (parser->lexer);
+    }
+
 StatementList:
-  //SEPSEMICOLON StatementList {COPY_BLOCK($<stmt>$, $<stmt>0);} Statement
   StatementList SEPSEMICOLON Statement
     {
       log_printf (parser->log, ll_debug, "StatementList -> StatementList SEPSEMICOLON Statement");
@@ -506,3 +614,11 @@ private_close_block (parser_rep_t * parser)
   parser->block = slist_popfront (parser->blockstack);
   return cont;
 }
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */

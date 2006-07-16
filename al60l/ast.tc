@@ -192,10 +192,17 @@ label_eq (label_id, label_int)
 //   SYMBOL
 // ------------------------------------
 
+%node boundspair %typedef = {
+  // @TODO: replace with expressions when the support lands
+  int lobound;
+  int hibound;
+}
+
 %node symbol %typedef = {
   label * lbl;
   %nocreate statement * stmt = { NULL };
   %nocreate type_t const* type = { NULL };
+  %nocreate slist_t * arr_bd_list = { new_slist () };
 }
 
 %operation void symbol_set_type (symbol * self, type_t const* type)
@@ -203,13 +210,11 @@ label_eq (label_id, label_int)
 
 symbol_set_type (symbol)
 {
-  assert (self->type == NULL);
   self->type = type;
 }
 
 symbol_set_stmt (symbol)
 {
-  assert (self->stmt == NULL);
   self->stmt = stmt;
 }
 
@@ -280,10 +285,28 @@ private_dump_container (container * self, FILE * ofile, int level)
       if (sym->type == type_label ())
 	continue;
 
-      type_str (sym->type, buf);
+      type_str_canon (sym->type, buf);
       fprintf (ofile, "%s%s", padding (level), estr_cstr (buf));
       label_str (sym->lbl, buf);
-      fprintf (ofile, " %s;\n", estr_cstr (buf));
+      fprintf (ofile, " %s", estr_cstr (buf));
+      if (sym->arr_bd_list != NULL
+	  && !slist_empty (sym->arr_bd_list))
+	{
+	  fprintf (ofile, "[");
+	  slist_it_t * jt = slist_iter (sym->arr_bd_list);
+	  while (1)
+	    {
+	      boundspair * bp = slist_it_get (jt);
+	      fprintf (ofile, "%d:%d", bp->lobound, bp->hibound);
+	      slist_it_next (jt);
+	      if (slist_it_has (jt))
+		fprintf (ofile, ",");
+	      else
+		break;
+	    }
+	  fprintf (ofile, "]");
+	}
+      fprintf (ofile, ";\n");
     }
   delete_slist_it (it);
 

@@ -1,0 +1,3 @@
+'begin'
+ 'integer' 'array' a[5];
+'end';
