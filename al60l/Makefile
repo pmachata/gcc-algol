@@ -20,7 +20,6 @@ FILES = cursor.c cursor.h\
 	estring.c estring.h\
 	ast.tc label.tc statement.tc symbol.tc expression.tc\
 	type.c type.h\
-	label.c label.h\
 	slist.c slist.h\
 	Makefile
 
