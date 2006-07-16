@@ -1,0 +1,35 @@
+// ------------------------------------
+//   ROOT EXPRESSION NODE
+// ------------------------------------
+
+%node expression %abstract %typedef = {
+}
+
+/// Dump the expression to string.  Returns 'buf', or allocated buffer
+/// if 'buf' was NULL.  Contents of non-NULL 'buf' is overwritten.
+%operation estring_t * expr_to_str (expression * self, estring_t * buf) = { NULL }
+
+
+
+// ------------------------------------
+//   INTEGER NUMBER NODE
+// ------------------------------------
+
+%node expr_int expression = {
+  int value;
+}
+
+expr_to_str (expr_int)
+{
+  if (buf == NULL)
+    buf = new_estring ();
+  estr_printf (buf, "%d", self->value);
+  return buf;
+}
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */

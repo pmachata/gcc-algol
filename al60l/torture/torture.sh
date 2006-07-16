@@ -7,6 +7,8 @@ dumper="$compiler -d"
 interpreter="false"
 mask='*.a60'
 
+rm -f core core.*
+
 echo "---------- testing uncompilable ----------"
 
 for file in fail/$mask; do

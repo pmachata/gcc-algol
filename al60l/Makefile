@@ -18,7 +18,7 @@ FILES = cursor.c cursor.h\
 	lexer.l lexer.h lexer-test.c\
 	parser.y parser.h\
 	estring.c estring.h\
-	ast.tc\
+	ast.tc label.tc statement.tc symbol.tc expression.tc\
 	type.c type.h\
 	label.c label.h\
 	slist.c slist.h\
@@ -79,10 +79,10 @@ check-estring: estring.o estring.c estring.h Makefile
 	rm -f ./estring-test
 
 
-ast-tab.c: ast.tc Makefile
+ast-tab.c: ast.tc label.tc statement.tc symbol.tc expression.tc Makefile
 	$(TREECC) -o ast-tab.c -h ast-tab.h ast.tc
 
-ast-tab.h: ast.tc ast-tab.c Makefile
+ast-tab.h: ast.tc label.tc statement.tc symbol.tc expression.tc ast-tab.c Makefile
 	[ -f ast-tab.h ]
 
 ast.o: ast-tab.c ast-tab.h slist.h
@@ -106,16 +106,6 @@ check-type: type.o type.c type.h estring.h Makefile
 	rm -f ./type-test
 
 
-label.o: label.c label.h estring.h pd.h Makefile
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c label.c -o label.o
-
-check-label: label.o estring.o estring.h label.c label.h Makefile
-	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -DSELF_TEST label.c label.o estring.o -o label-test
-	./label-test
-	rm -f ./label-test
-
-
 parser.o: parser-tab.c ast.o Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c parser-tab.c -o parser.o
 
@@ -125,10 +115,10 @@ parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
 
-parser-test: parser-test.c parser.o type.o label.o ast.o logger.o\
+parser-test: parser-test.c parser.o type.o ast.o logger.o\
  lexer.o cursor.o estring.o slist.o util.o parser.h lexer.h estring.h pd.h
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o parser-test \
-		parser-test.c parser.o type.o label.o ast.o logger.o\
+		parser-test.c parser.o type.o ast.o logger.o\
 		lexer.o cursor.o estring.o slist.o util.o
 
 check-parser: parser-test Makefile
@@ -171,7 +161,7 @@ clean:
 	rm -f *.o al60l
 
 check: check-util check-slist check-estring check-cursor check-logger \
- check-lexer check-type check-label check-ast check-parser
+ check-lexer check-type check-ast check-parser
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="

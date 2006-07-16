@@ -1,0 +1,77 @@
+// ------------------------------------
+//   LABEL
+// ------------------------------------
+
+%node label %abstract %typedef = {
+}
+
+/// Return string representation of the label (for debugging and
+/// dumping purposes).  Buffer `buf' may be NULL, in which case new
+/// buffer will be allocated, or it can be preallocated buffer, in
+/// which case it will be overwritten.  Return value is passed-in
+/// buffer, or newly allocated buffer it that was NULL.  NULL is
+/// returned if something goes wrong (usually allocation).
+%operation estring_t * label_to_str (label * self, estring_t * buf) = { NULL };
+
+/// Compare two labels.
+%operation int label_eq ([label * lhs], [label * rhs]) = {0}
+
+%node label_int label = {
+  int id;
+}
+
+label_to_str (label_int)
+{
+  if (buf == NULL)
+    return new_estring_fmt ("%d", self->id);
+  else
+    {
+      if (estr_printf (buf, "%d", self->id) != 0)
+	return NULL;
+      else
+	return buf;
+    }
+}
+
+%node label_id label = {
+  estring_t * id;
+}
+
+label_to_str (label_id)
+{
+  if (buf == NULL)
+    return clone_estring (self->id);
+  else
+    {
+       if (estr_assign (buf, self->id) != 0)
+	 return NULL;
+       else
+	 return buf;
+    }
+}
+
+
+label_eq (label_int, label_int)
+{
+  return lhs->id == rhs->id;
+}
+
+label_eq (label_id, label_id)
+{
+  return estr_compare (lhs->id, rhs->id) == 0;
+}
+
+
+label_eq (label_int, label_id),
+label_eq (label_id, label_int)
+{
+  return 0;
+}
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */

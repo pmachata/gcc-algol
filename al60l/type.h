@@ -59,12 +59,12 @@ int type_is_own (type_t const* type);
 /// which case it will be overwritten.  Return value is passed-in
 /// buffer, or newly allocated buffer it that was NULL.  NULL is
 /// returned if something goes wrong (usually allocation).
-estring_t * type_str (type_t const* type, estring_t * buf);
+estring_t * type_to_str (type_t const* type, estring_t * buf);
 
 /// Like type_str, but for canonical dumps.  It collapses series of
 /// arrays into one array: 'int array' instead of 'int array array
 /// array' for three dimensional array.
-estring_t * type_str_canon (type_t const* type, estring_t * buf);
+estring_t * type_to_str_canon (type_t const* type, estring_t * buf);
 
 
 /// Answers 1 or 0, depending on whether the two types are the same.

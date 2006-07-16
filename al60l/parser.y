@@ -73,6 +73,7 @@ container * private_close_block (parser_rep_t * parser);
   symbol * sym;
   type_t const* type;
   boundspair * bnds;
+  expression * expr;
 }
 
 %pure-parser
@@ -179,7 +180,7 @@ container * private_close_block (parser_rep_t * parser);
 %type <bnds> BoundsPair
 %type <lst> BoundsPairList
 %type <lst> OptBoundsPairList
-%type <flag> ArithExpression /*oh well, hack...*/
+%type <expr> ArithExpression
 
 %%
 
@@ -279,7 +280,7 @@ BlockDeclarations:
 	      && rt != type_bool ())
 	    log_printf (parser->log, ll_error,
 			"Type %s is invalid in this context.",
-			estr_cstr (type_str ($1, parser->tmp)));
+			estr_cstr (type_to_str ($1, parser->tmp)));
 
 	  // If it was array, see if identifier has dimensions and
 	  // mangle `rt' to reflect number of dimensions.  Note that
@@ -289,7 +290,7 @@ BlockDeclarations:
 	      if (sym->arr_bd_list == NULL)
 		log_printf (parser->log, ll_error,
 			    "Identifier `%s' needs array bounds.",
-			    estr_cstr (label_str (sym->lbl, parser->tmp)));
+			    estr_cstr (label_to_str (sym->lbl, parser->tmp)));
 	      else
 		{
 		  assert (!slist_empty (sym->arr_bd_list));
@@ -313,7 +314,7 @@ BlockDeclarations:
 	  if (conflict)
 	    log_printf (parser->log, ll_error,
 			"Duplicate identifier `%s'.",
-			estr_cstr (label_str (sym->lbl, parser->tmp)));
+			estr_cstr (label_to_str (sym->lbl, parser->tmp)));
 	}
       delete_slist_it (it);
     }
@@ -438,7 +439,7 @@ BoundsPair:
 ArithExpression:
   LITINTEGER
     {
-      $$ = lexer_get_tok_integer (parser->lexer);
+      $$ = expr_int_create (parser->ast, lexer_get_tok_integer (parser->lexer));
     }
 
 StatementList:
@@ -575,7 +576,7 @@ private_dump_log_labels (parser_rep_t * parser, slist_t * slist)
     log_printf (parser->log, ll_debug, " this block has following labels:");
   for (; slist_it_has (it); slist_it_next (it))
     {
-      label_str (slist_it_get (it), lstr);
+      label_to_str (slist_it_get (it), lstr);
       log_printf (parser->log, ll_debug, "  %s", estr_cstr (lstr));
     }
   delete_estring (lstr);

@@ -239,7 +239,7 @@ private_dump_type (type_rep_t const* type, estring_t * buf, int canon)
 }
 
 estring_t *
-type_str (type_t const* _type, estring_t * buf)
+type_to_str (type_t const* _type, estring_t * buf)
 {
   assert (_type != NULL);
   type_rep_t const* type = (void*)_type;
@@ -247,7 +247,7 @@ type_str (type_t const* _type, estring_t * buf)
 }
 
 estring_t *
-type_str_canon (type_t const* _type, estring_t * buf)
+type_to_str_canon (type_t const* _type, estring_t * buf)
 {
   assert (_type != NULL);
   type_rep_t const* type = (void*)_type;
