@@ -14,8 +14,20 @@
   %nocreate slist_t * arr_bd_list = { new_slist () };
 }
 
+/// Dump a symbol to a buffer.  If buffer is NULL, new buffer is
+/// created.  Return value is passed-in, or created buffer.
+%operation estring_t * symbol_to_str (symbol * self, estring_t * buf) = {NULL}
+
+/// Set the type of the symbol.
 %operation void symbol_set_type (symbol * self, type_t const* type)
+
+/// Set the statement associated with the symbol.
 %operation void symbol_set_stmt (symbol * self, statement * stmt)
+
+symbol_to_str (symbol)
+{
+  return label_to_str (self->lbl, buf);
+}
 
 symbol_set_type (symbol)
 {
@@ -26,3 +38,10 @@ symbol_set_stmt (symbol)
 {
   self->stmt = stmt;
 }
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */

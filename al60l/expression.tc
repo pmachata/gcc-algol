@@ -82,6 +82,27 @@ expr_type (expr_string)
   return type_string ();
 }
 
+
+
+
+// ------------------------------------
+//   IDENTIFIER NODE
+// ------------------------------------
+
+%node expr_idref expression = {
+  symbol * sym;
+}
+
+expr_to_str (expr_idref)
+{
+  return symbol_to_str (self->sym, buf);
+}
+
+expr_type (expr_idref)
+{
+  return self->sym->type;
+}
+
 /*
  * Local Variables:
  * mode: c

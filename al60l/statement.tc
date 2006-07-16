@@ -27,6 +27,44 @@ statement_dump (stmt_dummy)
 
 
 // ------------------------------------
+//   ASSIGNMENT STATEMENT NODE
+// ------------------------------------
+
+%node stmt_assign statement = {
+  %nocreate expression * rhs = { NULL };
+  %nocreate slist_t * lhss = { new_slist () };
+}
+
+%operation void stmt_assign_set_rhs (stmt_assign * self, expression * expr);
+%operation void stmt_assign_add_lhs (stmt_assign * self, expression * expr);
+
+statement_dump (stmt_assign)
+{
+  slist_it_t * it = slist_iter (self->lhss);
+  estring_t * buf = new_estring ();
+  fprintf (ofile, "%s", padding (level));
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      expression * expr = slist_it_get (it);
+      fprintf (ofile, "%s := ", estr_cstr (expr_to_str (expr, buf)));
+    }
+  fprintf (ofile, "%s\n", estr_cstr (expr_to_str (self->rhs, buf)));
+  delete_estring (buf);
+  delete_slist_it (it);
+}
+
+stmt_assign_set_rhs (stmt_assign)
+{
+  self->rhs = expr;
+}
+
+stmt_assign_add_lhs (stmt_assign)
+{
+  slist_pushback (self->lhss, expr);
+}
+
+
+// ------------------------------------
 //   CONTAINER ROOT NODE
 // ------------------------------------
 
@@ -42,11 +80,11 @@ statement_dump (stmt_dummy)
 /// is other symbol with the same name, do nothing and return -1.
 %operation int container_add_symbol (container * self, symbol * sym) = { 0 }
 
-/// Lookup given symbol in the container.
+/// Lookup given symbol in the container.  Return NULL if not found.
 %operation symbol * container_find_name ([container * self], label * lbl) = { NULL }
 
-/// Lookup given symbol in the container, and if it fails,
-/// recursively in all parental containers.
+/// Lookup given symbol in the container, and if it fails, recursively
+/// in all parental containers.  Return NULL if not found.
 %operation symbol * container_find_name_rec ([container * self], label * lbl) = { NULL }
 
 
@@ -167,7 +205,7 @@ container_find_name_rec (container)
   if (sym == NULL && self->parent != NULL)
     return container_find_name_rec (self->parent, lbl);
   else
-    return NULL;
+    return sym;
 }
 
 // ------------------------------------

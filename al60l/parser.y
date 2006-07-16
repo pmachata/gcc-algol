@@ -152,6 +152,8 @@ container * private_close_block (parser_rep_t * parser);
 %token LITINTEGER
 %token LITSTRING
 
+%token BOGUS
+
 %left LOPEQ
 %left LOPIMP
 %left LOPOR
@@ -163,24 +165,28 @@ container * private_close_block (parser_rep_t * parser);
 %left AOPPOW
 
 %type <cont> Program
-%type <stmt> DummyStatement
-%type <stmt> Block
-%type <stmt> BasicStatement
-%type <stmt> UnconditionalStatement
-%type <stmt> Statement
 %type <lst> LabelList
 %type <lbl> Label
 %type <lbl> LabelIdentifier
 %type <sym> Identifier
-%type <type> IntrinsicType
-%type <type> OptIntrinsicType
+%type <stmt> Block
+//%type <> BlockDeclarationsList
+//%type <> BlockDeclarations
 %type <type> Type
-%type <lst> IdentifierList
 %type <flag> OptOwn
-%type <bnds> BoundsPair
-%type <lst> BoundsPairList
+%type <type> OptIntrinsicType
+%type <type> IntrinsicType
+%type <lst> IdentifierList
 %type <lst> OptBoundsPairList
+%type <lst> BoundsPairList
+%type <bnds> BoundsPair
 %type <expr> Expression
+//%type <> StatementList
+%type <stmt> Statement
+%type <stmt> UnconditionalStatement
+%type <stmt> BasicStatement
+%type <lst> LeftPartList
+%type <expr> LeftPart
 
 %%
 
@@ -463,18 +469,38 @@ BoundsPair:
 Expression:
   LITINTEGER
     {
+      log_printf (parser->log, ll_debug, "Expression -> LITINTEGER");
       $$ = expr_int_create (parser->ast, lexer_get_tok_integer (parser->lexer));
     }
   |
   LITREAL
     {
+      log_printf (parser->log, ll_debug, "Expression -> LITREAL");
       $$ = expr_real_create (parser->ast, lexer_get_tok_real (parser->lexer));
     }
   |
   LITSTRING
     {
+      log_printf (parser->log, ll_debug, "Expression -> LITSTRING");
       $$ = expr_string_create (
 	parser->ast, clone_estring (lexer_get_tok_literal (parser->lexer)));
+    }
+  |
+  Identifier
+    {
+      log_printf (parser->log, ll_debug, "Expression -> Identifier");
+      symbol * sym = container_find_name_rec (parser->block, $1->lbl);
+      if (sym == NULL)
+	{
+	  log_printf (parser->log, ll_error, "unknown symbol named `%s'",
+		      estr_cstr (label_to_str ($1->lbl, parser->tmp)));
+	  int was_there = container_add_symbol (parser->block, $1);
+	  assert (!was_there);
+	  sym = container_find_name (parser->block, $1->lbl);
+	}
+      assert (sym != NULL);
+
+      $$ = expr_idref_create (parser->ast, sym);
     }
 
 StatementList:
@@ -500,32 +526,55 @@ Statement:
 UnconditionalStatement:
   LabelList Block
     {
-      log_printf (parser->log, ll_debug, "UnconditionalStatement -> CompoundStatement");
+      log_printf (parser->log, ll_debug, "UnconditionalStatement -> LabelList Block");
       private_dump_log_labels (parser, $1);
       private_add_labels_to_symtab (parser, parser->block, $1, $2);
       $$ = $2;
     }
   |
-  BasicStatement
+  LabelList BasicStatement
     {
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> BasicStatement");
-      $$ = $1;
-    }
-
-BasicStatement:
-  LabelList DummyStatement
-    {
-      log_printf (parser->log, ll_debug, "BasicStatement -> LabelList DummyStatement");
-      private_dump_log_labels (parser, $1);
       private_add_labels_to_symtab (parser, parser->block, $1, $2);
       $$ = $2;
     }
 
-DummyStatement:
-  /*epsilon*/
+BasicStatement:
+  /* eps */
     {
-      log_printf (parser->log, ll_debug, "DummyStatement -> <eps>");
+      log_printf (parser->log, ll_debug, "BasicStatement -> LabelList");
       $$ = stmt_dummy_create (parser->ast);
+    }
+  |
+  LeftPartList Expression
+    {
+      log_printf (parser->log, ll_debug, "BasicStatement -> LabelList LeftPartList Expression");
+
+      $$ = stmt_assign_create (parser->ast);
+      slist_it_t * it = slist_iter ($1);
+      for (; slist_it_has (it); slist_it_next (it))
+	stmt_assign_add_lhs (ast_as (stmt_assign, $$), slist_it_get (it));
+      delete_slist_it (it);
+      stmt_assign_set_rhs (ast_as (stmt_assign, $$), $2);
+    }
+
+LeftPartList:
+  LeftPart
+    {
+      $$ = new_slist ();
+      slist_pushback ($$, $1);
+    }
+  |
+  LeftPartList LeftPart
+    {
+      slist_pushback ($1, $2);
+      $$ = $1;
+    }
+
+LeftPart:
+  Expression SEPASSIGN
+    {
+      $$ = $1;
     }
 
 %%

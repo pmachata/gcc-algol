@@ -109,7 +109,7 @@ parser.o: parser-tab.c ast.o Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c parser-tab.c -o parser.o
 
 parser-tab.c: parser.y parser.h lexer.h logger.h pd.h cursor.h Makefile
-	$(BISON) -o parser-tab.c -d parser.y
+	$(BISON) -t -v -o parser-tab.c -d parser.y
 
 parser-tab.h: parser-tab.c
 	[ -f ./parser-tab.h ]
