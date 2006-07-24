@@ -1,0 +1,7 @@
+'begin'
+ 'integer' a;
+ 'integer' b;
+ p:
+ q:
+ a := b := 5
+'end';
