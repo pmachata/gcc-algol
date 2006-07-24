@@ -52,13 +52,12 @@ lexer_t * lexer (void * ptr)
      ARG_NONNULL(1);
 
 
-/// Get a new token.  In contrast to the rest of interfaces, this
-/// modifies internal state instead of returning new object of type
-/// token.  Token kind and lexeme are stored into the passed-in lexer
-/// and can be requested later by lexer_get_token_kind and
-/// lexer_get_token_lexeme.
-void lexer_next_tok (lexer_t * lexer)
-     ARG_NONNULL(1);
+/// Fetch new token with given lexer, and optionally store any
+/// token-related info into val.  Should a token return string values,
+/// val->slit will be initialized with new_estring.  You can pick this
+/// estring and use it further without cloning, a new one is created
+/// each time.
+int lexer_tok (lexer_t * lexer, YYSTYPE * val);
 
 /// Answer the kind of last token
 token_kind_t lexer_get_tok_kind (lexer_t * lexer)
@@ -68,25 +67,8 @@ token_kind_t lexer_get_tok_kind (lexer_t * lexer)
 char const* lexer_get_tok_lexeme (lexer_t * lexer)
      ARG_NONNULL(1);
 
-/// Answer the contents of LITSTRING token.  Returned value has to be
-/// cloned if it is to be used further, as lexer will rewrite it at
-/// next iteration.  The function checks whether last token held
-/// string at all, and an assertion fails if not.
-estring_t * lexer_get_tok_literal (lexer_t * lexer)
-     ARG_NONNULL(1);
-
 /// Answer the length of last lexeme.
 int lexer_get_tok_lexeme_len (lexer_t * lexer)
-     ARG_NONNULL(1);
-
-/// Answer the number associated with the previous token, if there is
-/// any.  The function checks whether last token held number at all,
-/// and an assertion fails if not.
-double lexer_get_tok_real (lexer_t * lexer)
-     ARG_NONNULL(1);
-
-/// Similar to lexer_get_tok_number, but for integer values.
-long lexer_get_tok_integer (lexer_t * lexer)
      ARG_NONNULL(1);
 
 /// Controls what logging messages get printed.  `Messages' controls

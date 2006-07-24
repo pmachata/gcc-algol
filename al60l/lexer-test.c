@@ -7,6 +7,8 @@
 int
 main(void)
 {
+  YYSTYPE val;
+
   printf (" + simple tokens\n");
   {
     int filedes[2] = {};
@@ -43,14 +45,12 @@ main(void)
 
     for (token_kind_t * it = tokens; *it != -1; ++it)
       {
-	lexer_next_tok (a_lexer);
-	int tok = lexer_get_tok_kind (a_lexer);
+	token_kind_t tok = lexer_tok (a_lexer, &val);
 	assert (tok == *it);
       }
 
     delete_lexer (a_lexer);
   }
-
 
   printf (" + strings and identifiers\n");
   {
@@ -101,13 +101,12 @@ main(void)
     token_kind_t * itk = tokens;
     for (; *it != NULL; ++it, ++itk)
       {
-	lexer_next_tok (a_lexer);
-	token_kind_t tk = lexer_get_tok_kind (a_lexer);
+	token_kind_t tk = lexer_tok (a_lexer, &val);
 	assert (tk == *itk);
 	if (tk == LITSTRING
 	    || tk == IDENTIFIER)
 	  {
-	    estring_t * lit = lexer_get_tok_literal (a_lexer);
+	    estring_t * lit = val.slit;
 	    assert (estr_compare_cstr (lit, *it) == 0);
 	  }
 	else
@@ -119,7 +118,6 @@ main(void)
 
     delete_lexer (a_lexer);
   }
-
 
   printf (" + floating numbers\n");
   {
@@ -150,13 +148,9 @@ main(void)
 
     for (double * it = numbers; !isnan (*it); ++it)
       {
-	lexer_next_tok (a_lexer);
-	token_kind_t tk = lexer_get_tok_kind (a_lexer);
+	token_kind_t tk = lexer_tok (a_lexer, &val);
 	if (tk == LITREAL)
-	  {
-	    double val = lexer_get_tok_real (a_lexer);
-	    assert (val == *it);
-	  }
+	  assert (val.dlit == *it);
 	else
 	  {
 	    assert (tk == EOFTOK);
@@ -166,7 +160,6 @@ main(void)
 
     delete_lexer (a_lexer);
   }
-
 
   printf (" + integer numbers\n");
   {
@@ -193,13 +186,9 @@ main(void)
 
     for (long * it = numbers; *it != 0; ++it)
       {
-	lexer_next_tok (a_lexer);
-	token_kind_t tk = lexer_get_tok_kind (a_lexer);
+	token_kind_t tk = lexer_tok (a_lexer, &val);
 	if (tk == LITINTEGER)
-	  {
-	    long val = lexer_get_tok_integer (a_lexer);
-	    assert (val == *it);
-	  }
+	  assert (val.ilit == *it);
 	else
 	  {
 	    assert (tk == EOFTOK);

@@ -123,25 +123,27 @@ parser-test: parser-test.c parser.o type.o ast.o logger.o\
 check-parser: parser-test Makefile
 	@echo "============================================="
 	cd torture && ./torture.sh
+	rm -f ./parser-test
 
 
 lexer.o: lexer-tab.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -c lexer-tab.c -o lexer.o
 
 lexer-tab.c: lexer.l lexer.h parser-tab.h estring.h logger.h pd.h cursor.h Makefile
-	$(FLEX) -R -o lexer-tab.c --header-file=lexer-tab.h lexer.l
-	sed -i -e '1s/^/#define _POSIX_SOURCE\n/'\
-	       -e '/static void yyunput/s/;/__attribute__((unused));/' lexer-tab.c
+	$(FLEX) -R --never-interactive -o lexer-tab.c --header-file=lexer-tab.h lexer.l
+	sed -i -e '/static void yyunput/s/;/__attribute__((unused));/' lexer-tab.c
 
 lexer-tab.h: lexer-tab.c
 	[ -f ./lexer-tab.h ]
 
-check-lexer: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
-	@echo "============================================="
-	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o check-lexer \
+lexer-test: lexer-test.c logger.o lexer.o cursor.o lexer.h pd.h Makefile
+	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) -std=gnu99 -o lexer-test \
 		lexer-test.c lexer.o cursor.o logger.o util.o estring.o
-	./check-lexer
-	rm -f ./check-lexer
+
+check-lexer: lexer-test Makefile
+	@echo "============================================="
+	./lexer-test
+	rm -f ./lexer-test
 
 
 al60l: parser-test

@@ -32,26 +32,12 @@ typedef struct struct_lexer_rep_t
   int managed;
   token_kind_t current_tok;
   token_kind_t prev_tok;
-
-  /// Usually the lexeme is stored using flex-internal buffers.
-  /// However in certain cases, this does not work very well.
-  /// E.g. strings have to be parsed in a special way, processing one
-  /// character at a time.  That data are stored in `literal' field.
-  estring_t * str_literal;
-
-  /// Similar to str_literal, except that it's used for numerical
-  /// values.
-  double num_literal;
-
-  /// Similar to str_literal, except that it's used for integer
-  /// values.
-  long int_literal;
 } lexer_rep_t;
 
 static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
 static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
 static token_kind_t private_lexer_got_eof_token (void * flex_scanner, char const* error);
-static token_kind_t private_lexer_got_real (void * flex_scanner);
+static token_kind_t private_lexer_got_real (void * flex_scanner, YYSTYPE * val);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
 
@@ -63,6 +49,9 @@ static int string_level = 0;
 %x END_COMMENT
 
 %option noyywrap
+%option bison-bridge
+%option nodefault
+%option case-insensitive
 
  /* primitives (RRA60 2.1, 2.2) */
 SPACE		[ \t\n\r\v\f]
@@ -72,73 +61,73 @@ DIGIT		[0-9]
 %%
 
  /* arithmetic operators */
-"'PLUS'"|"'plus'"|"+" {
+"'plus'"|"+" {
   return private_lexer_got_token (yyscanner, AOPADD);
 }
 
-"'MINUS'"|"'minus'"|"-" {
+"'minus'"|"-" {
   return private_lexer_got_token (yyscanner, AOPSUB);
 }
 
-"'TIMES'"|"'times'"|"*" {
+"'times'"|"*" {
   return private_lexer_got_token (yyscanner, AOPMUL);
 }
 
-"'OVER'"|"'over'"|"/" {
+"'over'"|"/" {
   return private_lexer_got_token (yyscanner, AOPRDIV);
 }
 
-"'DIV'"|"'div'" {
+"'div'" {
   return private_lexer_got_token (yyscanner, AOPIDIV);
 }
 
-"'POW'"|"'pow'"|"**" {
+"'pow'"|"**" {
   return private_lexer_got_token (yyscanner, AOPPOW);
 }
 
  /* relational operators */
-"'LESS'"|"'less'"|"<"  {
+"'less'"|"<"  {
   return private_lexer_got_token (yyscanner, ROPLT);
 }
 
-"'NOTGREATER'"|"'notgreater'"|"<=" {
+"'notgreater'"|"<=" {
   return private_lexer_got_token (yyscanner, ROPLTE);
 }
 
-"'EQUAL'"|"'equal'"|"="  {
+"'equal'"|"="  {
   return private_lexer_got_token (yyscanner, ROPEQ);
 }
 
-"'NOTLESS'"|"'notless'"|">=" {
+"'notless'"|">=" {
   return private_lexer_got_token (yyscanner, ROPGTE);
 }
 
-"'GREATER'"|"'greater'"|">"  {
+"'greater'"|">"  {
   return private_lexer_got_token (yyscanner, ROPGT);
 }
 
-"'NOTEQUAL'"|"'notequal'"|"!=" {
+"'notequal'"|"!=" {
   return private_lexer_got_token (yyscanner, ROPNEQ);
 }
 
  /* logical operators */
-"'EQUIV'"|"'equiv'"|"==" {
+"'equiv'"|"==" {
   return private_lexer_got_token (yyscanner, LOPEQ);
 }
 
-"'IMPL'"|"'impl'"|"=>" {
+"'impl'"|"=>" {
   return private_lexer_got_token (yyscanner, LOPIMP);
 }
 
-"'OR'"|"'or'"|"||" {
+"'or'"|"||" {
   return private_lexer_got_token (yyscanner, LOPOR);
 }
 
-"'AND'"|"'and'"|"&&" {
+"'and'"|"&&" {
   return private_lexer_got_token (yyscanner, LOPAND);
 }
 
-"'NOT'"|"'not'"|"!"  {
+"'not'"|"!"  {
   return private_lexer_got_token (yyscanner, LOPNOT);
 }
 
@@ -177,96 +166,96 @@ DIGIT		[0-9]
 }
 
  /* keywords */
-"'ARRAY'"|"'array'" {
+"'array'" {
   return private_lexer_got_token (yyscanner, KWARRAY);
 }
 
-"'BEGIN'"|"'begin'" {
+"'begin'" {
   return private_lexer_got_token (yyscanner, KWBEGIN);
 }
 
-"'BOOLEAN'"|"'Boolean'"|"'boolean'" {
+"'boolean'" {
   return private_lexer_got_token (yyscanner, KWBOOLEAN);
 }
 
-"'DO'"|"'do'" {
+"'do'" {
   return private_lexer_got_token (yyscanner, KWDO);
 }
 
-"'ELSE'"|"'else'" {
+"'else'" {
   return private_lexer_got_token (yyscanner, KWELSE);
 }
 
-"'END'"|"'end'" {
+"'end'" {
   BEGIN END_COMMENT;
   return private_lexer_got_token (yyscanner, KWEND);
 }
 
-"'FALSE'"|"'false'" {
+"'false'" {
   return private_lexer_got_token (yyscanner, KWFALSE);
 }
 
-"'FOR'"|"'for'" {
+"'for'" {
   return private_lexer_got_token (yyscanner, KWFOR);
 }
 
-"'GOTO'"|"'goto'" {
+"'goto'" {
   return private_lexer_got_token (yyscanner, KWGOTO);
 }
 
-"'IF'"|"'if'" {
+"'if'" {
   return private_lexer_got_token (yyscanner, KWIF);
 }
 
-"'INTEGER'"|"'integer'" {
+"'integer'" {
   return private_lexer_got_token (yyscanner, KWINTEGER);
 }
 
-"'LABEL'"|"'label'" {
+"'label'" {
   return private_lexer_got_token (yyscanner, KWLABEL);
 }
 
-"'OWN'"|"'own'" {
+"'own'" {
   return private_lexer_got_token (yyscanner, KWOWN);
 }
 
-"'PROCEDURE'"|"'procedure'" {
+"'procedure'" {
   return private_lexer_got_token (yyscanner, KWPROCEDURE);
 }
 
-"'TRUE'"|"'true'"  {
+"'true'"  {
   return private_lexer_got_token (yyscanner, KWTRUE);
 }
 
-"'REAL'"|"'real'" {
+"'real'" {
   return private_lexer_got_token (yyscanner, KWREAL);
 }
 
-"'STEP'"|"'step'" {
+"'step'" {
   return private_lexer_got_token (yyscanner, KWSTEP);
 }
 
-"'STRING'"|"'string'" {
+"'string'" {
   return private_lexer_got_token (yyscanner, KWSTRING);
 }
 
-"'SWITCH'"|"'switch'" {
+"'switch'" {
   return private_lexer_got_token (yyscanner, KWSWITCH);
 }
 
-"'THEN'"|"'then'" {
+"'then'" {
   return private_lexer_got_token (yyscanner, KWTHEN);
 }
 
-"'UNTIL'"|"'until'" {
+"'until'" {
   return private_lexer_got_token (yyscanner, KWUNTIL);
 }
 
-"'VALUE'"|"'value'" {
+"'value'" {
   return private_lexer_got_token (yyscanner, KWVALUE);
 }
 
-"'WHILE'"|"'while'" {
+"'while'" {
   return private_lexer_got_token (yyscanner, KWWHILE);
 }
 
@@ -274,19 +263,18 @@ DIGIT		[0-9]
  /* strings */
  /* Parsing string literal is somewhat kinky in ALGOL 60, as it allows
     nested forms.  Thus we have to count opening `s and closing 's,
-    and collect everything that's inbetween to lexer->str_literal. */
+    and collect everything that's inbetween to yylval->slit. */
 
 "`" {
   BEGIN STRING;
   string_level = 1;
-  lexer_rep_t * lexer = yyget_extra (yyscanner);
-  estr_clear (lexer->str_literal);
+  yylval->slit = new_estring ();
 }
 
 <STRING>("`"+) {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   string_level += yyget_leng (yyscanner);
-  if (estr_append_cstr (lexer->str_literal, yyget_text (yyscanner)) < 0)
+  if (estr_append_cstr (yylval->slit, yyget_text (yyscanner)) < 0)
     log_printf (lexer->log, ll_fatal_error, "literal append failure");
 }
 
@@ -299,14 +287,14 @@ DIGIT		[0-9]
   else
     {
       lexer_rep_t * lexer = yyget_extra (yyscanner);
-      if (estr_append_cstr (lexer->str_literal, yyget_text (yyscanner)) < 0)
+      if (estr_append_cstr (yylval->slit, yyget_text (yyscanner)) < 0)
 	log_printf (lexer->log, ll_fatal_error, "literal append failure");
     }
 }
 
 <STRING>([^`\']+) {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
-  if (estr_append_cstr (lexer->str_literal, yyget_text (yyscanner)) < 0)
+  if (estr_append_cstr (yylval->slit, yyget_text (yyscanner)) < 0)
     log_printf (lexer->log, ll_fatal_error, "literal append failure");
 }
 
@@ -319,7 +307,7 @@ DIGIT		[0-9]
     or semicolon, whichever comes first.  Thes is <END_COMMENT>
     part. */
 
-"'COMMENT'"|"'comment'" {
+"'comment'" {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
 
   switch (lexer->prev_tok) {
@@ -341,11 +329,11 @@ DIGIT		[0-9]
   // ignore for now
 }
 
-<END_COMMENT>("'ELSE'"|"'else'") {
+<END_COMMENT>"'else'" {
   BEGIN INITIAL;
   return private_lexer_got_token (yyscanner, KWELSE);
 }
-<END_COMMENT>("'END'"|"'end'") {
+<END_COMMENT>"'end'" {
   return private_lexer_got_token (yyscanner, KWEND);
 }
 <END_COMMENT>"'"[^\' ]*"'" {
@@ -366,8 +354,7 @@ DIGIT		[0-9]
 
  /* identifier */
 {LETTER}({LETTER}|{DIGIT})* {
-  lexer_rep_t * lexer = yyget_extra (yyscanner);
-  estr_assign_cstr (lexer->str_literal, yyget_text (yyscanner));
+  yylval->slit = new_estring_from (yyget_text (yyscanner));
   return private_lexer_got_token (yyscanner, IDENTIFIER);
 }
 
@@ -386,19 +373,19 @@ DIGIT		[0-9]
     private_lexer_got_number, where further parsing takes place.*/
 
 ([0-9]+"."[0-9]*) {
-  return private_lexer_got_real (yyscanner);
+  return private_lexer_got_real (yyscanner, yylval);
 }
 ([0-9]*"."[0-9]+) {
-  return private_lexer_got_real (yyscanner);
+  return private_lexer_got_real (yyscanner, yylval);
 }
 ([0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_real (yyscanner);
+  return private_lexer_got_real (yyscanner, yylval);
 }
 ([0-9]+"."[0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_real (yyscanner);
+  return private_lexer_got_real (yyscanner, yylval);
 }
 ([0-9]*"."[0-9]+("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_real (yyscanner);
+  return private_lexer_got_real (yyscanner, yylval);
 }
 
  /* Integer numbers, on the other hand, are quite simple.  We don't
@@ -417,10 +404,9 @@ DIGIT		[0-9]
   if (*pos != 0)
     log_printf (lexer->log, ll_error, "Invalid integer: `%s'", lit);
 
-  lexer->int_literal = value;
+  yylval->ilit = value;
 
   return private_lexer_got_token (yyscanner, LITINTEGER);
-  // yylval.litinteger = atol (yytext);
 }
 
 
@@ -486,7 +472,6 @@ new_lexer (FILE * stream, char const* filename, int manage)
       guard_ptr (buf, 1, ret->toklog = new_logger ("token"));
       guard_ptr (buf, 1, ret->log = new_logger ("lexer"));
       guard_ptr (buf, 1, ret->cursor = new_cursor (filename));
-      guard_ptr (buf, 1, ret->str_literal = new_estring ());
 
       guard_int (buf, 1, yylex_init (&ret->flex_scanner));
       yyset_extra (ret, ret->flex_scanner);
@@ -503,7 +488,6 @@ new_lexer (FILE * stream, char const* filename, int manage)
     {
       delete_logger (ret->log);
       delete_cursor (ret->cursor);
-      delete_estring (ret->str_literal);
       // yylex_init is called the last, and nothing will fail
       // afterwards.  So we don't call yylex_destroy at all.
       free (ret);
@@ -535,7 +519,6 @@ delete_lexer (lexer_t * _lexer)
 
       delete_logger (lexer->log);
       delete_cursor (lexer->cursor);
-      delete_estring (lexer->str_literal);
 
       free (lexer);
     }
@@ -564,13 +547,12 @@ private_lexer_got_token (void * flex_scanner, token_kind_t token_kind)
 {
   lexer_rep_t * lexer = yyget_extra (flex_scanner);
   char const* lexeme = yyget_text (flex_scanner);
-  char const* literal = estr_cstr (lexer->str_literal);
   cursor_move (lexer->cursor, yyget_leng (flex_scanner));
 
   log_printf (lexer->toklog, ll_debug,
-	      "%s: hit [tok:%d] [lex:%s] [lit:%s]",
+	      "%s: hit [tok:%d] [lex:%s]",
 	      cursor_to_str (lexer->cursor),
-	      token_kind, lexeme, literal);
+	      token_kind, lexeme);
 
   return token_kind;
 }
@@ -589,7 +571,7 @@ private_lexer_got_eof_token (void * flex_scanner, char const* error)
 }
 
 static token_kind_t
-private_lexer_got_real (void * flex_scanner)
+private_lexer_got_real (void * flex_scanner, YYSTYPE * val)
 {
   lexer_rep_t * lexer = yyget_extra (flex_scanner);
   char * lit = yyget_text (flex_scanner);
@@ -613,20 +595,21 @@ private_lexer_got_real (void * flex_scanner)
   if (*pos != 0)
     log_printf (lexer->log, ll_error, "Invalid number: `%s'", lit);
 
-  lexer->num_literal = value;
+  val->dlit = value;
 
   return private_lexer_got_token (flex_scanner, LITREAL);
 }
 
 
 
-void
-lexer_next_tok (lexer_t * _lexer)
+int
+lexer_tok (lexer_t * _lexer, YYSTYPE * val)
 {
   assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   lexer->prev_tok = lexer->current_tok;
-  lexer->current_tok = yylex (lexer->flex_scanner);
+  lexer->current_tok = yylex (val, lexer->flex_scanner);
+  return lexer->current_tok;
 }
 
 token_kind_t
@@ -651,38 +634,6 @@ lexer_get_tok_lexeme_len (lexer_t * _lexer)
   assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   return yyget_leng (lexer->flex_scanner);
-}
-
-estring_t *
-lexer_get_tok_literal (lexer_t * _lexer)
-{
-  assert (_lexer != NULL);
-  lexer_rep_t * lexer = (void*)_lexer;
-  assert (lexer->current_tok == LITSTRING
-	  || lexer->current_tok == IDENTIFIER
-	  || !"current token is neither LITSTRING, nor IDENTIFIER");
-
-  return lexer->str_literal;
-}
-
-double
-lexer_get_tok_real (lexer_t * _lexer)
-{
-  assert (_lexer != NULL);
-  lexer_rep_t * lexer = (void*)_lexer;
-  assert (lexer->current_tok == LITREAL || !"current token is not LITREAL");
-
-  return lexer->num_literal;
-}
-
-long
-lexer_get_tok_integer (lexer_t * _lexer)
-{
-  assert (_lexer != NULL);
-  lexer_rep_t * lexer = (void*)_lexer;
-  assert (lexer->current_tok == LITINTEGER || !"current token is not LITINTEGER");
-
-  return lexer->int_literal;
 }
 
 void

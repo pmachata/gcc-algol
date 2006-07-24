@@ -31,8 +31,7 @@ typedef struct struct_parser_rep_t
 static int
 yylex (YYSTYPE * arg, parser_rep_t * parser)
 {
-  lexer_next_tok (parser->lexer);
-  return lexer_get_tok_kind (parser->lexer);
+  return lexer_tok (parser->lexer, arg);
 }
 
 // report error
@@ -65,6 +64,12 @@ container * private_close_block (parser_rep_t * parser);
 %}
 
 %union {
+  // lexer portion
+  estring_t * slit;
+  long int ilit;
+  double dlit;
+
+  // parser portion
   int flag;
   slist_t * lst;
   statement * stmt;
@@ -146,11 +151,11 @@ container * private_close_block (parser_rep_t * parser);
 %token KWLABEL
 %token KWVALUE
 
-%token IDENTIFIER
+%token <slit> IDENTIFIER
 
-%token LITREAL
-%token LITINTEGER
-%token LITSTRING
+%token <dlit> LITREAL
+%token <ilit> LITINTEGER
+%token <slit> LITSTRING
 
 %token BOGUS
 
@@ -209,11 +214,11 @@ LabelList:
       $$ = new_slist ();
     }
   |
-  Label LabelList
+  LabelList Label
     {
       log_printf (parser->log, ll_debug, "LabelList -> Label LabelList");
-      slist_pushfront ($2, $1);
-      $$ = $2;
+      slist_pushback ($1, $2);
+      $$ = $1;
     }
 
 Label:
@@ -227,14 +232,14 @@ LabelIdentifier:
   IDENTIFIER
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
-      estring_t * lit = clone_estring (lexer_get_tok_literal (parser->lexer));
+      estring_t * lit = $1;
       $$ = label_id_create (parser->ast, lit);
     }
   |
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> LITINTEGER");
-      long lit = lexer_get_tok_integer (parser->lexer);
+      long lit = $1;
       $$ = label_int_create (parser->ast, lit);
     }
 
@@ -242,8 +247,7 @@ Identifier:
   IDENTIFIER
     {
       log_printf (parser->log, ll_debug, "Identifier -> IDENTIFIER");
-      estring_t * lit = lexer_get_tok_literal (parser->lexer);
-      label * lbl = label_id_create (parser->ast, clone_estring (lit));
+      label * lbl = label_id_create (parser->ast, $1);
       symbol * sym = symbol_create (parser->ast, lbl);
       $$ = sym;
     }
@@ -470,20 +474,19 @@ Expression:
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "Expression -> LITINTEGER");
-      $$ = expr_int_create (parser->ast, lexer_get_tok_integer (parser->lexer));
+      $$ = expr_int_create (parser->ast, $1);
     }
   |
   LITREAL
     {
       log_printf (parser->log, ll_debug, "Expression -> LITREAL");
-      $$ = expr_real_create (parser->ast, lexer_get_tok_real (parser->lexer));
+      $$ = expr_real_create (parser->ast, $1);
     }
   |
   LITSTRING
     {
       log_printf (parser->log, ll_debug, "Expression -> LITSTRING");
-      $$ = expr_string_create (
-	parser->ast, clone_estring (lexer_get_tok_literal (parser->lexer)));
+      $$ = expr_string_create (parser->ast, $1);
     }
   |
   Identifier
