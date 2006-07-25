@@ -27,23 +27,20 @@ typedef struct struct_logger_rep_t
 {
   char const* signature;
 
-  struct struct_logger_rep_t * next;
   char * name;
   FILE * stream;
   int ct[debug_level_t_count];
   debug_level_t threshold;
 } logger_rep_t;
 
-static logger_rep_t * pool = NULL;
-
 logger_t *
 new_logger (char const* name)
 {
   logger_rep_t * ret = malloc (sizeof (logger_rep_t));
+  if (ret == NULL)
+    return NULL;
 
   ret->signature = private_logger_signature;
-  ret->next = pool;
-  pool = ret;
 
   ret->name = a_strdup (name);
   ret->stream = stderr;
