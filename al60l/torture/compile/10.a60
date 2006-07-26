@@ -1,0 +1,6 @@
+'begin'
+ 'integer' a;
+ 'Boolean' b;
+ a := 'if' b 'then' 2*a + 3 'div' 4 'else' 'if' b 'then' a+6**2**3 'else' a+8-9-6+5;
+ b := a > a && a < a || a >= a && a <= a || a = a && a != a;
+'end';

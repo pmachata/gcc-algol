@@ -48,7 +48,7 @@ statement_dump (stmt_assign)
       expression * expr = slist_it_get (it);
       fprintf (ofile, "%s := ", estr_cstr (expr_to_str (expr, buf)));
     }
-  fprintf (ofile, "%s\n", estr_cstr (expr_to_str (self->rhs, buf)));
+  fprintf (ofile, "%s;\n", estr_cstr (expr_to_str (self->rhs, buf)));
   delete_estring (buf);
   delete_slist_it (it);
 }

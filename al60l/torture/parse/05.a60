@@ -3,5 +3,5 @@
  'integer' b;
  p:
  q:
- a := b := 5
+ a := b := 5;
 'end';

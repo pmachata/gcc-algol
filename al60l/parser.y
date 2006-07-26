@@ -186,6 +186,7 @@ container * private_close_block (parser_rep_t * parser);
 %type <lst> BoundsPairList
 %type <bnds> BoundsPair
 %type <expr> Expression
+%type <expr> SimpleExpression
 //%type <> StatementList
 %type <stmt> Statement
 %type <stmt> UnconditionalStatement
@@ -471,6 +472,30 @@ BoundsPair:
     }
 
 Expression:
+  SimpleExpression
+    {
+      log_printf (parser->log, ll_debug, "Expression -> SimpleExpression");
+      $$ = $1;
+    }
+  |
+  KWIF Expression KWTHEN SimpleExpression KWELSE Expression
+    {
+      log_printf (parser->log, ll_debug, "ArithmeticExpression -> KWIF BooleanExpression"
+		  " KWTHEN SimpleArithmeticExpression ELSE SimpleArithmeticExpression");
+
+      type_t const* ct = expr_type ($2);
+      if (!types_match (ct, type_bool ()))
+	{
+	  log_printf (parser->log, ll_error,
+		      "invalid type `%s' of condition in conditional expression",
+		      estr_cstr (type_to_str (ct, parser->tmp)));
+	}
+
+      //@@@TODO: typecheck branches
+      $$ = expr_if_create (parser->ast, $2, $4, $6);
+    }
+
+SimpleExpression:
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "Expression -> LITINTEGER");
@@ -504,6 +529,91 @@ Expression:
       assert (sym != NULL);
 
       $$ = expr_idref_create (parser->ast, sym);
+    }
+  |
+  SEPLPAREN Expression SEPRPAREN
+    {
+      $$ = $2;
+    }
+  |
+  SimpleExpression AOPADD SimpleExpression
+    {
+      $$ = expr_aadd_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression AOPSUB SimpleExpression
+    {
+      $$ = expr_asub_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression AOPMUL SimpleExpression
+    {
+      $$ = expr_amul_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression AOPIDIV SimpleExpression
+    {
+      $$ = expr_aidiv_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression AOPRDIV SimpleExpression
+    {
+      $$ = expr_ardiv_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression AOPPOW SimpleExpression
+    {
+      $$ = expr_apow_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression ROPNEQ SimpleExpression
+    {
+      $$ = expr_rneq_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression ROPEQ SimpleExpression
+    {
+      $$ = expr_req_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression ROPLTE SimpleExpression
+    {
+      $$ = expr_rlte_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression ROPLT SimpleExpression
+    {
+      $$ = expr_rlt_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression ROPGTE SimpleExpression
+    {
+      $$ = expr_rgte_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression ROPGT SimpleExpression
+    {
+      $$ = expr_rgt_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression LOPEQ SimpleExpression
+    {
+      $$ = expr_leq_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression LOPIMP SimpleExpression
+    {
+      $$ = expr_limp_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression LOPAND SimpleExpression
+    {
+      $$ = expr_land_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  SimpleExpression LOPOR SimpleExpression
+    {
+      $$ = expr_lor_create (parser->ast, $1, $3); //@@@TODO: typecheck
     }
 
 StatementList:

@@ -159,7 +159,7 @@ $(ARCHIVE_NAME): $(FILES)
 	rm -Rf dist_tmpdir/
 
 clean:
-	rm -f *.o al60l
+	rm -f *.o al60l *~ *-tab.c *-tab.h *-tab.output
 
 check: check-util check-slist check-estring check-cursor check-logger \
  check-lexer check-type check-ast check-parser

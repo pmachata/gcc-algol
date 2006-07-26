@@ -103,6 +103,140 @@ expr_type (expr_idref)
   return self->sym->type;
 }
 
+
+
+
+// ------------------------------------
+//   IF-EXPRESSION NODE
+// ------------------------------------
+
+%node expr_if expression = {
+  expression * cond;
+  expression * exp_t;
+  expression * exp_f;
+}
+
+expr_to_str (expr_if)
+{
+  buf = expr_to_str (self->cond, buf);
+  estr_prepend_cstr (buf, "'if' ");
+  estr_append_cstr (buf, " 'then' ");
+  estring_t * s = expr_to_str (self->exp_t, NULL);
+  estr_append (buf, s);
+  estr_append_cstr (buf, " 'else' ");
+  expr_to_str (self->exp_f, s);
+  estr_append (buf, s);
+  delete_estring (s);
+  return buf;
+}
+
+expr_type (expr_if)
+{
+  type_t const* tt = expr_type (self->exp_t);
+  type_t const* ft = expr_type (self->exp_f);
+  if (types_same (tt, ft)) // match is not enough
+    return tt;
+  else
+    return type_unknown ();
+}
+
+
+
+
+// ------------------------------------
+//   BINARY NODES
+// ------------------------------------
+
+%node expr_bin expression %abstract = {
+  expression * left;
+  expression * right;
+}
+
+/// Answer the string that represents the operator
+%operation char const* expr_bin_op_str (expr_bin * self) = { NULL }
+
+expr_to_str (expr_bin)
+{
+  buf = expr_to_str (self->left, buf);
+  estr_prepend_cstr (buf, "(");
+  estr_push (buf, ' ');
+  estr_append_cstr (buf, expr_bin_op_str (self));
+  estr_push (buf, ' ');
+  estring_t * s = expr_to_str (self->right, NULL);
+  estr_append (buf, s);
+  estr_push (buf, ')');
+  delete_estring (s);
+  return buf;
+}
+
+expr_type (expr_bin)
+{
+  // @TODO: fixme
+  return type_int ();
+}
+
+
+%node expr_aadd expr_bin = {}
+expr_bin_op_str (expr_aadd) {return "+";}
+
+%node expr_asub expr_bin = {}
+expr_bin_op_str (expr_asub) {return "-";}
+
+%node expr_amul expr_bin = {}
+expr_bin_op_str (expr_amul) {return "*";}
+
+%node expr_aidiv expr_bin = {}
+expr_bin_op_str (expr_aidiv) {return "'div'";}
+
+%node expr_ardiv expr_bin = {}
+expr_bin_op_str (expr_ardiv) {return "/";}
+
+%node expr_apow expr_bin = {}
+expr_bin_op_str (expr_apow) {return "**";}
+
+
+%node expr_rel expr_bin %abstract = {}
+expr_type (expr_rel) { return type_bool (); }
+
+
+%node expr_req expr_rel = {}
+expr_bin_op_str (expr_req) {return "=";}
+
+%node expr_rneq expr_rel = {}
+expr_bin_op_str (expr_rneq) {return "!=";}
+
+%node expr_rlt expr_rel = {}
+expr_bin_op_str (expr_rlt) {return "<";}
+
+%node expr_rlte expr_rel = {}
+expr_bin_op_str (expr_rlte) {return "<=";}
+
+%node expr_rgt expr_rel = {}
+expr_bin_op_str (expr_rgt) {return ">";}
+
+%node expr_rgte expr_rel = {}
+expr_bin_op_str (expr_rgte) {return ">=";}
+
+
+%node expr_log expr_bin %abstract = {}
+expr_type (expr_log) { return type_bool (); }
+
+
+%node expr_limp expr_log = {}
+expr_bin_op_str (expr_limp) {return "=>";}
+
+%node expr_leq expr_log = {}
+expr_bin_op_str (expr_leq) {return "==";}
+
+%node expr_lor expr_log = {}
+expr_bin_op_str (expr_lor) {return "||";}
+
+%node expr_land expr_log = {}
+expr_bin_op_str (expr_land) {return "&&";}
+
+// @@@TODO: not
+// @@@TODO: unary -
+
 /*
  * Local Variables:
  * mode: c
