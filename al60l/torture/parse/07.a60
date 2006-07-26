@@ -1,0 +1,176 @@
+ 'begin'
+  'integer' a;
+  'Boolean' b;
+
+#
+# few wild tests
+#
+
+C a := 'if' b 'then' 2*a      + 3 'div' 4    'else' 'if' b 'then' a+6**2**3             'else' a+8-9-6+5;
+D a := 'if' b 'then' ((2 * a) + (3 'div' 4)) 'else' 'if' b 'then' (a + ((6 ** 2) ** 3)) 'else' ((((a + 8) - 9) - 6) + 5);
+C b := a > a && a < a         || a >= a && a <= a        || a = a && a != a;
+D b := ((((a > a) && (a < a)) || ((a >= a) && (a <= a))) || ((a = a) && (a != a)));
+C b := b => b => a >= a;
+D b := ((b => b) => (a >= a));
+
+#
+# check precedence level by level
+#
+
+@add mising tests involving unary minus
+
+C a :=   a ** a  *  a ** a  ;
+D a := ((a ** a) * (a ** a));
+C a :=   a ** a  /  a ** a  ;
+D a := ((a ** a) / (a ** a));
+C a :=   a ** a  'div'  a ** a  ;
+D a := ((a ** a) 'div' (a ** a));
+C a :=    a ** a  ** a  ** a ;
+D a := (((a ** a) ** a) ** a);
+
+C a :=   a * a  +  a * a  ;
+D a := ((a * a) + (a * a));
+C a :=   a / a  +  a / a  ;
+D a := ((a / a) + (a / a));
+C a :=   a 'div' a  +  a 'div' a  ;
+D a := ((a 'div' a) + (a 'div' a));
+C a :=   a * a  -  a * a  ;
+D a := ((a * a) - (a * a));
+C a :=   a / a  -  a / a  ;
+D a := ((a / a) - (a / a));
+C a :=   a 'div' a  -  a 'div' a  ;
+D a := ((a 'div' a) - (a 'div' a));
+C a :=    a * a  * a  * a ;
+D a := (((a * a) * a) * a);
+C a :=    a / a  / a  / a ;
+D a := (((a / a) / a) / a);
+C a :=    a 'div' a  'div' a  'div' a ;
+D a := (((a 'div' a) 'div' a) 'div' a);
+C a :=    a * a  / a  / a ;
+D a := (((a * a) / a) / a);
+C a :=    a / a  * a  / a ;
+D a := (((a / a) * a) / a);
+C a :=    a * a  'div' a  'div' a ;
+D a := (((a * a) 'div' a) 'div' a);
+C a :=    a 'div' a  * a  'div' a ;
+D a := (((a 'div' a) * a) 'div' a);
+C a :=    a / a  'div' a  'div' a ;
+D a := (((a / a) 'div' a) 'div' a);
+C a :=    a 'div' a  / a  'div' a ;
+D a := (((a 'div' a) / a) 'div' a);
+
+C a :=   a + a  <  a + a  ;
+D a := ((a + a) < (a + a));
+C a :=   a + a  <=  a + a  ;
+D a := ((a + a) <= (a + a));
+C a :=   a + a  =  a + a  ;
+D a := ((a + a) = (a + a));
+C a :=   a + a  >=  a + a  ;
+D a := ((a + a) >= (a + a));
+C a :=   a + a  >  a + a  ;
+D a := ((a + a) > (a + a));
+C a :=   a + a  !=  a + a  ;
+D a := ((a + a) != (a + a));
+C a :=   a - a  <  a - a  ;
+D a := ((a - a) < (a - a));
+C a :=   a - a  <=  a - a  ;
+D a := ((a - a) <= (a - a));
+C a :=   a - a  =  a - a  ;
+D a := ((a - a) = (a - a));
+C a :=   a - a  >=  a - a  ;
+D a := ((a - a) >= (a - a));
+C a :=   a - a  >  a - a  ;
+D a := ((a - a) > (a - a));
+C a :=   a - a  !=  a - a  ;
+D a := ((a - a) != (a - a));
+C a :=    a + a  + a  + a ;
+D a := (((a + a) + a) + a);
+C a :=    a - a  - a  - a ;
+D a := (((a - a) - a) - a);
+C a :=    a + a  - a  - a ;
+D a := (((a + a) - a) - a);
+C a :=    a - a  + a  - a ;
+D a := (((a - a) + a) - a);
+
+@add mising tests involving unary not
+
+C a :=   a && a  ||  a && a  ;
+D a := ((a && a) || (a && a));
+C a :=    a && a  && a  && a ;
+D a := (((a && a) && a) && a);
+
+C a :=   a || a  =>  a || a  ;
+D a := ((a || a) => (a || a));
+C a :=    a || a  || a  || a ;
+D a := (((a || a) || a) || a);
+
+C a :=   a => a  ==  a => a  ;
+D a := ((a => a) == (a => a));
+C a :=    a => a  => a  => a ;
+D a := (((a => a) => a) => a);
+
+C a :=    a == a  == a  == a ;
+D a := (((a == a) == a) == a);
+
+#
+# parentheses tests
+#
+
+@add mising tests involving unary minus
+
+C a :=   a ** (a * a) ** a  ;
+D a := ((a ** (a * a)) ** a);
+
+C a :=   a * (a + a) * a  ;
+D a := ((a * (a + a)) * a);
+C a :=   a / (a + a) / a  ;
+D a := ((a / (a + a)) / a);
+C a :=   a 'div' (a + a) 'div' a  ;
+D a := ((a 'div' (a + a)) 'div' a);
+C a :=   a * (a - a) * a  ;
+D a := ((a * (a - a)) * a);
+C a :=   a / (a - a) / a  ;
+D a := ((a / (a - a)) / a);
+C a :=   a 'div' (a - a) 'div' a  ;
+D a := ((a 'div' (a - a)) 'div' a);
+
+C a :=   a + (a < a) + a  ;
+D a := ((a + (a < a)) + a);
+C a :=   a + (a <= a) + a  ;
+D a := ((a + (a <= a)) + a);
+C a :=   a + (a = a) + a  ;
+D a := ((a + (a = a)) + a);
+C a :=   a + (a >= a) + a  ;
+D a := ((a + (a >= a)) + a);
+C a :=   a + (a > a) + a  ;
+D a := ((a + (a > a)) + a);
+C a :=   a + (a != a) + a  ;
+D a := ((a + (a != a)) + a);
+C a :=   a - (a < a) - a  ;
+D a := ((a - (a < a)) - a);
+C a :=   a - (a <= a) - a  ;
+D a := ((a - (a <= a)) - a);
+C a :=   a - (a = a) - a  ;
+D a := ((a - (a = a)) - a);
+C a :=   a - (a >= a) - a  ;
+D a := ((a - (a >= a)) - a);
+C a :=   a - (a > a) - a  ;
+D a := ((a - (a > a)) - a);
+C a :=   a - (a != a) - a  ;
+D a := ((a - (a != a)) - a);
+
+@add mising tests involving unary not
+
+C a :=   a && (a || a) && a  ;
+D a := ((a && (a || a)) && a);
+
+C a :=   a || (a => a) || a  ;
+D a := ((a || (a => a)) || a);
+
+C a :=   a => (a == a) => a  ;
+D a := ((a => (a == a)) => a);
+
+C a := ((((((((((((((a ** ((((((((((((((a * a)))))))))))))) ** a))))))))))))));
+D a := ((a ** (a * a)) ** a);
+
+ 'end';

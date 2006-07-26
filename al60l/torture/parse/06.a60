@@ -1,5 +1,7 @@
-'begin'
- 'integer' a;
- a := 'if' (a >= 4) 'then' (2 * a) 'else' (3 + a);
- a := (((2 * 2) + (3 * 3)) + (4 * 4));
-'end';
+ 'begin'
+  'integer' a;
+C a := 'if' (a >= 4) 'then' 2 * a 'else' 3 + a;
+D a := 'if' (a >= 4) 'then' (2 * a) 'else' (3 + a);
+C a := 2 * 2 + 3 * 3 + 4 * 4;
+D a := (((2 * 2) + (3 * 3)) + (4 * 4));
+ 'end';

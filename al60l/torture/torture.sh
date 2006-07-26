@@ -50,22 +50,36 @@ echo "---------- testing parsing ----------"
 
 for file in parse/$mask; do
 	if [ -e $file ]; then
-		echo $file;
-		result="1";
-		$dumper $file >dump 2>tmp || result="0"
-		if [ "$result" != "1" ]; then
+	    	# first char of file is space -> we need to do
+	    	# preprocessing
+		sfile=$file
+		tfile=$file
+	    	head -n 1 < $file | grep -q '^ '
+		if [ $? = 0 ]; then
+		    echo "$file (pp)";
+		    sed -n '/^[C ]/{s/^.//; p}' < $file > sfile
+		    sed -n '/^[D ]/{s/^.//; p}' < $file > tfile
+		    sed -n '/^@/{s/^./\tnote: /; p}' < $file
+		    sfile="sfile"
+		    tfile="tfile"
+		else
+		    echo "$file";
+		fi
+
+		$dumper $sfile >dump 2>tmp
+		if [ $? != 0 ]; then
 			echo -e "\tunexpected: compilation failed"
 			cat tmp | sed 's/^/\t/'
 			all_ok=0
 		else
-			diff -u $file dump &> tmp
+			diff -u $tfile dump &> tmp
 			if [ $? != 0 ]; then
 				echo -e "\tunexpected: non-cannonic dump"
 				cat tmp | sed 's/^/\t/'
 				all_ok=0
 			fi
 		fi
-		rm tmp dump
+		rm -f sfile tfile tmp dump
 	fi;
 done;
 
