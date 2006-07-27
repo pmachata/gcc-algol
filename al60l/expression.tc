@@ -259,6 +259,50 @@ expr_type (expr_uminus) {return expr_type (self->operand);}
 expr_un_op_str (expr_not) {return "!";}
 expr_type (expr_not) {return expr_type (self->operand);}
 
+
+
+
+// ------------------------------------
+//   FUNCALL NODE
+// ------------------------------------
+
+%node expr_call expression = {
+  symbol * id;
+  slist_t * arguments;
+}
+
+expr_to_str (expr_call)
+{
+  buf = symbol_to_str (self->id, buf);
+  if (!slist_empty (self->arguments))
+    {
+      estr_push (buf, '(');
+      slist_it_t * it = slist_iter (self->arguments);
+      estring_t * tmp = new_estring ();
+      while (1)
+	{
+	  expression * arg = slist_it_get (it);
+	  tmp = expr_to_str (arg, tmp);
+	  estr_append (buf, tmp);
+	  slist_it_next (it);
+	  if (!slist_it_has (it))
+	    break;
+	  estr_append_cstr (buf, ", ");
+	}
+      delete_slist_it (it);
+      delete_estring (tmp);
+      estr_push (buf, ')');
+    }
+  return buf;
+}
+
+expr_type (expr_call)
+{
+  // @TODO: fixme
+  return type_int ();
+}
+
+
 /*
  * Local Variables:
  * mode: c

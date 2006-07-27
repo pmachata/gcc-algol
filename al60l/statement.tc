@@ -65,6 +65,22 @@ stmt_assign_add_lhs (stmt_assign)
 
 
 // ------------------------------------
+//   FUNCALL STATEMENT NODE
+// ------------------------------------
+
+%node stmt_call statement = {
+  expression * call;
+}
+
+statement_dump (stmt_call)
+{
+  estring_t * buf = expr_to_str (self->call, NULL);
+  fprintf (ofile, "%s%s;\n", padding (level), estr_cstr (buf));
+  delete_estring (buf);
+}
+
+
+// ------------------------------------
 //   CONTAINER ROOT NODE
 // ------------------------------------
 

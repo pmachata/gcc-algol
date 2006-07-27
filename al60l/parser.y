@@ -79,6 +79,7 @@ container * private_close_block (parser_rep_t * parser);
   type_t const* type;
   boundspair * bnds;
   expression * expr;
+  estring_t * estr;
 }
 
 %pure-parser
@@ -188,6 +189,9 @@ container * private_close_block (parser_rep_t * parser);
 %type <bnds> BoundsPair
 %type <expr> Expression
 %type <expr> SimpleExpression
+%type <expr> FunctionDesignator
+%type <lst> ActualParamList
+%type <estr> ParameterDelimiter
 //%type <> StatementList
 %type <stmt> Statement
 %type <stmt> UnconditionalStatement
@@ -515,21 +519,9 @@ SimpleExpression:
       $$ = expr_string_create (parser->ast, $1);
     }
   |
-  Identifier
+  FunctionDesignator
     {
-      log_printf (parser->log, ll_debug, "Expression -> Identifier");
-      symbol * sym = container_find_name_rec (parser->block, $1->lbl);
-      if (sym == NULL)
-	{
-	  log_printf (parser->log, ll_error, "unknown symbol named `%s'",
-		      estr_cstr (label_to_str ($1->lbl, parser->tmp)));
-	  int was_there = container_add_symbol (parser->block, $1);
-	  assert (!was_there);
-	  sym = container_find_name (parser->block, $1->lbl);
-	}
-      assert (sym != NULL);
-
-      $$ = expr_idref_create (parser->ast, sym);
+      $$ = $1;
     }
   |
   SEPLPAREN Expression SEPRPAREN
@@ -627,6 +619,63 @@ SimpleExpression:
       $$ = expr_not_create (parser->ast, $2); //@@@TODO: typecheck
     }
 
+FunctionDesignator:
+  Identifier SEPLPAREN ActualParamList SEPRPAREN
+    {
+      $$ = expr_call_create (parser->ast, $1, $3);
+    }
+  |
+  Identifier
+    {
+      // @TODO: note that this can be also simple identifier. These
+      // two rules have to be refactored a bit; we really want to
+      // check for identifier type before handing over funcall OR
+      // idref.  What with `any' types?  Pass by name adds some
+      // interesting spin...
+      log_printf (parser->log, ll_debug, "Expression -> Identifier");
+      symbol * sym = container_find_name_rec (parser->block, $1->lbl);
+      if (sym == NULL)
+	{
+	  log_printf (parser->log, ll_error, "unknown symbol named `%s'",
+		      estr_cstr (label_to_str ($1->lbl, parser->tmp)));
+	  int was_there = container_add_symbol (parser->block, $1);
+	  assert (!was_there);
+	  sym = container_find_name (parser->block, $1->lbl);
+	}
+      assert (sym != NULL);
+
+      $$ = expr_idref_create (parser->ast, sym);
+    }
+
+ActualParamList:
+  Expression
+    {
+      $$ = new_slist ();
+      slist_pushback ($$, $1);
+    }
+  |
+  ActualParamList ParameterDelimiter Expression
+    {
+      if ($2 != NULL)
+	{
+	  // @TODO: delimiters are ignored as per RRA60, but we want
+	  // to check match with formals
+	}
+
+      slist_pushback ($1, $3);
+    }
+
+ParameterDelimiter:
+  SEPCOMMA
+    {
+      $$ = NULL;
+    }
+  |
+  SEPRPAREN IDENTIFIER SEPCOLON SEPLPAREN
+    {
+      $$ = $2;
+    }
+
 StatementList:
   StatementList SEPSEMICOLON Statement
     {
@@ -680,6 +729,11 @@ BasicStatement:
 	stmt_assign_add_lhs (ast_as (stmt_assign, $$), slist_it_get (it));
       delete_slist_it (it);
       stmt_assign_set_rhs (ast_as (stmt_assign, $$), $2);
+    }
+  |
+  FunctionDesignator
+    {
+      $$ = stmt_call_create (parser->ast, $1);
     }
 
 LeftPartList:
