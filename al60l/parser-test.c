@@ -63,5 +63,5 @@ main(int argc, char ** argv)
     fprintf (stderr, "%d errors encountered.\n", errors);
 
   delete_parser (a_parser);
-  return errors;
+  return !!errors;
 }

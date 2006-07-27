@@ -144,7 +144,7 @@ expr_type (expr_if)
 
 
 // ------------------------------------
-//   BINARY NODES
+//   ORDINARY EXPRESSION NODES
 // ------------------------------------
 
 %node expr_bin expression %abstract = {
@@ -234,8 +234,30 @@ expr_bin_op_str (expr_lor) {return "||";}
 %node expr_land expr_log = {}
 expr_bin_op_str (expr_land) {return "&&";}
 
-// @@@TODO: not
-// @@@TODO: unary -
+
+%node expr_un expression %abstract = {
+  expression * operand;
+}
+
+/// Answer the string that represents the operator
+%operation char const* expr_un_op_str (expr_un * self) = { NULL }
+
+expr_to_str (expr_un)
+{
+  buf = expr_to_str (self->operand, buf);
+  estr_prepend_cstr (buf, expr_un_op_str (self));
+  estr_prepend_cstr (buf, "(");
+  estr_push (buf, ')');
+  return buf;
+}
+
+%node expr_uminus expr_un = {}
+expr_un_op_str (expr_uminus) {return "-";}
+expr_type (expr_uminus) {return expr_type (self->operand);}
+
+%node expr_not expr_un = {}
+expr_un_op_str (expr_not) {return "!";}
+expr_type (expr_not) {return expr_type (self->operand);}
 
 /*
  * Local Variables:

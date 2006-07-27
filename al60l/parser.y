@@ -168,6 +168,7 @@ container * private_close_block (parser_rep_t * parser);
 %left AOPADD AOPSUB
 %left AOPMUL AOPRDIV AOPIDIV
 %left AOPPOW
+%right PREC_UNARY_MINUS
 
 %type <cont> Program
 %type <lst> LabelList
@@ -536,6 +537,11 @@ SimpleExpression:
       $$ = $2;
     }
   |
+  AOPSUB SimpleExpression %prec PREC_UNARY_MINUS
+    {
+      $$ = expr_uminus_create (parser->ast, $2); //@@@TODO: typecheck
+    }
+  |
   SimpleExpression AOPADD SimpleExpression
     {
       $$ = expr_aadd_create (parser->ast, $1, $3); //@@@TODO: typecheck
@@ -614,6 +620,11 @@ SimpleExpression:
   SimpleExpression LOPOR SimpleExpression
     {
       $$ = expr_lor_create (parser->ast, $1, $3); //@@@TODO: typecheck
+    }
+  |
+  LOPNOT SimpleExpression
+    {
+      $$ = expr_not_create (parser->ast, $2); //@@@TODO: typecheck
     }
 
 StatementList:
