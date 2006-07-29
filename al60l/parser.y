@@ -176,6 +176,7 @@ container * private_close_block (parser_rep_t * parser);
 %type <lbl> Label
 %type <lbl> LabelIdentifier
 %type <sym> Identifier
+//%type <sym> DeclaredIdentifier
 %type <stmt> Block
 //%type <> BlockDeclarationsList
 //%type <> BlockDeclarations
@@ -257,6 +258,25 @@ Identifier:
       symbol * sym = symbol_create (parser->ast, lbl);
       $$ = sym;
     }
+
+/*
+DeclaredIdentifier:
+  Identifier
+    {
+      log_printf (parser->log, ll_debug, "Expression -> Identifier");
+      symbol * sym = container_find_name_rec (parser->block, $1->lbl);
+      if (sym == NULL)
+	{
+	  log_printf (parser->log, ll_error, "unknown symbol named `%s'",
+		      estr_cstr (label_to_str ($1->lbl, parser->tmp)));
+	  int was_there = container_add_symbol (parser->block, $1);
+	  assert (!was_there);
+	  sym = container_find_name (parser->block, $1->lbl);
+	}
+      assert (sym != NULL);
+      $$ = sym;
+    }
+*/
 
 
 Block:
@@ -461,6 +481,9 @@ BoundsPair:
 	}
 
       expression * hb = $3;
+/*
+  @@@TODO: defer typechecking to later stage
+
       type_t const* ht = expr_type (hb);
       if (!types_match (ht, type_int ()))
 	{
@@ -469,6 +492,7 @@ BoundsPair:
 		      estr_cstr (type_to_str (ht, parser->tmp)));
 	  hb = expr_int_create (parser->ast, 0);
 	}
+*/
 
       /* @TODO: if it's possible to evaluate expression in place, do
 	 it, and check that the boundaries make sense: A:B, A<B.  Also
@@ -488,6 +512,9 @@ Expression:
       log_printf (parser->log, ll_debug, "ArithmeticExpression -> KWIF BooleanExpression"
 		  " KWTHEN SimpleArithmeticExpression ELSE SimpleArithmeticExpression");
 
+/*
+  @@@TODO: defer typechecking to later stage
+
       type_t const* ct = expr_type ($2);
       if (!types_match (ct, type_bool ()))
 	{
@@ -495,6 +522,7 @@ Expression:
 		      "invalid type `%s' of condition in conditional expression",
 		      estr_cstr (type_to_str (ct, parser->tmp)));
 	}
+*/
 
       //@@@TODO: typecheck branches
       $$ = expr_if_create (parser->ast, $2, $4, $6);
@@ -627,24 +655,10 @@ FunctionDesignator:
   |
   Identifier
     {
-      // @TODO: note that this can be also simple identifier. These
-      // two rules have to be refactored a bit; we really want to
-      // check for identifier type before handing over funcall OR
-      // idref.  What with `any' types?  Pass by name adds some
-      // interesting spin...
-      log_printf (parser->log, ll_debug, "Expression -> Identifier");
-      symbol * sym = container_find_name_rec (parser->block, $1->lbl);
-      if (sym == NULL)
-	{
-	  log_printf (parser->log, ll_error, "unknown symbol named `%s'",
-		      estr_cstr (label_to_str ($1->lbl, parser->tmp)));
-	  int was_there = container_add_symbol (parser->block, $1);
-	  assert (!was_there);
-	  sym = container_find_name (parser->block, $1->lbl);
-	}
-      assert (sym != NULL);
-
-      $$ = expr_idref_create (parser->ast, sym);
+      // note: identifier node may denote funcall without parameters.  The
+      // translation from expr_idref to expr_call is done during semantic
+      // analysis, where we can decide what type given id is.
+      $$ = expr_idref_create (parser->ast, $1);
     }
 
 ActualParamList:
