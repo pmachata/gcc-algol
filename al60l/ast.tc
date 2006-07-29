@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include "slist.h"
 #include "estring.h"
-#include "type.h"
 %}
 
 %decls %end %{
@@ -121,6 +120,7 @@ padding (int level)
 // ------------------------------------
 
 %include "label.tc"
+%include "type.tc"
 %include "symbol.tc"
 %include "statement.tc"
 %include "expression.tc"

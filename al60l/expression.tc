@@ -10,7 +10,7 @@
 %operation estring_t * expr_to_str (expression * self, estring_t * buf) = { NULL }
 
 /// Get the type of the expression.
-%operation type_t const* expr_type (expression * self) = { type_unknown () }
+%operation type * expr_type (expression * self) = { type_unknown () }
 
 
 
@@ -132,8 +132,8 @@ expr_to_str (expr_if)
 
 expr_type (expr_if)
 {
-  type_t const* tt = expr_type (self->exp_t);
-  type_t const* ft = expr_type (self->exp_f);
+  type* tt = expr_type (self->exp_t);
+  type* ft = expr_type (self->exp_f);
   if (types_same (tt, ft)) // match is not enough
     return tt;
   else

@@ -115,7 +115,7 @@ private_dump_container (container * self, FILE * ofile, int level)
   for (; slist_it_has (it); slist_it_next (it))
     {
       symbol * sym = slist_it_get (it);
-      if (sym->type == type_label ())
+      if (ast_isa (sym->type, t_label))
 	continue;
 
       type_to_str_canon (sym->type, buf);
@@ -157,7 +157,7 @@ private_dump_container (container * self, FILE * ofile, int level)
       for (; slist_it_has (lt); slist_it_next (lt))
 	{
 	  symbol * sym = slist_it_get (lt);
-	  if (sym->type == type_label ()
+	  if (ast_isa (sym->type, t_label)
 	      && sym->stmt == stmt)
 	    {
 	      label_to_str (sym->lbl, buf);

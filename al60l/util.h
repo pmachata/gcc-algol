@@ -17,5 +17,9 @@ void guard_ptr (jmp_buf env, int fail_signal, void * ptr);
 /// Fire longjmp (evn, fail_signal) when errcode != 0
 void guard_int (jmp_buf env, int fail_signal, int errcode);
 
+/// If buf is non-NULL, just return it.  Otherwise return the result
+/// of buf_creator call.
+void * tmpbuild (void * buf, void* (*buf_creator)(void));
+
 
 #endif//_AL60L_UTIL_H_

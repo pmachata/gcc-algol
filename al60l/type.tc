@@ -1,0 +1,345 @@
+// ------------------------------------
+//   ROOT TYPE NODE
+// ------------------------------------
+
+%node type %abstract %typedef = {
+}
+
+%decls %end %{
+/// Return string representation of the type (for debugging and
+/// dumping purposes).  Buffer `buf' may be NULL, in which case new
+/// buffer will be allocated, or it can be preallocated buffer, in
+/// which case it will be overwritten.  Return value is passed-in
+/// buffer, or newly allocated buffer it that was NULL.  NULL is
+/// returned if something goes wrong (usually allocation).
+estring_t * type_to_str (type * self, estring_t * buf);
+
+/// Like type_str, but for canonical dumps.  It collapses series of
+/// arrays into one array: 'int array' instead of 'int array array
+/// array' for three dimensional array.
+estring_t * type_to_str_canon (type * self, estring_t * buf);
+%}
+
+/// Private handler called by type_to_str. buf is guaranteed to be
+/// non-NULL here.
+%operation void type_to_str_private (type * self, estring_t * buf, int canon)
+
+/// Answers 1 or 0, depending on whether the two types are the same.
+%operation int types_same ([type * self], [type * other]) = { 0 }
+
+/// Answers 1 or 0, depending on whether one type matches the other.
+/// This is the same behavior as types_same exhibits, with following
+/// exception.  t_any matches any other type, including t_any.  And
+/// t_unknown doesn't match any other type, with the exception of
+/// t_any, but including t_unknown.  Thus:
+///
+///  any     ~~ any
+///  any     ~~ unknown
+///  unknown !~ unknown
+///
+/// Other rules include `own' handling:
+///
+///  'own' X ~~ X;   X ~~ 'own' X
+///
+/// The relation 'matches' is commutative.  It's not transitive:
+/// unknown~~any, any~~any, any~~unknown, but unknown!~unknown.
+%operation int types_match ([type * self], [type * other]) = { 0 }
+
+/// Answer root type.  Root type is the type at the very end of
+/// hosting chain.  E.g. 'own array of array of int' has root type
+/// 'int'.  This may also be a procedure or structured type.  This
+/// procedure effectively strips any 'own' and 'array' garbage around
+/// the type.
+%operation type * type_get_root (type * self) = { NULL }
+
+
+
+%{
+#include "util.h"
+
+estring_t *
+type_to_str (type * self, estring_t * buf)
+{
+  buf = tmpbuild (buf, (void*(*)(void))new_estring);
+  type_to_str_private (self, buf, 0);
+  return buf;
+}
+
+estring_t *
+type_to_str_canon (type * self, estring_t * buf)
+{
+  buf = tmpbuild (buf, (void*(*)(void))new_estring);
+  type_to_str_private (self, buf, 1);
+  return buf;
+}
+%}
+
+type_get_root (type)
+{
+  // by default, type is root by itself
+  return self;
+}
+
+
+// ------------------------------------
+//   BASIC TYPES
+// ------------------------------------
+
+%node t_unknown type = { }
+type_to_str_private (t_unknown) { estr_assign_cstr (buf, "'unknown'"); }
+
+%node t_any type = { }
+type_to_str_private (t_any) { estr_assign_cstr (buf, "'any'"); }
+
+%node t_int type = { }
+type_to_str_private (t_int) { estr_assign_cstr (buf, "'integer'"); }
+
+%node t_void type = { }
+type_to_str_private (t_void)
+{
+  if (!canon)
+    estr_assign_cstr (buf, "<void>");
+  else
+    estr_assign_cstr (buf, "");
+}
+
+%node t_real type = { }
+type_to_str_private (t_real) { estr_assign_cstr (buf, "'real'"); }
+
+%node t_string type = { }
+type_to_str_private (t_string) { estr_assign_cstr (buf, "'string'"); }
+
+%node t_bool type = { }
+type_to_str_private (t_bool) { estr_assign_cstr (buf, "'Boolean'"); }
+
+%node t_label type = { }
+type_to_str_private (t_label) { estr_assign_cstr (buf, "<label>"); }
+
+%decls %end %{
+type* type_unknown (void);
+type* type_any (void);
+type* type_int (void);
+type* type_void (void);
+type* type_real (void);
+type* type_string (void);
+type* type_bool (void);
+type* type_label (void);
+type* type_array_any (void);
+%}
+
+%{
+#define MEMOIZE(TYPE)\
+type* type_##TYPE (void) {\
+  static type * inst = NULL;\
+  if (!inst) inst = t_##TYPE##_create (&_tmpstate);\
+  return inst;\
+}
+#define MEMOIZE2(TYPE1,TYPE2)\
+type* type_##TYPE1##_##TYPE2 (void) {\
+  static type * inst = NULL;\
+  if (!inst) inst = t_##TYPE1##_create (&_tmpstate, type_##TYPE2 ());\
+  return inst;\
+}
+
+static ast_state_t _tmpstate;
+MEMOIZE(unknown)
+MEMOIZE(any)
+MEMOIZE(int)
+MEMOIZE(void)
+MEMOIZE(real)
+MEMOIZE(string)
+MEMOIZE(bool)
+MEMOIZE(label)
+MEMOIZE2(array, any)
+
+#undef MEMOIZE
+%}
+
+
+// ------------------------------------
+//   ARRAY TYPE
+// ------------------------------------
+
+%node t_array type = {
+  type * host;
+}
+
+type_to_str_private (t_array)
+{
+  type_to_str_private (self->host, buf, canon);
+  if (!canon || !ast_isa (self->host, t_array))
+    estr_append_cstr (buf, " 'array'");
+}
+
+type_get_root (t_array)
+{
+  return type_get_root (self->host);
+}
+
+
+// ------------------------------------
+//   OWN TYPE
+// ------------------------------------
+
+%node t_own type = {
+  type * host;
+}
+
+type_to_str_private (t_own)
+{
+  type_to_str_private (self->host, buf, canon);
+  estr_prepend_cstr (buf, "'own' ");
+}
+
+type_get_root (t_own)
+{
+  return type_get_root (self->host);
+}
+
+
+// ------------------------------------
+//   PROCEDURE TYPE
+// ------------------------------------
+
+%node t_proc type = {
+  type * ret_type;
+  slist_t * arg_types;
+}
+
+%{
+static int
+proc_types_check (t_proc * self, t_proc * other, int (*pred)(type*, type*))
+{
+  if (!pred (self->ret_type, other->ret_type))
+    return 0;
+
+  slist_it_t * it1 = slist_iter (self->arg_types);
+  slist_it_t * it2 = slist_iter (other->arg_types);
+  int ret = 0;
+  while (slist_it_has (it1) && slist_it_has (it2))
+    {
+      type * t1 = slist_it_get (it1);
+      type * t2 = slist_it_get (it2);
+      if (!pred (t1, t2))
+	// leave ret at 0 and jump away
+	goto cleanup;
+
+      slist_it_next (it1);
+      slist_it_next (it2);
+    }
+  // so far, all types were compatible
+  // also require same number of arguments
+  ret = slist_it_has (it1) == slist_it_has (it2);
+
+ cleanup:
+  delete_slist_it (it1);
+  delete_slist_it (it2);
+  return ret;
+}
+%}
+
+type_to_str_private (t_proc)
+{
+  estr_assign_cstr (buf, "<proc ");
+  estring_t * tmp = new_estring ();
+
+  slist_it_t * it = slist_iter (self->arg_types);
+  while (1)
+    {
+      type * t = slist_it_get (it);
+      type_to_str_private (t, tmp, canon);
+      estr_append (buf, tmp);
+      slist_it_next (it);
+      if (slist_it_has (it))
+	estr_append_cstr (buf, ", ");
+      else
+	break;
+    }
+  delete_slist_it (it);
+
+  type_to_str_private (self->ret_type, tmp, canon);
+  estr_append_cstr (buf, " -> ");
+  estr_append (buf, tmp);
+  estr_append_cstr (buf, ">");
+  delete_estring (tmp);
+}
+
+
+// ------------------------------------
+//   TYPES_SAME RELATION
+// ------------------------------------
+
+types_same (t_unknown, t_unknown),
+types_same (t_any, t_any),
+types_same (t_int, t_int),
+types_same (t_real, t_real),
+types_same (t_string, t_string),
+types_same (t_bool, t_bool),
+types_same (t_label, t_label)
+{
+  return 1;
+}
+
+types_same (t_array, t_array),
+types_same (t_own, t_own)
+{
+  return types_same (self->host, other->host);
+}
+
+types_same (t_proc, t_proc)
+{
+  return proc_types_check (self, other, types_same);
+}
+
+types_same (type, type)
+{
+  return 0;
+}
+
+
+// ------------------------------------
+//   TYPES_MATCH RELATION
+// ------------------------------------
+
+types_match (t_any, type),
+types_match (type, t_any)
+{
+  return 1;
+}
+
+types_match (t_unknown, type),
+types_match (type, t_unknown)
+{
+  return 0;
+}
+
+types_match (t_own, type)
+{
+  // note how we swap the arguments to eventually strip off `own' also
+  // from other argument
+  return types_match (other, self->host);
+}
+
+types_match (t_array, t_array)
+{
+  return types_match (self->host, other->host);
+}
+
+types_match (t_proc, t_proc)
+{
+  return proc_types_check (self, other, types_match);
+}
+
+types_match (type, type)
+{
+  // if no pattern was found so far, we will do simple comparison and
+  // see if it holds
+  return types_same (self, other);
+}
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */

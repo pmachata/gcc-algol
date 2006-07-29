@@ -34,6 +34,16 @@ guard_int (jmp_buf env, int fail_signal, int errcode)
     longjmp (env, fail_signal);
 }
 
+void *
+tmpbuild (void * buf, void* (*buf_creator)(void))
+{
+  if (buf)
+    return buf;
+  else
+    return buf_creator ();
+}
+
+
 #else /* SELF_TEST */
 
 #include "util.h"
@@ -105,11 +115,23 @@ test_guards (void)
   return 0;
 }
 
+void *
+allocate ()
+{
+  return malloc (1024);
+}
+
 int
 main (void)
 {
   assert (test_a_strdup () == 0);
   assert (test_guards () == 0);
+
+  printf ("tmpbuild\n");
+  void * ptr = tmpbuild (NULL, allocate);
+  assert (ptr != NULL);
+  void * ptr2 = tmpbuild (ptr, allocate);
+  assert (ptr == ptr2);
 
   printf ("All passed.\n");
   return 0;

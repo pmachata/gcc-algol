@@ -10,7 +10,7 @@
 %node symbol %typedef = {
   label * lbl;
   %nocreate statement * stmt = { NULL };
-  %nocreate type_t const* type = { NULL };
+  %nocreate type * type = { NULL };
   %nocreate slist_t * arr_bd_list = { new_slist () };
 }
 
@@ -19,7 +19,7 @@
 %operation estring_t * symbol_to_str (symbol * self, estring_t * buf) = {NULL}
 
 /// Set the type of the symbol.
-%operation void symbol_set_type (symbol * self, type_t const* type)
+%operation void symbol_set_type (symbol * self, type * type)
 
 /// Set the statement associated with the symbol.
 %operation void symbol_set_stmt (symbol * self, statement * stmt)

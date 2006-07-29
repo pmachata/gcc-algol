@@ -76,7 +76,7 @@ container * private_close_block (parser_rep_t * parser);
   container * cont;
   label * lbl;
   symbol * sym;
-  type_t const* type;
+  type * type;
   boundspair * bnds;
   expression * expr;
   estring_t * estr;
@@ -310,7 +310,7 @@ BlockDeclarations:
 
 	  // Classic algol only allows in this context:
 	  // ['own'] {'integer'|'real'|'Boolean'} ['array']
-	  type_t const* rt = type_get_root ($1);
+	  type * rt = type_get_root ($1);
 	  if (rt != type_int ()
 	      && rt != type_real ()
 	      && rt != type_bool ())
@@ -321,7 +321,7 @@ BlockDeclarations:
 	  // If it was array, see if identifier has dimensions and
 	  // mangle `rt' to reflect number of dimensions.  Note that
 	  // 'own' doesn't influence matching.
-	  if (types_match ($1, type_array (type_any ())))
+	  if (types_match ($1, type_array_any ()))
 	    {
 	      if (sym->arr_bd_list == NULL)
 		log_printf (parser->log, ll_error,
@@ -333,7 +333,7 @@ BlockDeclarations:
 		  slist_it_t * jt = slist_iter (sym->arr_bd_list);
 		  while (slist_it_has (jt))
 		    {
-		      rt = type_array (rt);
+		      rt = t_array_create (parser->ast, rt);
 		      slist_it_next (jt);
 		    }
 		  delete_slist_it (jt);
@@ -341,8 +341,8 @@ BlockDeclarations:
 	    }
 
 	  // If original type is `own', make also this type `own'.
-	  if (type_is_own ($1))
-	    rt = type_own (rt);
+	  if (ast_isa ($1, t_own))
+	    rt = t_own_create (parser->ast, rt);
 
 	  // Setup symbol and add to table.
 	  symbol_set_type (sym, rt);
@@ -360,7 +360,7 @@ Type:
     {
       log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
       if ($1)
-	$$ = type_own ($2);
+	$$ = t_own_create (parser->ast, $2);
       else
 	$$ = $2;
     }
@@ -369,9 +369,9 @@ Type:
     {
       log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
       // if no type declarator is given the type 'real' is understood
-      type_t const* t = type_array (($2 != NULL) ? $2 : type_real ());
+      type * t = t_array_create (parser->ast, ($2 != NULL) ? $2 : type_real ());
       if ($1)
-	t = type_own (t);
+	t = t_own_create (parser->ast, t);
       $$ = t;
     }
 
@@ -471,7 +471,7 @@ BoundsPair:
       log_printf (parser->log, ll_debug, "BoundsPair -> Expression SEPCOLON Expression");
 
       expression * lb = $1;
-      type_t const* lt = expr_type (lb);
+      type * lt = expr_type (lb);
       if (!types_match (lt, type_int ()))
 	{
 	  log_printf (parser->log, ll_error,
@@ -515,7 +515,7 @@ Expression:
 /*
   @@@TODO: defer typechecking to later stage
 
-      type_t const* ct = expr_type ($2);
+      type * ct = expr_type ($2);
       if (!types_match (ct, type_bool ()))
 	{
 	  log_printf (parser->log, ll_error,
