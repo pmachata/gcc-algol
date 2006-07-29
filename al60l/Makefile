@@ -157,3 +157,4 @@ check: check-util check-slist check-estring check-cursor check-logger \
 	@echo "============================================="
 	@echo "Self testing successful."
 	@echo "============================================="
+
