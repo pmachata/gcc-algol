@@ -16,8 +16,7 @@ main(int argc, char ** argv)
 	       "usage: %s [-string_of_options] filename\n"
 	       "recognized options:\n"
 	       " d : dump ast\n", argv[0]);
-      fflush (stderr); // maybe superfluous, but...
-      exit (-1);
+      return 1;
     }
 
   char const* filename = argv[1];
@@ -51,6 +50,7 @@ main(int argc, char ** argv)
   if (ast)
     {
       assert (ast_isa (ast, statement));
+      //resolve_idrefs (ast);
       if (dump)
 	statement_dump (ast, stdout, 0);
     }

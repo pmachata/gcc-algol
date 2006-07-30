@@ -6,19 +6,18 @@ int
 main (void)
 {
   printf (" + ast sanity\n");
-  ast_state_t * ast = new_ast_state ();
-  statement * c1 = stmt_block_create (ast);
+  statement * c1 = stmt_block_create ();
   assert (ast_as (stmt_block, c1));
   assert (ast_as (container, c1));
   assert (ast_as (statement, c1));
   assert (!ast_as (stmt_dummy, c1));
-  container_add_stmt (ast_as (container, c1), stmt_dummy_create (ast));
-  container_add_stmt (ast_as (container, c1), stmt_dummy_create (ast));
-  statement * toplev = stmt_toplev_create (ast);
+  container_add_stmt (ast_as (container, c1), stmt_dummy_create ());
+  container_add_stmt (ast_as (container, c1), stmt_dummy_create ());
+  statement * toplev = stmt_toplev_create ();
   container_add_stmt (ast_as (container, toplev), c1);
   statement_dump (toplev, stdout, 0);
 
-  label * l = label_int_create (ast, 4);
+  label * l = label_int_create (4);
   assert (ast_as (label, l));
   assert (!ast_as (statement, l));
   assert (!ast_as (symbol, l));
@@ -85,8 +84,8 @@ main (void)
   assert (!types_match (t4a, t5a));
 
   printf (" + arrays\n");
-  type* t6a = t_array_create (ast, type_int ());
-  type* t6b = t_array_create (ast, t1a);
+  type* t6a = t_array_create (type_int ());
+  type* t6b = t_array_create (t1a);
   assert (types_same (t6a, t6b));
   assert (types_match (t6a, t6b));
   assert (t1a != t6a);
@@ -105,10 +104,10 @@ main (void)
   assert (!types_same (t5a, t6a));
   assert (!types_match (t5a, t6a));
 
-  type* t7a = t_array_create (ast, t_array_create (ast, type_int ()));
-  type* t7b = t_array_create (ast, t_array_create (ast, t1a));
-  type* t7c = t_array_create (ast, t6a);
-  type* t7d = t_array_create (ast, t6b);
+  type* t7a = t_array_create (t_array_create (type_int ()));
+  type* t7b = t_array_create (t_array_create (t1a));
+  type* t7c = t_array_create (t6a);
+  type* t7d = t_array_create (t6b);
   assert (types_same (t7a, t7b));
   assert (types_match (t7a, t7b));
   assert (types_same (t7a, t7c));
@@ -151,10 +150,10 @@ main (void)
   // this test is slightly different from the rest, it checks whether
   // 'array of any' will match 'array of int' and 'array of array of
   // int'
-  type* t81a = t_array_create (ast, t8a);
-  type* t81b = t_array_create (ast, type_any ());
-  type* t81c = t_array_create (ast, type_int ());
-  type* t81d = t_array_create (ast, t_array_create (ast, type_int ()));
+  type* t81a = t_array_create (t8a);
+  type* t81b = t_array_create (type_any ());
+  type* t81c = t_array_create (type_int ());
+  type* t81d = t_array_create (t_array_create (type_int ()));
   assert (types_same (t81a, t81b));
   assert (!types_same (t81a, t81c));
   assert (!types_same (t81a, t81d));
@@ -195,17 +194,17 @@ main (void)
   assert (types_match (t8a, t9a)); // match ANY
 
   printf (" + own\n");
-  type* tA1a = t_own_create (ast, t8a);
-  type* tA1b = t_own_create (ast, type_int ());
-  type* tA1c = t_own_create (ast, t_array_create (ast, type_int ()));
-  type* tA1d = t_own_create (ast, t81a);
+  type* tA1a = t_own_create (t8a);
+  type* tA1b = t_own_create (type_int ());
+  type* tA1c = t_own_create (t_array_create (type_int ()));
+  type* tA1d = t_own_create (t81a);
   assert (types_match (tA1a, t8a));
-  assert (types_match (tA1b, t_own_create (ast, type_int ())));
-  assert (types_match (tA1c, t_own_create (ast, t_array_create (ast, type_int ()))));
-  assert (types_match (tA1d, t_own_create (ast, t81a)));
+  assert (types_match (tA1b, t_own_create (type_int ())));
+  assert (types_match (tA1c, t_own_create (t_array_create (type_int ()))));
+  assert (types_match (tA1d, t_own_create (t81a)));
   assert (!types_same (tA1a, t8a));
-  assert (!types_same (tA1b, t_array_create (ast, type_int ())));
-  assert (!types_same (tA1c, t_array_create (ast, t_array_create (ast, type_int ()))));
+  assert (!types_same (tA1b, t_array_create (type_int ())));
+  assert (!types_same (tA1c, t_array_create (t_array_create (type_int ()))));
   assert (!types_same (tA1d, t81a));
 
   printf ("All passed.\n");

@@ -1,3 +1,19 @@
+%option lang = "C"
+%option prefix = "type_"
+%option state_type = "type_state_t"
+%option no_track_lines
+%option force
+%option base = "200"
+
+%decls %{
+#include "estring.h"
+#include "slist.h"
+%}
+%{
+#include "type-tab.h"
+#define type_nodefailed ast_nodefailed
+%}
+
 // ------------------------------------
 //   ROOT TYPE NODE
 // ------------------------------------
@@ -131,17 +147,16 @@ type* type_array_any (void);
 #define MEMOIZE(TYPE)\
 type* type_##TYPE (void) {\
   static type * inst = NULL;\
-  if (!inst) inst = t_##TYPE##_create (&_tmpstate);\
+  if (!inst) inst = t_##TYPE##_create ();\
   return inst;\
 }
 #define MEMOIZE2(TYPE1,TYPE2)\
 type* type_##TYPE1##_##TYPE2 (void) {\
   static type * inst = NULL;\
-  if (!inst) inst = t_##TYPE1##_create (&_tmpstate, type_##TYPE2 ());\
+  if (!inst) inst = t_##TYPE1##_create (type_##TYPE2 ());\
   return inst;\
 }
 
-static ast_state_t _tmpstate;
 MEMOIZE(unknown)
 MEMOIZE(any)
 MEMOIZE(int)
@@ -167,7 +182,7 @@ MEMOIZE2(array, any)
 type_to_str_private (t_array)
 {
   type_to_str_private (self->host, buf, canon);
-  if (!canon || !ast_isa (self->host, t_array))
+  if (!canon || !type_isa (self->host, t_array))
     estr_append_cstr (buf, " 'array'");
 }
 

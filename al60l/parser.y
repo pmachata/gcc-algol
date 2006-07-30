@@ -20,7 +20,6 @@ typedef struct struct_parser_rep_t
   logger_t * log;
   int manage;
   statement * result;
-  ast_state_t * ast;
 
   slist_t * blockstack;
   container * block;
@@ -203,7 +202,7 @@ container * private_close_block (parser_rep_t * parser);
 %%
 
 Program:
-  {private_open_block (parser, ast_as (container, stmt_toplev_create (parser->ast)));}
+  {private_open_block (parser, ast_as (container, stmt_toplev_create ()));}
   LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
@@ -240,22 +239,22 @@ LabelIdentifier:
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
       estring_t * lit = $1;
-      $$ = label_id_create (parser->ast, lit);
+      $$ = label_id_create (lit);
     }
   |
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> LITINTEGER");
       long lit = $1;
-      $$ = label_int_create (parser->ast, lit);
+      $$ = label_int_create (lit);
     }
 
 Identifier:
   IDENTIFIER
     {
       log_printf (parser->log, ll_debug, "Identifier -> IDENTIFIER");
-      label * lbl = label_id_create (parser->ast, $1);
-      symbol * sym = symbol_create (parser->ast, lbl);
+      label * lbl = label_id_create ($1);
+      symbol * sym = symbol_create (lbl);
       $$ = sym;
     }
 
@@ -281,7 +280,7 @@ DeclaredIdentifier:
 
 Block:
   KWBEGIN
-  { private_open_block (parser, ast_as (container, stmt_block_create (parser->ast)));}
+  { private_open_block (parser, ast_as (container, stmt_block_create ()));}
   BlockDeclarationsList StatementList
   KWEND
     {
@@ -333,7 +332,7 @@ BlockDeclarations:
 		  slist_it_t * jt = slist_iter (sym->arr_bd_list);
 		  while (slist_it_has (jt))
 		    {
-		      rt = t_array_create (parser->ast, rt);
+		      rt = t_array_create (rt);
 		      slist_it_next (jt);
 		    }
 		  delete_slist_it (jt);
@@ -342,7 +341,7 @@ BlockDeclarations:
 
 	  // If original type is `own', make also this type `own'.
 	  if (ast_isa ($1, t_own))
-	    rt = t_own_create (parser->ast, rt);
+	    rt = t_own_create (rt);
 
 	  // Setup symbol and add to table.
 	  symbol_set_type (sym, rt);
@@ -360,7 +359,7 @@ Type:
     {
       log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
       if ($1)
-	$$ = t_own_create (parser->ast, $2);
+	$$ = t_own_create ($2);
       else
 	$$ = $2;
     }
@@ -369,9 +368,9 @@ Type:
     {
       log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
       // if no type declarator is given the type 'real' is understood
-      type * t = t_array_create (parser->ast, ($2 != NULL) ? $2 : type_real ());
+      type * t = t_array_create (($2 != NULL) ? $2 : type_real ());
       if ($1)
-	t = t_own_create (parser->ast, t);
+	t = t_own_create (t);
       $$ = t;
     }
 
@@ -477,7 +476,7 @@ BoundsPair:
 	  log_printf (parser->log, ll_error,
 		      "invalid type `%s' in array bounds",
 		      estr_cstr (type_to_str (lt, parser->tmp)));
-	  lb = expr_int_create (parser->ast, 0);
+	  lb = expr_int_create (0);
 	}
 
       expression * hb = $3;
@@ -490,14 +489,14 @@ BoundsPair:
 	  log_printf (parser->log, ll_error,
 		      "invalid type `%s' in array bounds",
 		      estr_cstr (type_to_str (ht, parser->tmp)));
-	  hb = expr_int_create (parser->ast, 0);
+	  hb = expr_int_create (0);
 	}
 */
 
       /* @TODO: if it's possible to evaluate expression in place, do
 	 it, and check that the boundaries make sense: A:B, A<B.  Also
 	 it will be necessary to generate runtime tests for that. */
-      $$ = boundspair_create (parser->ast, lb, hb);
+      $$ = boundspair_create (lb, hb);
     }
 
 Expression:
@@ -525,26 +524,26 @@ Expression:
 */
 
       //@@@TODO: typecheck branches
-      $$ = expr_if_create (parser->ast, $2, $4, $6);
+      $$ = expr_if_create ($2, $4, $6);
     }
 
 SimpleExpression:
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "Expression -> LITINTEGER");
-      $$ = expr_int_create (parser->ast, $1);
+      $$ = expr_int_create ($1);
     }
   |
   LITREAL
     {
       log_printf (parser->log, ll_debug, "Expression -> LITREAL");
-      $$ = expr_real_create (parser->ast, $1);
+      $$ = expr_real_create ($1);
     }
   |
   LITSTRING
     {
       log_printf (parser->log, ll_debug, "Expression -> LITSTRING");
-      $$ = expr_string_create (parser->ast, $1);
+      $$ = expr_string_create ($1);
     }
   |
   FunctionDesignator
@@ -559,98 +558,98 @@ SimpleExpression:
   |
   AOPSUB SimpleExpression %prec PREC_UNARY_MINUS
     {
-      $$ = expr_uminus_create (parser->ast, $2); //@@@TODO: typecheck
+      $$ = expr_uminus_create ($2); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPADD SimpleExpression
     {
-      $$ = expr_aadd_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_aadd_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPSUB SimpleExpression
     {
-      $$ = expr_asub_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_asub_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPMUL SimpleExpression
     {
-      $$ = expr_amul_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_amul_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPIDIV SimpleExpression
     {
-      $$ = expr_aidiv_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_aidiv_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPRDIV SimpleExpression
     {
-      $$ = expr_ardiv_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_ardiv_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPPOW SimpleExpression
     {
-      $$ = expr_apow_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_apow_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPNEQ SimpleExpression
     {
-      $$ = expr_rneq_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_rneq_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPEQ SimpleExpression
     {
-      $$ = expr_req_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_req_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPLTE SimpleExpression
     {
-      $$ = expr_rlte_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_rlte_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPLT SimpleExpression
     {
-      $$ = expr_rlt_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_rlt_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPGTE SimpleExpression
     {
-      $$ = expr_rgte_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_rgte_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPGT SimpleExpression
     {
-      $$ = expr_rgt_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_rgt_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPEQ SimpleExpression
     {
-      $$ = expr_leq_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_leq_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPIMP SimpleExpression
     {
-      $$ = expr_limp_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_limp_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPAND SimpleExpression
     {
-      $$ = expr_land_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_land_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPOR SimpleExpression
     {
-      $$ = expr_lor_create (parser->ast, $1, $3); //@@@TODO: typecheck
+      $$ = expr_lor_create ($1, $3); //@@@TODO: typecheck
     }
   |
   LOPNOT SimpleExpression
     {
-      $$ = expr_not_create (parser->ast, $2); //@@@TODO: typecheck
+      $$ = expr_not_create ($2); //@@@TODO: typecheck
     }
 
 FunctionDesignator:
   Identifier SEPLPAREN ActualParamList SEPRPAREN
     {
-      $$ = expr_call_create (parser->ast, $1, $3);
+      $$ = expr_call_create ($1, $3);
     }
   |
   Identifier
@@ -658,7 +657,7 @@ FunctionDesignator:
       // note: identifier node may denote funcall without parameters.  The
       // translation from expr_idref to expr_call is done during semantic
       // analysis, where we can decide what type given id is.
-      $$ = expr_idref_create (parser->ast, $1);
+      $$ = expr_idref_create ($1);
     }
 
 ActualParamList:
@@ -730,14 +729,14 @@ BasicStatement:
   /* eps */
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList");
-      $$ = stmt_dummy_create (parser->ast);
+      $$ = stmt_dummy_create ();
     }
   |
   LeftPartList Expression
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList LeftPartList Expression");
 
-      $$ = stmt_assign_create (parser->ast);
+      $$ = stmt_assign_create ();
       slist_it_t * it = slist_iter ($1);
       for (; slist_it_has (it); slist_it_next (it))
 	stmt_assign_add_lhs (ast_as (stmt_assign, $$), slist_it_get (it));
@@ -747,7 +746,7 @@ BasicStatement:
   |
   FunctionDesignator
     {
-      $$ = stmt_call_create (parser->ast, $1);
+      $$ = stmt_call_create ($1);
     }
 
 LeftPartList:
@@ -784,7 +783,6 @@ new_parser (lexer_t * lexer, int manage)
       ret->signature = private_parser_signature;
       ret->lexer = lexer;
       ret->manage = manage;
-      guard_ptr (buf, 1, ret->ast = new_ast_state ());
       guard_ptr (buf, 1, ret->log = new_logger ("parser"));
       log_set_filter (ret->log, ll_debug);
       guard_ptr (buf, 1, ret->blockstack = new_slist ());
@@ -804,7 +802,6 @@ delete_parser (parser_t * _parser)
   if (_parser != NULL)
     {
       parser_rep_t * parser = (void*)_parser;
-      delete_ast_state (parser->ast);
       delete_logger (parser->log);
       delete_slist (parser->blockstack);
       delete_estring (parser->tmp);
@@ -867,7 +864,7 @@ private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
   for (; slist_it_has (it); slist_it_next (it))
     {
       label * lbl = slist_it_get (it);
-      symbol * sym = symbol_create (parser->ast, lbl);
+      symbol * sym = symbol_create (lbl);
       container_add_symbol (cont, sym);
       symbol_set_stmt (sym, target);
       symbol_set_type (sym, type_label ());
