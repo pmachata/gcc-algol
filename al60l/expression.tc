@@ -109,7 +109,8 @@ expr_resolve_symbols (expr_string)
 // ------------------------------------
 
 %node expr_idref expression = {
-  symbol * sym;
+  label * lbl;
+  %nocreate symbol * sym = { NULL };
 }
 
 expr_to_str (expr_idref)
@@ -124,7 +125,7 @@ expr_type (expr_idref)
 
 expr_resolve_symbols (expr_idref)
 {
-  container_find_name_rec_add_undefined (block, self->sym, log);
+  self->sym = container_find_name_rec_add_undefined (block, self->lbl, log);
 }
 
 
@@ -168,6 +169,8 @@ expr_resolve_symbols (expr_if)
   expr_resolve_symbols (self->cond, block, log);
   expr_resolve_symbols (self->exp_t, block, log);
   expr_resolve_symbols (self->exp_f, block, log);
+  if (types_same (expr_type (ast_as (expression, self)), type_unknown ()))
+    ;
 }
 
 
@@ -308,13 +311,14 @@ expr_type (expr_not) {return expr_type (self->operand);}
 // ------------------------------------
 
 %node expr_call expression = {
-  symbol * id;
+  label * lbl;
   slist_t * arguments;
+  %nocreate symbol * sym = { NULL };
 }
 
 expr_to_str (expr_call)
 {
-  buf = symbol_to_str (self->id, buf);
+  buf = label_to_str (self->lbl, buf);
   if (!slist_empty (self->arguments))
     {
       estr_push (buf, '(');
@@ -345,7 +349,7 @@ expr_type (expr_call)
 
 expr_resolve_symbols (expr_call)
 {
-  container_find_name_rec_add_undefined (block, self->id, log);
+  self->sym = container_find_name_rec_add_undefined (block, self->lbl, log);
 
   slist_it_t * it = slist_iter (self->arguments);
   for (; slist_it_has (it); slist_it_next (it))

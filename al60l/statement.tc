@@ -140,23 +140,23 @@ stmt_resolve_symbols (container)
 /// See if given symbol is already defined somewhere in the scope.  If
 /// it's not, create new definition in most enclosing scope.  Answer
 /// either found, or newly created symbol.
-symbol * container_find_name_rec_add_undefined (container * self, symbol * sym, logger_t * log);
+symbol * container_find_name_rec_add_undefined (container * self, label * lbl, logger_t * log);
 %}
 
 
 %{
 symbol *
-container_find_name_rec_add_undefined (container * self, symbol * sym, logger_t * log)
+container_find_name_rec_add_undefined (container * self, label * lbl, logger_t * log)
 {
   estring_t * tmp = NULL;
-  symbol * found = container_find_name_rec (self, sym->lbl);
+  symbol * found = container_find_name_rec (self, lbl);
   if (found == NULL)
     {
       log_printf (log, ll_error, "unknown symbol named `%s'",
-		  estr_cstr (tmp = label_to_str (sym->lbl, tmp)));
-      int was_there = container_add_symbol (self, sym);
+		  estr_cstr (tmp = label_to_str (lbl, tmp)));
+      int was_there = container_add_symbol (self, symbol_create (lbl));
       assert (!was_there);
-      found = container_find_name (self, sym->lbl);
+      found = container_find_name (self, lbl);
     }
   assert (found != NULL);
   delete_estring (tmp);
@@ -182,11 +182,11 @@ private_dump_container (container * self, FILE * ofile, int level)
       fprintf (ofile, "%s%s", padding (level), estr_cstr (buf));
       label_to_str (sym->lbl, buf);
       fprintf (ofile, " %s", estr_cstr (buf));
-      if (sym->arr_bd_list != NULL
-	  && !slist_empty (sym->arr_bd_list))
+      if (sym->lbl->arr_bd_list != NULL
+	  && !slist_empty (sym->lbl->arr_bd_list))
 	{
 	  fprintf (ofile, "[");
-	  slist_it_t * jt = slist_iter (sym->arr_bd_list);
+	  slist_it_t * jt = slist_iter (sym->lbl->arr_bd_list);
 	  while (1)
 	    {
 	      boundspair * bp = slist_it_get (jt);

@@ -107,6 +107,7 @@ padding (int level)
 //   AST MODULES
 // ------------------------------------
 
+%include "label.tc"
 %include "symbol.tc"
 %include "statement.tc"
 %include "expression.tc"

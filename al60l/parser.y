@@ -174,7 +174,7 @@ container * private_close_block (parser_rep_t * parser);
 %type <lst> LabelList
 %type <lbl> Label
 %type <lbl> LabelIdentifier
-%type <sym> Identifier
+%type <lbl> Identifier
 //%type <sym> DeclaredIdentifier
 %type <stmt> Block
 //%type <> BlockDeclarationsList
@@ -258,8 +258,7 @@ Identifier:
     {
       log_printf (parser->log, ll_debug, "Identifier -> IDENTIFIER");
       label * lbl = label_id_create ($1);
-      symbol * sym = symbol_create (lbl);
-      $$ = sym;
+      $$ = lbl;
     }
 
 /*
@@ -309,7 +308,7 @@ BlockDeclarations:
       slist_it_t * it;
       for (it = slist_iter ($2); slist_it_has (it); slist_it_next (it))
 	{
-	  symbol * sym = ast_as (symbol, slist_it_get (it));
+	  label * lbl = ast_as (label, slist_it_get (it));
 
 	  // Classic algol only allows in this context:
 	  // ['own'] {'integer'|'real'|'Boolean'} ['array']
@@ -326,14 +325,14 @@ BlockDeclarations:
 	  // 'own' doesn't influence matching.
 	  if (types_match ($1, type_array_any ()))
 	    {
-	      if (sym->arr_bd_list == NULL)
+	      if (lbl->arr_bd_list == NULL)
 		log_printf (parser->log, ll_error,
 			    "Identifier `%s' needs array bounds.",
-			    estr_cstr (label_to_str (sym->lbl, parser->tmp)));
+			    estr_cstr (label_to_str (lbl, parser->tmp)));
 	      else
 		{
-		  assert (!slist_empty (sym->arr_bd_list));
-		  slist_it_t * jt = slist_iter (sym->arr_bd_list);
+		  assert (!slist_empty (lbl->arr_bd_list));
+		  slist_it_t * jt = slist_iter (lbl->arr_bd_list);
 		  while (slist_it_has (jt))
 		    {
 		      rt = t_array_create (rt);
@@ -348,6 +347,7 @@ BlockDeclarations:
 	    rt = t_own_create (rt);
 
 	  // Setup symbol and add to table.
+	  symbol * sym = symbol_create (lbl);
 	  symbol_set_type (sym, rt);
 	  int conflict = container_add_symbol (parser->block, sym);
 	  if (conflict)
@@ -474,6 +474,8 @@ BoundsPair:
       log_printf (parser->log, ll_debug, "BoundsPair -> Expression SEPCOLON Expression");
 
       expression * lb = $1;
+/*
+  @@@TODO: defer to type-checking stage
       type * lt = expr_type (lb);
       if (!types_match (lt, type_int ()))
 	{
@@ -482,6 +484,7 @@ BoundsPair:
 		      estr_cstr (type_to_str (lt, parser->tmp)));
 	  lb = expr_int_create (0);
 	}
+*/
 
       expression * hb = $3;
 /*

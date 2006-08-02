@@ -1,5 +1,4 @@
 %decls %{
-#include "label-tab.h"
 #include "type-tab.h"
 %}
 
@@ -7,16 +6,10 @@
 //   SYMBOL
 // ------------------------------------
 
-%node boundspair %typedef = {
-  expression * lobound;
-  expression * hibound;
-}
-
 %node symbol %typedef = {
   label * lbl;
   %nocreate statement * stmt = { NULL };
   %nocreate type * type = { NULL };
-  %nocreate slist_t * arr_bd_list = { new_slist () };
   %nocreate int hidden = { 0 };
 }
 

@@ -1,23 +1,14 @@
-%option lang = "C"
-%option prefix = "label_"
-%option state_type = "label_state_t"
-%option no_track_lines
-%option force
-%option base = "100"
-
-%decls %{
-#include "estring.h"
-%}
-%{
-#include "label-tab.h"
-#define label_nodefailed ast_nodefailed
-%}
-
 // ------------------------------------
 //   LABEL
 // ------------------------------------
 
+%node boundspair %typedef = {
+  expression * lobound;
+  expression * hibound;
+}
+
 %node label %abstract %typedef = {
+  %nocreate slist_t * arr_bd_list = { new_slist () };
 }
 
 /// Return string representation of the label (for debugging and
