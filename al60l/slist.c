@@ -8,6 +8,7 @@
 #include "slist.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 static char const* private_slist_signature = "slist";
 
@@ -77,6 +78,35 @@ new_slist_typed (void* (*test)(void * obj, void * user), void * userdata)
 #else
   return new_slist ();
 #endif
+}
+
+slist_t *
+new_slist_from (int num, ...)
+{
+  assert (num >= 0);
+  slist_t * ret = new_slist ();
+  va_list ap;
+  va_start(ap, num);
+  while (num--)
+    {
+      void * arg = va_arg(ap, void *);
+      slist_pushback (ret, arg);
+    }
+  va_end(ap);
+  return ret;
+}
+
+slist_t *
+clone_slist (slist_t * _slist)
+{
+  assert (_slist != NULL);
+  slist_t * ret = new_slist ();
+  slist_rep_t * slist = (void*)_slist;
+  for (slist_node_rep_t * node = slist->head;
+       node != NULL; node = node->link)
+    slist_pushback (ret, node->object);
+
+  return ret;
 }
 
 void
@@ -373,6 +403,13 @@ main (void)
     }
 
   assert (*nit == NULL);
+
+  printf (" + empty list\n");
+  slist_it_t * it = slist_iter (new_slist ());
+  for (; slist_it_has (it); slist_it_next (it))
+    assert (!"empty list shouldn't execute this");
+  delete_slist_it (it);
+
   printf ("All passed.\n");
   return 0;
 }

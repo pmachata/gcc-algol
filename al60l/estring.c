@@ -168,12 +168,14 @@ clone_estring (estring_t const* src)
 void
 delete_estring (estring_t * _dest)
 {
-  assert (_dest != NULL);
-  estring_rep_t * dest = (void*)_dest;
-  assert (dest->body != NULL);
+  if (_dest != NULL)
+    {
+      estring_rep_t * dest = (void*)_dest;
+      assert (dest->body != NULL);
 
-  free (dest->body);
-  free (dest);
+      free (dest->body);
+      free (dest);
+    }
 }
 
 estring_t *

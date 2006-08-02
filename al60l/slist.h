@@ -23,6 +23,12 @@ slist_t * new_slist (void);
 /// overhead, both memory and time.
 slist_t * new_slist_typed (void* (*test)(void * obj, void * user), void * userdata);
 
+/// Create new slist with `num' elements defined as extra arguments.
+slist_t * new_slist_from (int num, ...);
+
+/// Clone existing slist.
+slist_t * clone_slist (slist_t * slist);
+
 /// For purposes of testing type, this adaptor is provided.  The
 /// `test' has to be something*(*test)(whatever*), but is declared as
 /// mere void* to make it possible to pass over functions operating
