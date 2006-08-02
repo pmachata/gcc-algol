@@ -535,119 +535,151 @@ Expression:
 SimpleExpression:
   LITINTEGER
     {
-      log_printf (parser->log, ll_debug, "Expression -> LITINTEGER");
+      log_printf (parser->log, ll_debug, "SimpleExpression -> LITINTEGER");
       $$ = expr_int_create ($1);
     }
   |
   LITREAL
     {
-      log_printf (parser->log, ll_debug, "Expression -> LITREAL");
+      log_printf (parser->log, ll_debug, "SimpleExpression -> LITREAL");
       $$ = expr_real_create ($1);
     }
   |
   LITSTRING
     {
-      log_printf (parser->log, ll_debug, "Expression -> LITSTRING");
+      log_printf (parser->log, ll_debug, "SimpleExpression -> LITSTRING");
       $$ = expr_string_create ($1);
+    }
+  |
+  KWFALSE
+    {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> KWFALSE");
+      $$ = expr_bool_create (0);
+    }
+  |
+  KWTRUE
+    {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> KWTRUE");
+      $$ = expr_bool_create (1);
     }
   |
   FunctionDesignator
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> FunctionDesignator");
       $$ = $1;
     }
   |
   SEPLPAREN Expression SEPRPAREN
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SEPLPAREN Expression SEPRPAREN");
       $$ = $2;
     }
   |
   AOPSUB SimpleExpression %prec PREC_UNARY_MINUS
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> AOPSUB SimpleExpression");
       $$ = expr_uminus_create ($2); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPADD SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPADD SimpleExpression");
       $$ = expr_aadd_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPSUB SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPSUB SimpleExpression");
       $$ = expr_asub_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPMUL SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPMUL SimpleExpression");
       $$ = expr_amul_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPIDIV SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPIDIV SimpleExpression");
       $$ = expr_aidiv_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPRDIV SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPRDIV SimpleExpression");
       $$ = expr_ardiv_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression AOPPOW SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPPOW SimpleExpression");
       $$ = expr_apow_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPNEQ SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPNEQ SimpleExpression");
       $$ = expr_rneq_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPEQ SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPEQ SimpleExpression");
       $$ = expr_req_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPLTE SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPLTE SimpleExpression");
       $$ = expr_rlte_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPLT SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPLT SimpleExpression");
       $$ = expr_rlt_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPGTE SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPGTE SimpleExpression");
       $$ = expr_rgte_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression ROPGT SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPGT SimpleExpression");
       $$ = expr_rgt_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPEQ SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPEQ SimpleExpression");
       $$ = expr_leq_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPIMP SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPIMP SimpleExpression");
       $$ = expr_limp_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPAND SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPAND SimpleExpression");
       $$ = expr_land_create ($1, $3); //@@@TODO: typecheck
     }
   |
   SimpleExpression LOPOR SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPOR SimpleExpression");
       $$ = expr_lor_create ($1, $3); //@@@TODO: typecheck
     }
   |
   LOPNOT SimpleExpression
     {
+      log_printf (parser->log, ll_debug, "SimpleExpression -> LOPNOT SimpleExpression");
       $$ = expr_not_create ($2); //@@@TODO: typecheck
     }
 
