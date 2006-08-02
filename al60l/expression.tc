@@ -105,6 +105,34 @@ expr_resolve_symbols (expr_string)
 
 
 // ------------------------------------
+//   BOOLEAN LITERAL NODE
+// ------------------------------------
+
+%node expr_bool expression = {
+  int value;
+}
+
+expr_to_str (expr_bool)
+{
+  if (buf == NULL)
+    buf = new_estring ();
+  estr_assign_cstr (buf, self->value ? "'true'" : "'false'");
+  return buf;
+}
+
+expr_type (expr_bool)
+{
+  return type_bool ();
+}
+
+expr_resolve_symbols (expr_bool)
+{
+  // nothing
+}
+
+
+
+// ------------------------------------
 //   IDENTIFIER NODE
 // ------------------------------------
 
@@ -138,6 +166,7 @@ expr_resolve_symbols (expr_idref)
   expression * cond;
   expression * exp_t;
   expression * exp_f;
+  %nocreate type * result_type = { NULL };
 }
 
 expr_to_str (expr_if)
@@ -156,12 +185,7 @@ expr_to_str (expr_if)
 
 expr_type (expr_if)
 {
-  type* tt = expr_type (self->exp_t);
-  type* ft = expr_type (self->exp_f);
-  if (types_same (tt, ft)) // match is not enough
-    return tt;
-  else
-    return type_unknown ();
+  return self->result_type;
 }
 
 expr_resolve_symbols (expr_if)
@@ -169,8 +193,15 @@ expr_resolve_symbols (expr_if)
   expr_resolve_symbols (self->cond, block, log);
   expr_resolve_symbols (self->exp_t, block, log);
   expr_resolve_symbols (self->exp_f, block, log);
-  if (types_same (expr_type (ast_as (expression, self)), type_unknown ()))
-    ;
+
+  type* tt = expr_type (self->exp_t);
+  type* ft = expr_type (self->exp_f);
+  self->result_type = tt;
+  if (!types_same (tt, ft)) // match is not enough
+    {
+      log_printf (log, ll_error, "both `if' branches have to have same types");
+      self->exp_f = expr_primitive_for_type (tt);
+    }
 }
 
 

@@ -47,20 +47,22 @@ main(int argc, char ** argv)
 
   statement * ast = parser_parse (a_parser);
 
+  logger_t * anal_log = new_logger ("analysis");
+  log_set_filter (anal_log, ll_filter_nothing);
+
   if (ast)
     {
       assert (ast_isa (ast, statement));
-      logger_t * log = new_logger ("analysis");
-      log_set_filter (log, ll_filter_nothing);
-      log_printf (log, ll_info, "entering analysis...");
-      stmt_resolve_symbols (ast, log);
+      log_printf (anal_log, ll_info, "entering analysis...");
+      stmt_resolve_symbols (ast, anal_log);
       if (dump)
 	statement_dump (ast, stdout, 0);
     }
 
   int errors =
     log_count_messages (lexer_log (a_lexer), ll_error)
-    + log_count_messages (parser_log (a_parser), ll_error);
+    + log_count_messages (parser_log (a_parser), ll_error)
+    + log_count_messages (anal_log, ll_error);
 
   if (errors)
     fprintf (stderr, "%d errors encountered.\n", errors);

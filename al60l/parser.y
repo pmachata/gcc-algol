@@ -529,8 +529,6 @@ Expression:
 		      estr_cstr (type_to_str (ct, parser->tmp)));
 	}
 */
-
-      //@@@TODO: typecheck branches
       $$ = expr_if_create ($2, $4, $6);
     }
 
