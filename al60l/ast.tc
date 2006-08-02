@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include "slist.h"
 #include "estring.h"
+#include "logger.h"
+#include "util.h"
 %}
 
 %decls %end %{

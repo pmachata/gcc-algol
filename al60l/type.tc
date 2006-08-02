@@ -111,13 +111,7 @@ type_to_str_private (t_any) { estr_assign_cstr (buf, "'any'"); }
 type_to_str_private (t_int) { estr_assign_cstr (buf, "'integer'"); }
 
 %node t_void type = { }
-type_to_str_private (t_void)
-{
-  if (!canon)
-    estr_assign_cstr (buf, "<void>");
-  else
-    estr_assign_cstr (buf, "");
-}
+type_to_str_private (t_void) { estr_assign_cstr (buf, "<void>"); }
 
 %node t_real type = { }
 type_to_str_private (t_real) { estr_assign_cstr (buf, "'real'"); }

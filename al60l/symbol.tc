@@ -17,6 +17,7 @@
   %nocreate statement * stmt = { NULL };
   %nocreate type * type = { NULL };
   %nocreate slist_t * arr_bd_list = { new_slist () };
+  %nocreate int hidden = { 0 };
 }
 
 /// Dump a symbol to a buffer.  If buffer is NULL, new buffer is
@@ -28,6 +29,9 @@
 
 /// Set the statement associated with the symbol.
 %operation void symbol_set_stmt (symbol * self, statement * stmt)
+
+/// Make the symbol hidden / visible.
+%operation void symbol_set_hidden (symbol * self, int hidden)
 
 symbol_to_str (symbol)
 {
@@ -43,6 +47,12 @@ symbol_set_stmt (symbol)
 {
   self->stmt = stmt;
 }
+
+symbol_set_hidden (symbol)
+{
+  self->hidden = hidden;
+}
+
 
 /*
  * Local Variables:

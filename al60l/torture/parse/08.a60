@@ -1,6 +1,5 @@
- 'begin'
-  'integer' a;
-  'integer' exit;
-@exit should be builtin
-  exit(1);
- 'end';
+'begin'
+ 'integer' a;
+ a := 1;
+ exit(a);
+'end';

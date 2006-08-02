@@ -50,7 +50,10 @@ main(int argc, char ** argv)
   if (ast)
     {
       assert (ast_isa (ast, statement));
-      //resolve_idrefs (ast);
+      logger_t * log = new_logger ("analysis");
+      log_set_filter (log, ll_filter_nothing);
+      log_printf (log, ll_info, "entering analysis...");
+      stmt_resolve_symbols (ast, log);
       if (dump)
 	statement_dump (ast, stdout, 0);
     }

@@ -12,6 +12,11 @@
 /// Get the type of the expression.
 %operation type * expr_type (expression * self) = { type_unknown () }
 
+/// Resolve symbols used in this expression.  By the time this gets
+/// called, symtabs should be already filled.  Typechecking should be
+/// also performed here.
+%operation void expr_resolve_symbols (expression * self, container * block, logger_t * log);
+
 
 
 // ------------------------------------
@@ -35,6 +40,11 @@ expr_type (expr_int)
   return type_int ();
 }
 
+expr_resolve_symbols (expr_int)
+{
+  // nothing
+}
+
 
 
 // ------------------------------------
@@ -56,6 +66,11 @@ expr_to_str (expr_real)
 expr_type (expr_real)
 {
   return type_real ();
+}
+
+expr_resolve_symbols (expr_real)
+{
+  // nothing
 }
 
 
@@ -82,6 +97,10 @@ expr_type (expr_string)
   return type_string ();
 }
 
+expr_resolve_symbols (expr_string)
+{
+  // nothing
+}
 
 
 
@@ -103,6 +122,10 @@ expr_type (expr_idref)
   return self->sym->type;
 }
 
+expr_resolve_symbols (expr_idref)
+{
+  container_find_name_rec_add_undefined (block, self->sym, log);
+}
 
 
 
@@ -140,6 +163,13 @@ expr_type (expr_if)
     return type_unknown ();
 }
 
+expr_resolve_symbols (expr_if)
+{
+  expr_resolve_symbols (self->cond, block, log);
+  expr_resolve_symbols (self->exp_t, block, log);
+  expr_resolve_symbols (self->exp_f, block, log);
+}
+
 
 
 
@@ -173,6 +203,12 @@ expr_type (expr_bin)
 {
   // @TODO: fixme
   return type_int ();
+}
+
+expr_resolve_symbols (expr_bin)
+{
+  expr_resolve_symbols (self->left, block, log);
+  expr_resolve_symbols (self->right, block, log);
 }
 
 
@@ -251,6 +287,11 @@ expr_to_str (expr_un)
   return buf;
 }
 
+expr_resolve_symbols (expr_un)
+{
+  expr_resolve_symbols (self->operand, block, log);
+}
+
 %node expr_uminus expr_un = {}
 expr_un_op_str (expr_uminus) {return "-";}
 expr_type (expr_uminus) {return expr_type (self->operand);}
@@ -300,6 +341,19 @@ expr_type (expr_call)
 {
   // @TODO: fixme
   return type_int ();
+}
+
+expr_resolve_symbols (expr_call)
+{
+  container_find_name_rec_add_undefined (block, self->id, log);
+
+  slist_it_t * it = slist_iter (self->arguments);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      expression * arg = slist_it_get (it);
+      expr_resolve_symbols (arg, block, log);
+    }
+  delete_slist_it (it);
 }
 
 

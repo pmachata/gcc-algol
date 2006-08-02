@@ -11,6 +11,11 @@
 /// `ofile' with basic indentation of `level' spaces.
 %operation void statement_dump (statement * self, FILE * ofile, int level)
 
+/// Resolve symbols used in this statement.  By the time this gets
+/// called, symtabs should be already filled.  Typechecking should be
+/// also performed here.
+%operation void stmt_resolve_symbols (statement * self, logger_t * log);
+
 
 
 // ------------------------------------
@@ -23,6 +28,11 @@
 statement_dump (stmt_dummy)
 {
   fprintf (ofile, "%s;\n", padding (level));
+}
+
+stmt_resolve_symbols (stmt_dummy)
+{
+  // nothing
 }
 
 
@@ -63,6 +73,16 @@ stmt_assign_add_lhs (stmt_assign)
   slist_pushback (self->lhss, expr);
 }
 
+stmt_resolve_symbols (stmt_assign)
+{
+  expr_resolve_symbols (self->rhs, self->parent, log);
+  slist_it_t * it = slist_iter (self->lhss);
+  for (; slist_it_has (it); slist_it_next (it))
+    expr_resolve_symbols (slist_it_get (it), self->parent, log);
+  delete_slist_it (it);
+  // @TODO: also check for lvalues and typecheck
+}
+
 
 // ------------------------------------
 //   FUNCALL STATEMENT NODE
@@ -77,6 +97,11 @@ statement_dump (stmt_call)
   estring_t * buf = expr_to_str (self->call, NULL);
   fprintf (ofile, "%s%s;\n", padding (level), estr_cstr (buf));
   delete_estring (buf);
+}
+
+stmt_resolve_symbols (stmt_call)
+{
+  expr_resolve_symbols (self->call, self->parent, log);
 }
 
 
@@ -103,19 +128,54 @@ statement_dump (stmt_call)
 /// in all parental containers.  Return NULL if not found.
 %operation symbol * container_find_name_rec ([container * self], label * lbl) = { NULL }
 
+stmt_resolve_symbols (container)
+{
+  slist_it_t * it = slist_iter (self->commands);
+  for (; slist_it_has (it); slist_it_next (it))
+    stmt_resolve_symbols (slist_it_get (it), log);
+  delete_slist_it (it);
+}
+
+%decls %end %{
+/// See if given symbol is already defined somewhere in the scope.  If
+/// it's not, create new definition in most enclosing scope.  Answer
+/// either found, or newly created symbol.
+symbol * container_find_name_rec_add_undefined (container * self, symbol * sym, logger_t * log);
+%}
+
 
 %{
+symbol *
+container_find_name_rec_add_undefined (container * self, symbol * sym, logger_t * log)
+{
+  estring_t * tmp = NULL;
+  symbol * found = container_find_name_rec (self, sym->lbl);
+  if (found == NULL)
+    {
+      log_printf (log, ll_error, "unknown symbol named `%s'",
+		  estr_cstr (tmp = label_to_str (sym->lbl, tmp)));
+      int was_there = container_add_symbol (self, sym);
+      assert (!was_there);
+      found = container_find_name (self, sym->lbl);
+    }
+  assert (found != NULL);
+  delete_estring (tmp);
+
+  return found;
+}
+
 void
 private_dump_container (container * self, FILE * ofile, int level)
 {
   estring_t * buf = new_estring ();
 
-  // dump all variables but labels
+  // dump all variables but labels and hidden symbols
   slist_it_t * it = slist_iter (self->symtab);
   for (; slist_it_has (it); slist_it_next (it))
     {
       symbol * sym = slist_it_get (it);
-      if (ast_isa (sym->type, t_label))
+      if (ast_isa (sym->type, t_label)
+	  || sym->hidden)
 	continue;
 
       type_to_str_canon (sym->type, buf);
@@ -250,6 +310,22 @@ statement_dump (stmt_toplev)
 {
   private_dump_container (ast_as (container, self), ofile, level);
 }
+
+%decls %end %{
+/// Populate given container with algol internal functions.
+void stmt_toplev_define_internals (stmt_toplev * self);
+%}
+
+%{
+void
+stmt_toplev_define_internals (stmt_toplev * self)
+{
+  symbol * s = symbol_create (label_id_create (new_estring_from ("exit")));
+  symbol_set_type (s, t_proc_create (type_void (), new_slist_from (1, type_int ())));
+  symbol_set_hidden (s, 1);
+  container_add_symbol (ast_as (container, self), s);
+}
+%}
 
 
 /*

@@ -202,7 +202,11 @@ container * private_close_block (parser_rep_t * parser);
 %%
 
 Program:
-  {private_open_block (parser, ast_as (container, stmt_toplev_create ()));}
+  {
+    container * c = ast_as (container, stmt_toplev_create ());
+    stmt_toplev_define_internals (ast_as (stmt_toplev, c));
+    private_open_block (parser, c);
+  }
   LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
