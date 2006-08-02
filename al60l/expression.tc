@@ -153,7 +153,11 @@ expr_type (expr_idref)
 
 expr_resolve_symbols (expr_idref)
 {
-  self->sym = container_find_name_rec_add_undefined (block, self->lbl, log);
+  type * match_type = t_proc_create (type_any (), new_slist ());
+  symbol * found = container_find_name_rec (block, self->lbl, match_type);
+  if (found == NULL)
+    found = container_find_name_rec_add_undefined (block, self->lbl, type_any (), log);
+  self->sym = found;
 }
 
 
@@ -239,13 +243,6 @@ expr_type (expr_bin)
   return type_int ();
 }
 
-expr_resolve_symbols (expr_bin)
-{
-  expr_resolve_symbols (self->left, block, log);
-  expr_resolve_symbols (self->right, block, log);
-}
-
-
 %node expr_aadd expr_bin = {}
 expr_bin_op_str (expr_aadd) {return "+";}
 
@@ -263,6 +260,18 @@ expr_bin_op_str (expr_ardiv) {return "/";}
 
 %node expr_apow expr_bin = {}
 expr_bin_op_str (expr_apow) {return "**";}
+
+expr_resolve_symbols (expr_aadd),
+expr_resolve_symbols (expr_asub),
+expr_resolve_symbols (expr_amul),
+expr_resolve_symbols (expr_aidiv),
+expr_resolve_symbols (expr_ardiv),
+expr_resolve_symbols (expr_apow),
+expr_resolve_symbols (expr_bin)
+{
+  expr_resolve_symbols (self->left, block, log);
+  expr_resolve_symbols (self->right, block, log);
+}
 
 
 %node expr_rel expr_bin %abstract = {}
@@ -344,6 +353,7 @@ expr_type (expr_not) {return expr_type (self->operand);}
 %node expr_call expression = {
   label * lbl;
   slist_t * arguments;
+  %nocreate type * t = { NULL };
   %nocreate symbol * sym = { NULL };
 }
 
@@ -380,15 +390,20 @@ expr_type (expr_call)
 
 expr_resolve_symbols (expr_call)
 {
-  self->sym = container_find_name_rec_add_undefined (block, self->lbl, log);
-
+  slist_t * argtypes = new_slist ();
   slist_it_t * it = slist_iter (self->arguments);
   for (; slist_it_has (it); slist_it_next (it))
     {
       expression * arg = slist_it_get (it);
       expr_resolve_symbols (arg, block, log);
+      type * argtype = expr_type (arg);
+      slist_pushback (argtypes, argtype);
     }
   delete_slist_it (it);
+
+  type * match_type = t_proc_create (type_any (), argtypes);
+  self->sym = container_find_name_rec_add_undefined (block, self->lbl, match_type, log);
+  delete_slist (argtypes);
 }
 
 

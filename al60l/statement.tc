@@ -117,16 +117,31 @@ stmt_resolve_symbols (stmt_call)
 /// Add new command into container.
 %operation void container_add_stmt (container * self, statement * stmt)
 
+%decls %{
+typedef enum enum_symtab_entry_kind_t
+{
+  sek_internal,
+  sek_ordinary
+} symtab_entry_kind_t;
+%}
+
 /// Add given symbol to the container and return 0.  It there already
 /// is other symbol with the same name, do nothing and return -1.
-%operation int container_add_symbol (container * self, symbol * sym) = { 0 }
+/// `internal' is 1 for internal symbols (which may be overloaded) and
+/// 0 for ordinary symbols (which may not).  This means that with
+/// internal==1, this function will always answer 0.
+%operation int container_add_symbol (container * self, symbol * sym, symtab_entry_kind_t internal) = { 0 }
 
-/// Lookup given symbol in the container.  Return NULL if not found.
-%operation symbol * container_find_name ([container * self], label * lbl) = { NULL }
+/// Lookup given symbol in the container.  Answer first symbol that
+/// matches restriction `atype', or first symbol with NULL type (in
+/// which case type can't be checked).  Return NULL if not found.
+%operation symbol * container_find_name ([container * self], label * lbl, type * atype) = { NULL }
 
 /// Lookup given symbol in the container, and if it fails, recursively
-/// in all parental containers.  Return NULL if not found.
-%operation symbol * container_find_name_rec ([container * self], label * lbl) = { NULL }
+/// in all parental containers.  Answer first symbol that matches
+/// restriction `atype', or first symbol with NULL type (in which case
+/// type can't be checked).  Return NULL if not found.
+%operation symbol * container_find_name_rec ([container * self], label * lbl, type * atype) = { NULL }
 
 stmt_resolve_symbols (container)
 {
@@ -134,29 +149,96 @@ stmt_resolve_symbols (container)
   for (; slist_it_has (it); slist_it_next (it))
     stmt_resolve_symbols (slist_it_get (it), log);
   delete_slist_it (it);
+
+  estring_t * tmp = NULL;
+  it = slist_iter (self->symtab);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      symbol * sym = slist_it_get (it);
+      if (sym->lbl->arr_bd_list != NULL
+	  && !slist_empty (sym->lbl->arr_bd_list))
+	{
+	  slist_it_t * jt = slist_iter (sym->lbl->arr_bd_list);
+	  for (; slist_it_has (jt); slist_it_next (jt))
+	    {
+	      boundspair * bp = slist_it_get (jt);
+	      expression * hi = bp->hibound;
+	      expression * lo = bp->lobound;
+	      expr_resolve_symbols (hi, self, log);
+	      expr_resolve_symbols (lo, self, log);
+	      type * hit = expr_type (hi);
+	      type * lot = expr_type (lo);
+
+	      if (!types_match (lot, type_int ()))
+		{
+		  log_printf (log, ll_error,
+			      "invalid type `%s' in lower boundary",
+			      estr_cstr (tmp = type_to_str (lot, tmp)));
+		  bp->lobound = expr_primitive_for_type (type_int ());
+		}
+
+	      if (!types_match (hit, type_int ()))
+		{
+		  log_printf (log, ll_error,
+			      "invalid type `%s' in upper boundary",
+			      estr_cstr (tmp = type_to_str (hit, tmp)));
+		  bp->hibound = expr_primitive_for_type (type_int ());
+		}
+	    }
+	  delete_slist_it (jt);
+	}
+    }
+  delete_slist_it (it);
+  delete_estring (tmp);
 }
 
 %decls %end %{
-/// See if given symbol is already defined somewhere in the scope.  If
-/// it's not, create new definition in most enclosing scope.  Answer
-/// either found, or newly created symbol.
-symbol * container_find_name_rec_add_undefined (container * self, label * lbl, logger_t * log);
+/// See if given symbol with requested matching type, is already
+/// defined somewhere in the scope.  If it's not, create new
+/// definition in most enclosing scope.  Answer either found, or newly
+/// created symbol.
+symbol * container_find_name_rec_add_undefined (container * self, label * lbl, type * atype, logger_t * log);
 %}
 
 
 %{
 symbol *
-container_find_name_rec_add_undefined (container * self, label * lbl, logger_t * log)
+container_find_name_rec_add_undefined (container * self, label * lbl, type * atype, logger_t * log)
 {
   estring_t * tmp = NULL;
-  symbol * found = container_find_name_rec (self, lbl);
+  symbol * found = container_find_name_rec (self, lbl, atype);
   if (found == NULL)
     {
-      log_printf (log, ll_error, "unknown symbol named `%s'",
-		  estr_cstr (tmp = label_to_str (lbl, tmp)));
-      int was_there = container_add_symbol (self, symbol_create (lbl));
+      if (types_same (atype, type_any ()))
+	log_printf (log, ll_error, "unknown symbol named `%s'",
+		    estr_cstr (tmp = label_to_str (lbl, tmp)));
+      else
+	{
+	  // second chance: look up any symbol of that name
+	  found = container_find_name_rec (self, lbl, type_any ());
+	  if (found == NULL)
+	    {
+	      log_printf (log, ll_error, "unknown symbol named `%s'",
+			  estr_cstr (tmp = label_to_str (lbl, tmp)));
+	    }
+	  else
+	    {
+	      tmp = label_to_str (lbl, tmp);
+	      estring_t * t1s = type_to_str (atype, NULL);
+	      estring_t * t2s = type_to_str (found->type, NULL);
+	      estring_t * fmt =
+		new_estring_fmt ("type mismatch for symbol `%s': requested "
+				 "type `%s', found type `%s'",
+				 estr_cstr (tmp), estr_cstr (t1s), estr_cstr (t2s));
+	      log_printf (log, ll_error, "%s", estr_cstr (fmt));
+	      delete_estring (fmt);
+	      delete_estring (t2s);
+	      delete_estring (t1s);
+	    }
+	}
+      int was_there = container_add_symbol (self, symbol_create (lbl), 0);
       assert (!was_there);
-      found = container_find_name (self, lbl);
+      found = container_find_name (self, lbl, atype);
     }
   assert (found != NULL);
   delete_estring (tmp);
@@ -256,7 +338,8 @@ container_add_stmt (container)
 
 container_add_symbol (container)
 {
-  if (container_find_name (self, sym->lbl) != NULL)
+  if (internal == sek_ordinary
+      && container_find_name (self, sym->lbl, type_any ()) != NULL)
     return -1;
 
   slist_pushback (self->symtab, sym);
@@ -269,7 +352,8 @@ container_find_name (container)
   for (it = slist_iter (self->symtab); slist_it_has (it); slist_it_next (it))
     {
       symbol * sym = slist_it_get (it);
-      if (label_eq (sym->lbl, lbl))
+      if (label_eq (sym->lbl, lbl)
+	  && (sym->type == NULL || types_match (sym->type, atype)))
 	return sym;
     }
   return NULL;
@@ -277,9 +361,9 @@ container_find_name (container)
 
 container_find_name_rec (container)
 {
-  symbol * sym = container_find_name (self, lbl);
+  symbol * sym = container_find_name (self, lbl, atype);
   if (sym == NULL && self->parent != NULL)
-    return container_find_name_rec (self->parent, lbl);
+    return container_find_name_rec (self->parent, lbl, atype);
   else
     return sym;
 }
@@ -320,10 +404,34 @@ void stmt_toplev_define_internals (stmt_toplev * self);
 void
 stmt_toplev_define_internals (stmt_toplev * self)
 {
-  symbol * s = symbol_create (label_id_create (new_estring_from ("exit")));
-  symbol_set_type (s, t_proc_create (type_void (), new_slist_from (1, type_int ())));
-  symbol_set_hidden (s, 1);
-  container_add_symbol (ast_as (container, self), s);
+  struct interfun {
+    char const* n;
+    type * t;
+  } builtins [] =
+  {
+    {"exit", type_proc_void_int ()},
+    {"abs",  type_proc_real_real ()},
+    {"abs",  type_proc_int_int ()},
+    {"sign", type_proc_real_int ()},
+    {"sqrt", type_proc_real_real ()},
+    {"sin",  type_proc_real_real ()},
+    {"cos",  type_proc_real_real ()},
+    {"arctan", type_proc_real_real ()},
+    {"ln",   type_proc_real_real ()},
+    {"exp",  type_proc_real_real ()},
+    {"entier", type_proc_int_real ()},
+    {NULL,   NULL}
+  };
+
+  for (struct interfun * ptr = builtins;
+       ptr->n != NULL; ptr++)
+    {
+      symbol * s = symbol_create (label_id_create (new_estring_from (ptr->n)));
+      symbol_set_type (s, ptr->t);
+      symbol_set_hidden (s, 1);
+      int fail = container_add_symbol (ast_as (container, self), s, sek_internal);
+      assert (fail == 0);
+    }
 }
 %}
 

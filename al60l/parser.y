@@ -349,7 +349,7 @@ BlockDeclarations:
 	  // Setup symbol and add to table.
 	  symbol * sym = symbol_create (lbl);
 	  symbol_set_type (sym, rt);
-	  int conflict = container_add_symbol (parser->block, sym);
+	  int conflict = container_add_symbol (parser->block, sym, sek_ordinary);
 	  if (conflict)
 	    log_printf (parser->log, ll_error,
 			"Duplicate identifier `%s'.",
@@ -474,31 +474,7 @@ BoundsPair:
       log_printf (parser->log, ll_debug, "BoundsPair -> Expression SEPCOLON Expression");
 
       expression * lb = $1;
-/*
-  @@@TODO: defer to type-checking stage
-      type * lt = expr_type (lb);
-      if (!types_match (lt, type_int ()))
-	{
-	  log_printf (parser->log, ll_error,
-		      "invalid type `%s' in array bounds",
-		      estr_cstr (type_to_str (lt, parser->tmp)));
-	  lb = expr_int_create (0);
-	}
-*/
-
       expression * hb = $3;
-/*
-  @@@TODO: defer typechecking to later stage
-
-      type_t const* ht = expr_type (hb);
-      if (!types_match (ht, type_int ()))
-	{
-	  log_printf (parser->log, ll_error,
-		      "invalid type `%s' in array bounds",
-		      estr_cstr (type_to_str (ht, parser->tmp)));
-	  hb = expr_int_create (0);
-	}
-*/
 
       /* @TODO: if it's possible to evaluate expression in place, do
 	 it, and check that the boundaries make sense: A:B, A<B.  Also
@@ -902,7 +878,7 @@ private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
     {
       label * lbl = slist_it_get (it);
       symbol * sym = symbol_create (lbl);
-      container_add_symbol (cont, sym);
+      container_add_symbol (cont, sym, sek_ordinary);
       symbol_set_stmt (sym, target);
       symbol_set_type (sym, type_label ());
     }

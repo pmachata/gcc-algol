@@ -134,6 +134,11 @@ type* type_string (void);
 type* type_bool (void);
 type* type_label (void);
 type* type_array_any (void);
+type* type_proc_void_int (void);
+type* type_proc_int_int (void);
+type* type_proc_real_int (void);
+type* type_proc_int_real (void);
+type* type_proc_real_real (void);
 %}
 
 %{
@@ -149,6 +154,12 @@ type* type_##TYPE1##_##TYPE2 (void) {\
   if (!inst) inst = t_##TYPE1##_create (type_##TYPE2 ());\
   return inst;\
 }
+#define MEMOIZEPROC1(TYPERET,TYPEARG)\
+type* type_proc_##TYPERET##_##TYPEARG (void) {\
+  static type * inst = NULL;\
+  if (!inst) inst = t_proc_create (type_##TYPERET (), new_slist_from (1, type_##TYPEARG ()));\
+  return inst;\
+}
 
 MEMOIZE(unknown)
 MEMOIZE(any)
@@ -159,8 +170,15 @@ MEMOIZE(string)
 MEMOIZE(bool)
 MEMOIZE(label)
 MEMOIZE2(array, any)
+MEMOIZEPROC1(void, int)
+MEMOIZEPROC1(int, real)
+MEMOIZEPROC1(real, int)
+MEMOIZEPROC1(int, int)
+MEMOIZEPROC1(real, real)
 
 #undef MEMOIZE
+#undef MEMOIZE2
+#undef MEMOIZEPROC1
 %}
 
 
