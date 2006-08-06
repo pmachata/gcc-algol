@@ -164,10 +164,13 @@ stmt_resolve_symbols (container)
 	      boundspair * bp = slist_it_get (jt);
 	      expression * hi = bp->hibound;
 	      expression * lo = bp->lobound;
-	      expr_resolve_symbols (hi, self, log);
-	      expr_resolve_symbols (lo, self, log);
-	      type * hit = expr_type (hi);
+	      // symbols in bounds are resolved with use of parental
+	      // symtab; this is illegal:
+	      //  'begin' 'integer' y; 'integer' 'array' z[1:y]; 'end';
+	      expr_resolve_symbols (lo, self->parent, log);
+	      expr_resolve_symbols (hi, self->parent, log);
 	      type * lot = expr_type (lo);
+	      type * hit = expr_type (hi);
 
 	      if (!types_match (lot, type_int ()))
 		{
@@ -210,7 +213,7 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
   if (found == NULL)
     {
       if (types_same (atype, type_any ()))
-	log_printf (log, ll_error, "unknown symbol named `%s'",
+	log_printf (log, ll_error, "(1) unknown symbol named `%s'",
 		    estr_cstr (tmp = label_to_str (lbl, tmp)));
       else
 	{
@@ -218,7 +221,7 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
 	  found = container_find_name_rec (self, lbl, type_any ());
 	  if (found == NULL)
 	    {
-	      log_printf (log, ll_error, "unknown symbol named `%s'",
+	      log_printf (log, ll_error, "(2) unknown symbol named `%s'",
 			  estr_cstr (tmp = label_to_str (lbl, tmp)));
 	    }
 	  else
@@ -227,8 +230,8 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
 	      estring_t * t1s = type_to_str (atype, NULL);
 	      estring_t * t2s = type_to_str (found->type, NULL);
 	      estring_t * fmt =
-		new_estring_fmt ("type mismatch for symbol `%s': requested "
-				 "type `%s', found type `%s'",
+		new_estring_fmt ("type mismatch for symbol `%s': "
+				 "requested type `%s', found type `%s'",
 				 estr_cstr (tmp), estr_cstr (t1s), estr_cstr (t2s));
 	      log_printf (log, ll_error, "%s", estr_cstr (fmt));
 	      delete_estring (fmt);
@@ -236,9 +239,12 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
 	      delete_estring (t1s);
 	    }
 	}
-      int was_there = container_add_symbol (self, symbol_create (lbl), 0);
+      int was_there = container_add_symbol (self, symbol_create (lbl), sek_ordinary);
       assert (!was_there);
       found = container_find_name (self, lbl, atype);
+      // mark a type at new symbol, either fallback type_int, or
+      // atype, if it has suitable type
+      symbol_set_type (found, is_metatype (atype) ? type_int () : atype);
     }
   assert (found != NULL);
   delete_estring (tmp);

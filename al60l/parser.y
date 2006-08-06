@@ -203,7 +203,14 @@ container * private_close_block (parser_rep_t * parser);
 
 Program:
   {
+    // dummy container, so that toplevel references to ->parent end up
+    // somewhere sensible
+    container * dummy = ast_as (container, stmt_toplev_create ());
+    private_open_block (parser, dummy);
+
+    // actual toplevel container
     container * c = ast_as (container, stmt_toplev_create ());
+    c->parent = dummy;
     stmt_toplev_define_internals (ast_as (stmt_toplev, c));
     private_open_block (parser, c);
   }

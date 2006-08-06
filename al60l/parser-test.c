@@ -37,6 +37,11 @@ main(int argc, char ** argv)
     }
 
   lexer_t * a_lexer = new_lexer_filename (filename);
+  if (a_lexer == NULL)
+    {
+      fprintf (stderr, "lexer creation failed\n");
+      return 1;
+    }
   assert (lexer (a_lexer));
   assert (logger ((void*)lexer_log (a_lexer)));
   lexer_set_logging (a_lexer, ll_warning, 1);
@@ -47,7 +52,7 @@ main(int argc, char ** argv)
 
   statement * ast = parser_parse (a_parser);
 
-  logger_t * anal_log = new_logger ("analysis");
+  logger_t * anal_log = new_logger ("analys");
   log_set_filter (anal_log, ll_filter_nothing);
 
   if (ast)

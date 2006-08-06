@@ -63,7 +63,16 @@ expr_primitive_for_type (type)
 }
 
 
+/// Check if given type is metatype (unknown, any, or maybe others in
+/// future), or basic type.  Note that array, own, etc. are not
+/// metatypes, but merely parametrized basic types.
+%operation int is_metatype (type * self) = { 0 }
 
+is_metatype (type)
+{
+  // all types except for those marked are basic, non-metatype types
+  return 0;
+}
 
 %{
 #include "util.h"
@@ -93,14 +102,21 @@ type_get_root (type)
 
 
 // ------------------------------------
-//   BASIC TYPES
+//   METATYPES
 // ------------------------------------
 
 %node t_unknown type = { }
-type_to_str_private (t_unknown) { estr_assign_cstr (buf, "'unknown'"); }
+type_to_str_private (t_unknown) { estr_assign_cstr (buf, "<unknown>"); }
+is_metatype (t_unknown) { return 1; }
 
 %node t_any type = { }
-type_to_str_private (t_any) { estr_assign_cstr (buf, "'any'"); }
+type_to_str_private (t_any) { estr_assign_cstr (buf, "<any>"); }
+is_metatype (t_any) { return 1; }
+
+
+// ------------------------------------
+//   BASIC TYPES
+// ------------------------------------
 
 %node t_int type = { }
 type_to_str_private (t_int) { estr_assign_cstr (buf, "'integer'"); }

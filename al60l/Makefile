@@ -113,7 +113,7 @@ parser-test: parser-test.c parser.o ast.o logger.o\
 
 check-parser: parser-test Makefile
 	@echo "============================================="
-	cd torture && ./torture.sh
+	cd testsuite && ./torture.sh
 	rm -f ./parser-test
 
 
