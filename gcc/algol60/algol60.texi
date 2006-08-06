@@ -1,0 +1,15 @@
+\input texinfo @c -*-texinfo-*-
+@setfilename algol60.info
+@settitle Guide to g60
+
+@include gcc-common.texi
+
+@c This tells @include'd files that they're part of the overall
+@c ALGOL60 doc set.  (They might be part of a higher-level doc set
+@c too.)
+@set DOC-ALGOL60
+
+@copying
+It's GPL!
+@end copying
+

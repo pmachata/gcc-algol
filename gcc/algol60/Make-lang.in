@@ -1,0 +1,248 @@
+# Top level makefile fragment for Algol 60 For GCC. -*- makefile -*-
+
+# This file provides the language dependent support in the main Makefile.
+# Each language makefile fragment must provide the following targets:
+# foo.all.cross, foo.start.encap, foo.rest.encap,
+# foo.install-common, foo.install-man, foo.install-info, foo.dvi, foo.html,
+# foo.uninstall,
+# foo.mostlyclean, foo.clean, foo.distclean,
+# foo.maintainer-clean, foo.stage1, foo.stage2, foo.stage3, foo.stage4
+#
+# where `foo' is the name of the language.
+#
+# It should also provide rules for:
+#
+# - making any compiler driver (eg: g60)
+# - the compiler proper (eg: al601)
+# - define the names for selecting the language in LANGUAGES.
+
+ALGOL60_INSTALL_NAME := $(shell echo g60|sed '$(program_transform_name)')
+ALGOL60_TARGET_INSTALL_NAME := $(target_noncanonical)-$(shell echo g60|sed '$(program_transform_name)')
+
+ALGOL60_GENERATED = lexer-tab.c lexer-tab.h parser-tab.c parser-tab.h parser-tab.output ast-tab.c ast-tab.h
+ALGOL60_EXES = g60
+
+.PHONY: algol60
+
+# Define the names for selecting Algol 60 in LANGUAGES.
+algol60: algol60.done
+
+algol60.done: g60$(exeext) al601$(exeext)
+	$(STAMP) algol60.done
+
+# no preprocessor
+
+# core compiler
+al601$(exeext): algol60/al601.o algol60/lang.o algol60/tree-convert.o \
+		$(BACKEND) $(LIBSDEPS) attribs.o
+	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
+		algol60/al601.o algol60/lang.o algol60/tree-convert.o \
+		$(BACKEND) $(LIBS) attribs.o
+
+# Create the compiler driver g60
+g60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
+		$(LIBDEPS) algol60/spec.o
+	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ algol60/spec.o \
+		$(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) $(LIBS)
+
+#
+# Compiling object files from source files.
+
+algol60/al601.o: algol60/al601.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
+		flags.h toplev.h $(GGC_H) $(TREE_H) diagnostic.h \
+		input.h algol60/lang.h options.h opts.h \
+		algol60/lang.h gt-algol60-al601.h gtype-algol60.h
+
+algol60/lang.o: algol60/lang.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
+		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
+		algol60/lang.h $(TARGET_H)
+
+algol60/tree-convert.o: algol60/tree-convert.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
+		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
+		algol60/lang.h $(TARGET_H)
+
+algol60/spec.o: algol60/spec.c $(CONFIG_H) $(SYSTEM_H) \
+		coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H)
+
+# generated files are put into the source directory in case someone
+# wants to build but does not have lex/yacc
+
+# -- NEEDS TO BE COMPARED AGAINST THE REAL MAKEFILE FROM AL60L LIBRARY --
+#algol60.srcextra: algol60/parse-tab.c algol60/parse-tab.h algol60/lexer-tab.c algol60/lexer-tab.h
+#	-cp -p $^ $(srcdir)/algol60
+#
+#algol60/lexer-tab.c: algol60/lexer.l
+#	-$(FLEX) $(FLEXFLAGS) -o$@ $<
+#
+#algol60/parser-tab.c algol60/parser-tab.h algol60/parser-tab.output: algol60/parser.y
+#	-$(BISON) $(BISONFLAGS) -v --defines --output=algol60/parser-tab.c $<
+
+#
+# Build hooks:
+
+algol60.all.cross:
+	_error_not_here_yet - havent even thought about it - it may even work
+
+algol60.start.encap:
+algol60.rest.encap:
+algol60.man:
+algol60.srcman:
+
+algol60.tags: force
+	cd $(srcdir)/algol60; etags -o TAGS.sub *.y *.l *.c *.h; \
+		etags --include TAGS.sub --include ../TAGS.sub
+
+algol60.info: doc/algol60.info
+
+algol60.srcinfo: doc/algol60.info
+	-cp -p $^ $(srcdir)/doc
+
+algol60.dvi: doc/algol60.dvi
+
+TEXI_ALGOL60_FILES = algol60/algol60.texi \
+	 $(gcc_docdir)/include/gcc-common.texi \
+	 $(gcc_docdir)/include/gpl.texi \
+	 $(gcc_docdir)/include/fdl.texi \
+	 $(gcc_docdir)/include/funding.texi \
+	 gcc-vers.texi
+
+doc/algol60.info: $(TEXI_ALGOL60_FILES)
+	$(MAKEINFO) $(MAKEINFOFLAGS) -I $(gcc_docdir)/include -o $@ $<
+
+doc/algol60.dvi: $(TEXI_ALGOL60_FILES)
+	$(TEXI2DVI) -I $(abs_docdir)/include -o $@ $<
+
+algol60.html: $(build_htmldir)/algol60/index.html
+
+$(build_htmldir)/algol60/index.html: $(TEXI_ALGOL60_FILES)
+	$(mkinstalldirs) $(@D)
+	rm -f $(@D)/*
+	$(TEXI2HTML) -I $(gcc_docdir)/include -I $(srcdir)/algol60 -o $(@D) $<
+
+#
+# Install hooks:
+
+# Install
+.phony:algol60.install.common
+.phony:algol60.install
+
+algol60.install algol60.install.common algol60.install-common: algol60.install.common.done
+
+algol60.install.common.done:  installdirs algol60.done
+	for name in $(ALGOL60_EXES); \
+	do \
+	   if [ -f $$name ] ; then \
+	    name2="`echo \`basename $$name\` | sed -e '$(program_transform_name)' `"; \
+	    rm -f $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	    echo $(INSTALL_PROGRAM) $$name$(exeext) $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	    $(INSTALL_PROGRAM) $$name$(exeext) $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	    chmod a+x $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	  fi ; \
+	done
+	$(STAMP) algol60.install.common.done
+
+# We might not be able to build the info files
+algol60.install-info: $(DESTDIR)$(infodir)/algol60.info
+
+algol60.install-man:
+
+algol60.uninstall:
+	for name in $(ALGOL60_EXES); \
+	do \
+	  echo $$name; \
+	  name2="`echo $$name | sed -e '$(program_transform_name)' `"; \
+	  echo becomes $$name2; \
+	  echo -rm -rf $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	  rm -rf $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	done
+	-rm algol60.install.common.done
+
+#
+# Clean hooks:
+# A lot of the ancillary files are deleted by the main makefile.
+# We just have to delete files specific to us.
+
+algol60.mostlyclean:
+	for name in $(ALGOL60_EXES); \
+	do \
+	  echo deleting $$name; \
+	  if [ -f algol60/$$name$(exeext) ] ; then \
+	    rm -f algol60/$$name$(exeext); \
+	  fi ; \
+	done
+	-rm -f algol60/*$(objext)
+	-rm -f algol60/*$(coverageexts)
+	-rm algol60.done
+
+
+algol60.clean: algol60.mostlyclean
+
+algol60.distclean: algol60.clean
+	-rm -f algol60/config.status
+	-rm -f algol60/*.output
+
+algol60.maintainer-clean: algol60.distclean
+	for name in $(ALGOL60_GENERATED); \
+	do \
+	  if [ -f $(srcdir)/algol60/$$name ] ; then \
+             echo deleting $(srcdir)/algol60/$$name; \
+	     rm -f $(srcdir)/algol60/$$name; \
+	  fi ; \
+	done
+	-rm -R $(srcdir)/algol60/*~
+
+#
+# Stage hooks:
+# The main makefile has already created stage?/algol60.
+
+algol60.stage1: stage1-start
+	-mv algol60/*$(objext) stage1/algol60
+algol60.stage2: stage2-start
+	-mv algol60/*$(objext) stage2/algol60
+algol60.stage3: stage3-start
+	-mv algol60/*$(objext) stage3/algol60
+algol60.stage4: stage4-start
+	-mv algol60/*$(objext) stage4/algol60
+algol60.stageprofile: stageprofile-start
+	-mv algol60/*$(objext) stageprofile/algol60
+algol60.stagefeedback: stagefeedback-start
+	-mv algol60/*$(objext) stagefeedback/algol60
+
+#
+# Maintenance hooks:
+
+# test hook
+
+check-algol60: algol60.check
+
+TESTSUITEDIR = testsuite
+
+algol60.check: $(TESTSUITEDIR)/site.exp
+	-mkdir testsuite/algol60
+
+# these three files are empty and it seems diff has trouble generating
+# patch files for new empty files as required for cvs.
+# STAMP does not cut it here as I need an empty file.
+	-rootme=`${PWD_COMMAND}`; export rootme; \
+	srcdir=`cd ${srcdir}; ${PWD_COMMAND}` ; export srcdir ; \
+	cd testsuite; \
+	EXPECT=${EXPECT} ; export EXPECT ; \
+	if [ -f $${rootme}/../expect/expect ] ; then  \
+	   TCL_LIBRARY=`cd .. ; cd ${srcdir}/../tcl/library ; ${PWD_COMMAND}` ; \
+	   export TCL_LIBRARY ; fi ; \
+	PATH=`cd ..;${PWD_COMMAND}`:$$PATH; export PATH; \
+	gcc_extras="-B`cd ..;${PWD_COMMAND}` -B`cd ..;${PWD_COMMAND}`/algol60"; export gcc_extras; \
+	$(RUNTEST) --tool algol60 $(RUNTESTFLAGS)
+
+# copy the output files from the current test to source ie say the new results are OK
+algol60.check.fix: force
+	srcdir=`cd ${srcdir}; ${PWD_COMMAND}` ; export srcdir ;
+	-cp testsuite/algol60/*.out* t
+	-cp testsuite/algol60/*runpgm* t
+	-rm -f t/*nofilename
+
+#
+
+config.status: algol60/config-lang.in

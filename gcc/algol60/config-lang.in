@@ -1,0 +1,10 @@
+language="algol60"
+
+#build_by_default=no
+
+stagestuff=
+
+compilers="al601\$(exeext)"
+
+# files for garbage collection
+gtfiles="\$(srcdir)/algol60/al601.c \$(srcdir)/algol60/lang.c"

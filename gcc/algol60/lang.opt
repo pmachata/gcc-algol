@@ -1,0 +1,16 @@
+Language
+Algol60
+
+v
+Algol60
+Enable verbose output
+
+flexer-trace
+Algol60
+Trace lexical analysis
+
+fparser-trace
+Algol60
+Trace the parsing process
+
+; This comment is to ensure we retain the blank line above.

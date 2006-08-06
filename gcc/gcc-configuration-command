@@ -1,0 +1,1 @@
+../gcc/configure --prefix=/mnt/storage/opt/gcc-svn/ --program-suffix=-svn --enable-__cxa_atexit --enable-maintainer-mode --enable-version-specific-runtime-libs --enable-languages=c,treelang,algol60 --disable-werror --disable-nls
