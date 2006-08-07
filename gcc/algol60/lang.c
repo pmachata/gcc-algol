@@ -29,6 +29,9 @@
 #include "tm.h"     /* machine dependent defines of BITS_PER_UNIT and
 		       UNITS_PER_WORD */
 
+#include "target.h" /* for targetm used in init */
+#include "flags.h"  /* for flag_signed_char in init */
+
 
 /* Language-specific identifier information */
 struct lang_identifier GTY(())
@@ -117,24 +120,29 @@ const struct lang_hooks lang_hooks = LANG_HOOKS_INITIALIZER;
 bool
 algol60_init (void)
 {
-  printf ("algol60_init\n");
+  current_function_decl = NULL;
+
+  build_common_tree_nodes (flag_signed_char, false);
+  build_common_tree_nodes_2 (/* short_double= */ 0);
+  size_type_node = make_unsigned_type (POINTER_SIZE);
+  set_sizetype (size_type_node);
   return true;
 }
 
 void
 algol60_finish (void)
 {
-  printf ("algol60_finish\n");
+  fprintf (stderr, "algol60_finish\n");
 }
 
 unsigned int
 algol60_init_options (unsigned int argc, const char ** argv)
 {
   unsigned int i;
-  printf ("algol60_init_options:\n");
+  fprintf (stderr, "algol60_init_options:\n");
   for (i = 0; i < argc; ++i)
-    printf (" `%s'\n", argv[i]);
-  printf ("---\n");
+    fprintf (stderr, " `%s'\n", argv[i]);
+  fprintf (stderr, "---\n");
   return CL_Algol60;
 }
 
@@ -142,7 +150,7 @@ algol60_init_options (unsigned int argc, const char ** argv)
 int
 algol60_handle_option (size_t scode, const char *arg, int value)
 {
-  printf ("algol60_handle_option: scode=%d arg=`%s' value=%d\n", scode, arg, value);
+  fprintf (stderr, "algol60_handle_option: scode=%d arg=`%s' value=%d\n", scode, arg, value);
   return 1;
 }
 
@@ -159,7 +167,7 @@ algol60_post_options (char const* * pfilename)
 	error ("can't do dependency tracking with input from stdin");
       */
     }
-  printf ("algol60_post_options: filename=`%s'\n", filename);
+  fprintf (stderr, "algol60_post_options: filename=`%s'\n", filename);
 
   /* Initialize the compiler back end.  */
   return false;
@@ -169,7 +177,7 @@ algol60_post_options (char const* * pfilename)
 void
 algol60_parse_file (int debug)
 {
-  printf ("algol60_parse_file: debug=%d\n", debug);
+  fprintf (stderr, "algol60_parse_file: debug=%d\n", debug);
 }
 
 /* Mark EXP saying that we need to be able to take the
@@ -368,6 +376,6 @@ builtin_function (const char *name,
 		  const char *library_name,
 		  tree attrs ATTRIBUTE_UNUSED)
 {
-  printf ("builtin_function name=`%s' library_name=`%s'\n", name, library_name);
+  fprintf (stderr, "builtin_function name=`%s' library_name=`%s'\n", name, library_name);
   return NULL;
 }
