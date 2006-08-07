@@ -120,12 +120,22 @@ const struct lang_hooks lang_hooks = LANG_HOOKS_INITIALIZER;
 bool
 algol60_init (void)
 {
+  /* current_function_decl: tree.h */
   current_function_decl = NULL;
 
+  fprintf (stderr, "algol60_init:\n");
+  fprintf (stderr, " + build_common_tree_nodes\n");
   build_common_tree_nodes (flag_signed_char, false);
+  fprintf (stderr, " + build_common_tree_nodes_2\n");
   build_common_tree_nodes_2 (/* short_double= */ 0);
+  fprintf (stderr, " + register sizetype\n");
   size_type_node = make_unsigned_type (POINTER_SIZE);
   set_sizetype (size_type_node);
+  fprintf (stderr, " + build_common_builtin_nodes\n");
+  build_common_builtin_nodes ();
+  fprintf (stderr, " + targetm.init_builtins\n");
+  (*targetm.init_builtins) ();
+  fprintf (stderr, "---\n");
   return true;
 }
 
@@ -159,7 +169,8 @@ bool
 algol60_post_options (char const* * pfilename)
 {
   char const* filename = *pfilename;
-  if (filename == 0 || !strcmp (filename, "-"))
+  fprintf (stderr, "algol60_post_options\n");
+  if (filename == 0 || strcmp (filename, "-") == 0)
     {
       filename = "stdin";
       /*
@@ -188,6 +199,7 @@ algol60_parse_file (int debug)
 bool
 algol60_mark_addressable (tree exp)
 {
+  fprintf (stderr, "algol60_mark_addressable\n");
   register tree x = exp;
   while (1)
     switch (TREE_CODE (x))
@@ -244,6 +256,7 @@ algol60_mark_addressable (tree exp)
 tree
 algol60_lang_signed_type (tree type_node)
 {
+  fprintf (stderr, "algol60_lang_signed_type\n");
   return algol60_lang_type_for_size (TYPE_PRECISION (type_node), 0);
 }
 
@@ -251,6 +264,7 @@ algol60_lang_signed_type (tree type_node)
 tree
 algol60_lang_unsigned_type (tree type_node)
 {
+  fprintf (stderr, "algol60_lang_unsigned_type\n");
   return algol60_lang_type_for_size (TYPE_PRECISION (type_node), 1);
 }
 
@@ -259,6 +273,7 @@ algol60_lang_unsigned_type (tree type_node)
 tree
 algol60_lang_signed_or_unsigned_type (int unsignedp, tree type)
 {
+  fprintf (stderr, "algol60_lang_signed_or_unsigned_type\n");
   if (! INTEGRAL_TYPE_P (type) || TYPE_UNSIGNED (type) == unsignedp)
     return type;
   else
@@ -282,6 +297,7 @@ algol60_lang_type_for_mode (enum machine_mode mode, int unsignedp)
 tree
 algol60_lang_type_for_size (unsigned precision, int unsignedp)
 {
+  fprintf (stderr, "algol60_lang_type_for_size\n");
   tree t;
 
   if (precision <= MAX_BITS_PER_WORD
@@ -330,6 +346,7 @@ const char *const tree_code_name[] = {
 tree
 pushdecl (tree x)
 {
+  fprintf (stderr, "pushdecl\n");
   return x;
 }
 
@@ -337,6 +354,7 @@ pushdecl (tree x)
 tree
 getdecls (void)
 {
+  fprintf (stderr, "getdecls\n");
   return NULL;
 }
 
@@ -344,6 +362,7 @@ getdecls (void)
 int
 global_bindings_p (void)
 {
+  fprintf (stderr, "global_bindings_p\n");
   return 0;/*current_binding_level == global_binding_level;*/
 }
 
@@ -353,6 +372,7 @@ global_bindings_p (void)
 void
 insert_block (tree block ATTRIBUTE_UNUSED)
 {
+  fprintf (stderr, "insert_block\n");
   /*
   TREE_USED (block) = 1;
   current_binding_level->blocks
@@ -365,9 +385,11 @@ insert_block (tree block ATTRIBUTE_UNUSED)
    types.  FUNCTION_CODE tells later passes how to compile calls to
    this function.  See tree.h for its possible values.
 
-   If LIBRARY_NAME is nonzero, use that for DECL_ASSEMBLER_NAME,
-   the name to be called if we can't opencode the function.  If
-   ATTRS is nonzero, use that for the function's attribute list.  */
+   If LIBRARY_NAME is nonzero, use that for DECL_ASSEMBLER_NAME, the
+   name to be called if we can't opencode the function.  If ATTRS is
+   nonzero, use that for the function's attribute list.
+
+   copied from gcc/c-decl.c */
 tree
 builtin_function (const char *name,
 		  tree type ATTRIBUTE_UNUSED,
@@ -376,6 +398,20 @@ builtin_function (const char *name,
 		  const char *library_name,
 		  tree attrs ATTRIBUTE_UNUSED)
 {
-  fprintf (stderr, "builtin_function name=`%s' library_name=`%s'\n", name, library_name);
-  return NULL;
+  tree decl = build_decl (FUNCTION_DECL, get_identifier (name), type);
+  DECL_EXTERNAL (decl) = 1;
+  TREE_PUBLIC (decl) = 1;
+  if (library_name)
+    SET_DECL_ASSEMBLER_NAME (decl, get_identifier (library_name));
+  //pushdecl (decl);
+  DECL_BUILT_IN_CLASS (decl) = cl;
+  DECL_FUNCTION_CODE (decl) = function_code;
+
+  /* Possibly apply some default attributes to this built-in function.  */
+  if (attrs)
+    decl_attributes (&decl, attrs, ATTR_FLAG_BUILT_IN);
+  else
+    decl_attributes (&decl, NULL_TREE, 0);
+
+  return decl;
 }
