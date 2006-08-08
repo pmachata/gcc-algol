@@ -10,6 +10,7 @@ tree algol60_lang_unsigned_type (tree type_node);
 tree algol60_lang_signed_or_unsigned_type (int unsignedp, tree type_node);
 tree algol60_lang_type_for_mode (enum machine_mode mode, int unsignedp);
 tree algol60_lang_type_for_size (unsigned precision, int unsignedp);
+void algol60_expand_function (tree fndecl);
 
 tree pushdecl (tree);
 tree getdecls (void);

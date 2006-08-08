@@ -1,4 +1,4 @@
-/* Language-level data type conversion for Treelang.
+/* Language-level data type conversion for Algol60.
    This is a very slightly modified copy of c-convert.c.
    Copyright (C) 1987, 1988, 1991, 1998, 2002, 2003 Free Software Foundation, Inc.
 
