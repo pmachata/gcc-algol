@@ -1,6 +1,6 @@
 \input texinfo @c -*-texinfo-*-
 @setfilename algol60.info
-@settitle Guide to g60
+@settitle Guide to GNU Algol 60
 
 @include gcc-common.texi
 

@@ -12,35 +12,35 @@
 #
 # It should also provide rules for:
 #
-# - making any compiler driver (eg: g60)
-# - the compiler proper (eg: al601)
+# - making any compiler driver (ga60)
+# - the compiler proper (algol601)
 # - define the names for selecting the language in LANGUAGES.
 
-ALGOL60_INSTALL_NAME := $(shell echo g60|sed '$(program_transform_name)')
-ALGOL60_TARGET_INSTALL_NAME := $(target_noncanonical)-$(shell echo g60|sed '$(program_transform_name)')
+ALGOL60_INSTALL_NAME := $(shell echo ga60|sed '$(program_transform_name)')
+ALGOL60_TARGET_INSTALL_NAME := $(target_noncanonical)-$(shell echo ga60|sed '$(program_transform_name)')
 
 ALGOL60_GENERATED = lexer-tab.c lexer-tab.h parser-tab.c parser-tab.h parser-tab.output ast-tab.c ast-tab.h
-ALGOL60_EXES = g60
+ALGOL60_EXES = ga60
 
 .PHONY: algol60
 
 # Define the names for selecting Algol 60 in LANGUAGES.
 algol60: algol60.done
 
-algol60.done: g60$(exeext) al601$(exeext)
+algol60.done: ga60$(exeext) algol601$(exeext)
 	$(STAMP) algol60.done
 
 # no preprocessor
 
 # core compiler
-al601$(exeext): algol60/al601.o algol60/lang.o algol60/tree-convert.o \
+algol601$(exeext): algol60/algol601.o algol60/lang.o algol60/tree-convert.o \
 		$(BACKEND) $(LIBSDEPS) attribs.o
 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
-		algol60/al601.o algol60/lang.o algol60/tree-convert.o \
+		algol60/algol601.o algol60/lang.o algol60/tree-convert.o \
 		$(BACKEND) $(LIBS) attribs.o
 
-# Create the compiler driver g60
-g60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
+# Create the compiler driver ga60
+ga60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
 		$(LIBDEPS) algol60/spec.o
 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ algol60/spec.o \
 		$(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) $(LIBS)
@@ -48,10 +48,10 @@ g60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
 #
 # Compiling object files from source files.
 
-algol60/al601.o: algol60/al601.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
+algol60/algol601.o: algol60/algol601.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
 		flags.h toplev.h $(GGC_H) $(TREE_H) diagnostic.h \
 		input.h algol60/lang.h options.h opts.h \
-		algol60/lang.h gt-algol60-al601.h gtype-algol60.h
+		algol60/lang.h gt-algol60-algol601.h gtype-algol60.h
 
 algol60/lang.o: algol60/lang.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
 		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \

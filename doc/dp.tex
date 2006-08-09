@@ -17,58 +17,169 @@
 \topmargin 0in
 \begin{document}
 
-This is a series of notes regarding what I'm going to want to have
-there included.
+\title{Construction of GNU Compiler Collection Frontend}
+\author{Petr Machata\\
+  \texttt{xmacha31@stud.fit.vutbr.cz}}
+\date{2006-09-08}
+\maketitle
 
- + Introduction: the purpose of work, goals, how to read, how is it
- written.  Write at the very end of work.
+\def\program#1{{\tt\begin{tabbing}#1\end{tabbing}}}
+\def\mychapter#1{{\Huge \bf \vspace{1em}#1}\vspace{1.0em}}
+\def\mysection#1{{\Large \bf \vspace{1em}#1}\vspace{1.0em}}
+\def\mysubsection#1{{\large \bf \vspace{1em}#1}\vspace{1.0em}}
 
- + GCC the platform: How is GCC organized internally, how the
- compilation process works, what is required on side of future
- frontend implementor.  What is GENERIC and how is it used.  Concrete
- stuff: the way GCC works, and how to use it when you want to gccify
- your parser.  I don't think it makes a sense to include whole GENERIC
- reference here.  Provide few examples and leave the rest to next
- chapter.  Debugging -- how to debug GCC itself.  Dejagnu testing
- suite.  Attributes -- how do frontend handle attributes, how do they
- define their own.  -std=XXX, -pedantic -- how to support various
- language versions.  How to support interaction between languages
- (explore how is JNI stuff done in java compiler).
+\def\Algol{{\sc Algol}\space}
 
- + ALGOL 60: the language.  Why ALGOL 60.  High level overview of how
- the language looks like and what's inside.  Pick interesting points,
- if they are interesting from language implementor's POV.  Show
- extensions to the language (IO, structures, separate compilation).
- Provide UML model of ALGOL representation.  Methods employed to
- implement lexical and syntactic analysis. (Just a short note.  Most
- probably flex and yacc, but maybe we would rather stick with
- recursive descend.)
+% ====================================================================
 
- + ALGOL 60 over GCC: Case study.  Suppose we have the parser library
- ready and waiting.  How to plug it into GCC?  Let's see... step by
- step from creation of apropriate directory, to setting up configures
- (don't forget about the optional keyword distinguisher (probably only
- case-sensitivity flag)), to initialization and to translation of
- ALGOL 60 representation data structures to GENERIC.  How to plug
- testsuite to gcc.  Variable sized arrays.  Pass by name.  Linking
- with C (or other languages for that matter), glibc.  Conditional
- compilation using the preprocessor.  GCC-style assembly in Algol.
- Pthreads.
+\chapter*{Prohlá¹ení}
 
- + Thoughts on compilation of dynamic languages with gcc.  Could we
- use some kind of type inference or feedback? (May be, feedback would
- be gathered via profiler, types can be inferred in front end.)
+Prohla¹uji ¾e jsem tuto bakaláøskou práci vypracoval sám pod odborným
+vedením Ing. Luká¹e Szemly.  Ve¹keré prameny, z nich¾ jsem pøi práci
+èerpal, jsou øádnì citovány, a v pøíloze uvedeny.
 
- + Thoughts on GDB support.
+% ====================================================================
 
- + Conclusion: Why this work simply rocks.  What has been done, what
- could have been done better, etc.
+\chapter*{Acknowledgements}
 
- + Appendix A: steps to install ALGOL 60 compiler on end user system.
+Thanks to... (FIT BUT that they gave up their rights)
 
- + Appendix B: source codes.
+% ====================================================================
 
- + Appendix C: ALGOL 60 spec (don't attach to work? maybe just use it
- as a reference)
+\chapter*{Abstrakt}
+
+\mysection{Klíèová slova}
+
+% ====================================================================
+
+\chapter*{Abstract}
+
+\mysection{Key words}
+
+% ====================================================================
+
+\chapter{Introduction}
+
+Describe what this thesis is about, summarize chapters, provide
+insight to how to read it.
+
+\chapter{Why GCC, Why Now}
+
+(Reference: Tom Tromey's Java paper) Summarize options available when
+one writes new language.  Interpreters and compilers, hand-rolling
+compiler, compiling via C (this sucks mostly because C compiler has to
+recover the higher level model from C, which of course isn't possible;
+and debugging--GCC will preserve symbol names where necessary, while
+in C, you'd have to mangle them without chance to give a clue to
+target C compiler), compiling via GCC (what if it's dynamic language,
+what if static).
+
+Personal opinions aside, writing GCC frontend is probably best choice.
+GCC is ported to dozens of platforms, has tons of optimizations, has
+necessary community, corporation and academia drive, and finally
+writing such frontend isn't nearly as difficult as rolling your own
+backend (fingers crossed it's true).
+
+\chapter{GCC Architecture}
+
+How does GCC work.  What's driver, what's the frontend proper.  Bird's
+eye view of compilation passes, internal structure, references to
+other documents with more detailed description.  Main source will be
+Diego Novillo's OLS paper.  Mention garbage collector.  Also mention
+hooks, but don't go into depth (go as far as Tom Tromey's Linux
+Journal article).
+
+Mention that there are two approaches: targeting GENERIC, and using
+GENERIC as AST rep.  This work aims at the former scenario.  Under
+this setup, there are four levels actually: your parser, GCC frontend,
+GCC middleend, GCC backend.  The frontend of the parser is completely
+independent of GCC, backend of the parser is frontend of the GCC.
+With the latter approach, one defines special tree codes.
+
+\chapter[Hello World]{Hello, World!}
+
+What's Make-lang.in, config-lang.in, lang-specs.h, algol60.texi.
+
+Compilation process: why language subdirectory, what happens with
+Make-lang.in and config-lang.in, what's bootstrapping.  Defining
+hooks, defining options.
+
+This work includes frontend template.  That's the smallest possible
+frontend, that even doesn't emit any code, just writes out some stuff
+(but it has all inits in place and ready for real thing).  Go through
+the files and code in that template, and briefly describe hooks and
+interesting things.  Leave the full catalogues to subsequent chapters.
+
+\chapter{Targeting GCC}
+
+Describe briefly that the author has written \Algol 60 parser to get
+himself familiar with the stuff he describes.  Maybe drop a few notes
+about how the parser (independent from GCC) and GCC frontend got
+joined.
+
+Catalogue of constructions: how to translate symbol handing, loops,
+funcalls, automatic and global variables, variable sized arrays,
+global, local, overloaded, internal, external functions, visibility
+(static or public), pass by value, reference and name, varargs,
+modules, module ctors and dtors, jumps, cases, expressions,
+typechecking, name mangling and C-compatible interfacing (extern "C"),
+(OpenMP?), and other to GENERIC (with the help of proper hooks).  Show
+examples taken from \Algol 60 code.
+
+What are custom GENERIC codes, how to declare them, how to handle
+them, what's gimplification, how to gimplify them.
+
+\chapter{Language Services}
+
+How to add runtime for your language.
+
+How to add debuginfos to binaries that your frontend produces.  How to
+use gdb for your language.
+
+\chapter{GCC Extensions}
+
+Employing libcpp.  How to use preprocessor for your language.
+
+Employing assembly.  How to add GCC-compatible inline assembly into
+your language.
+
+Employing attributes.  How does frontend handle attributes, how does
+it define its own.
+
+\chapter{GCC Development Flow}
+
+How to debug gcc, asserts and functions, how to use valgrind with gcc.
+Maybe dismiss this chapter.
+
+What's dejagnu testsuite, how to write tests, how to integrate them
+into GCC testsuite.
+
+\chapter{Conclusions}
+
+Conclusions: ``short, concise statements of the inferences that you
+have made because of your work. It helps to organize these as short
+numbered paragraphs, ordered from most to least important.''
+
+Summary of Contributions: ``The Summary of Contributions will be much
+sought and carefully read by the examiners.  Here you list the
+contributions of new knowledge that your thesis makes. Of course, the
+thesis itself must substantiate any claims made here. There is often
+some overlap with the Conclusions, but that's okay. Concise numbered
+paragraphs are again best. Organize from most to least important.''
+
+Future Research: How feasible would be to have a frontend, that just
+hands all the calls to dynamically loaded external parser?  This would
+allow for out-of-tree builds, wouldn't it?
+
+\chapter*{Appendix: Frontend-to-Middleend Interface}
+
+Describe all data structures that frontend touches.
+http://gcc.gnu.org/projects/documentation.html, project "Fully
+document the interface of front ends to GCC"
+
+\chapter*{Appendix: \Algol 60 Compiler}
+
+Installation, supported GCCs, usual stuff.
+
 
 \end{document}

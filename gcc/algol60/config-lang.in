@@ -4,7 +4,7 @@ language="algol60"
 
 stagestuff=
 
-compilers="al601\$(exeext)"
+compilers="algol601\$(exeext)"
 
 # files for garbage collection
-gtfiles="\$(srcdir)/algol60/al601.c \$(srcdir)/algol60/lang.c"
+gtfiles="\$(srcdir)/algol60/algol601.c \$(srcdir)/algol60/lang.c"

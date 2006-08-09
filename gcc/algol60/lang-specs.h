@@ -3,7 +3,7 @@
 
 {".a60",   "@a60", 0, 0, 0},
 {".A60",   "@a60", 0, 0, 0},
-{"@a60",   "%{!E:al601 %i %(cc1_options) %{I*}\
+{"@a60",   "%{!E:algol601 %i %(cc1_options) %{I*}\
              %{!fsyntax-only:%(invoke_as)}}\n", 0, 0, 0},
 
 /* @@@TODO: maybe make A60 files be preprocessed first
