@@ -223,6 +223,10 @@ expr_resolve_symbols (expr_if)
 /// Answer the string that represents the operator
 %operation char const* expr_bin_op_str (expr_bin * self) = { NULL }
 
+/// Answer the type of the binary expression
+%operation type* expr_bin_type ([expr_bin * self], [type * ltype], [type * rtype]) = { NULL }
+
+
 expr_to_str (expr_bin)
 {
   buf = expr_to_str (self->left, buf);
@@ -239,27 +243,58 @@ expr_to_str (expr_bin)
 
 expr_type (expr_bin)
 {
-  // @TODO: fixme
+  return expr_bin_type (self, expr_type (self->left), expr_type (self->right));
+}
+
+
+%node expr_arith expr_bin %abstract = {
+}
+
+%node expr_aadd expr_arith = {}
+expr_bin_op_str (expr_aadd) {return "+";}
+
+%node expr_asub expr_arith = {}
+expr_bin_op_str (expr_asub) {return "-";}
+
+%node expr_amul expr_arith = {}
+expr_bin_op_str (expr_amul) {return "*";}
+
+%node expr_aidiv expr_arith = {}
+expr_bin_op_str (expr_aidiv) {return "'div'";}
+
+%node expr_ardiv expr_arith = {}
+expr_bin_op_str (expr_ardiv) {return "/";}
+
+%node expr_apow expr_arith = {}
+expr_bin_op_str (expr_apow) {return "**";}
+
+expr_bin_type (expr_aadd, t_int, t_int),
+expr_bin_type (expr_asub, t_int, t_int),
+expr_bin_type (expr_amul, t_int, t_int),
+expr_bin_type (expr_aidiv, t_int, t_int),
+expr_bin_type (expr_apow, t_int, t_int)
+{
   return type_int ();
 }
 
-%node expr_aadd expr_bin = {}
-expr_bin_op_str (expr_aadd) {return "+";}
+expr_bin_type (expr_aadd, t_real, t_real),
+expr_bin_type (expr_asub, t_real, t_real),
+expr_bin_type (expr_amul, t_real, t_real),
+expr_bin_type (expr_ardiv, t_int, t_int),
+expr_bin_type (expr_ardiv, t_real, t_real)
+{
+  return type_real ();
+}
 
-%node expr_asub expr_bin = {}
-expr_bin_op_str (expr_asub) {return "-";}
-
-%node expr_amul expr_bin = {}
-expr_bin_op_str (expr_amul) {return "*";}
-
-%node expr_aidiv expr_bin = {}
-expr_bin_op_str (expr_aidiv) {return "'div'";}
-
-%node expr_ardiv expr_bin = {}
-expr_bin_op_str (expr_ardiv) {return "/";}
-
-%node expr_apow expr_bin = {}
-expr_bin_op_str (expr_apow) {return "**";}
+expr_bin_type (expr_aadd, type, type),
+expr_bin_type (expr_asub, type, type),
+expr_bin_type (expr_amul, type, type),
+expr_bin_type (expr_aidiv, type, type),
+expr_bin_type (expr_ardiv, type, type),
+expr_bin_type (expr_apow, type, type)
+{
+  return type_unknown ();
+}
 
 expr_resolve_symbols (expr_aadd),
 expr_resolve_symbols (expr_asub),
@@ -271,11 +306,34 @@ expr_resolve_symbols (expr_bin)
 {
   expr_resolve_symbols (self->left, block, log);
   expr_resolve_symbols (self->right, block, log);
+
+  type* tt = expr_type (ast_as (expression, self));
+  if (is_unknown (tt))
+    {
+      // @TODO: there should me some error recovery; this way our node
+      // ends up being type_unknown, and avalanche of errors is
+      // blurted on the user
+
+      estring_t * es = expr_to_str (ast_as (expression, self), NULL);
+      estring_t * tmp = type_to_str (expr_type (self->left), NULL);
+      estr_prepend_cstr (es, "type mismatch in expression `");
+      estr_append_cstr (es, "': ");
+      estr_append (es, tmp);
+      estr_push (es, ' ');
+      estr_append_cstr (es, expr_bin_op_str (ast_as (expr_bin, self)));
+      estr_push (es, ' ');
+      type_to_str (expr_type (self->right), tmp);
+      estr_append (es, tmp);
+
+      log_printf (log, ll_error, "%s", estr_cstr (es));
+
+      delete_estring (es);
+      delete_estring (tmp);
+    }
 }
 
 
 %node expr_rel expr_bin %abstract = {}
-expr_type (expr_rel) { return type_bool (); }
 
 
 %node expr_req expr_rel = {}
@@ -296,6 +354,33 @@ expr_bin_op_str (expr_rgt) {return ">";}
 %node expr_rgte expr_rel = {}
 expr_bin_op_str (expr_rgte) {return ">=";}
 
+expr_bin_type (expr_req, t_int, t_int),
+expr_bin_type (expr_rneq, t_int, t_int),
+expr_bin_type (expr_rlt, t_int, t_int),
+expr_bin_type (expr_rlte, t_int, t_int),
+expr_bin_type (expr_rgt, t_int, t_int),
+expr_bin_type (expr_rgte, t_int, t_int),
+expr_bin_type (expr_req, t_real, t_real),
+expr_bin_type (expr_rneq, t_real, t_real),
+expr_bin_type (expr_rlt, t_real, t_real),
+expr_bin_type (expr_rlte, t_real, t_real),
+expr_bin_type (expr_rgt, t_real, t_real),
+expr_bin_type (expr_rgte, t_real, t_real)
+{
+  return type_bool ();
+}
+
+expr_bin_type (expr_req, type, type),
+expr_bin_type (expr_rneq, type, type),
+expr_bin_type (expr_rlt, type, type),
+expr_bin_type (expr_rlte, type, type),
+expr_bin_type (expr_rgt, type, type),
+expr_bin_type (expr_rgte, type, type)
+{
+  return type_unknown ();
+}
+
+
 
 %node expr_log expr_bin %abstract = {}
 expr_type (expr_log) { return type_bool (); }
@@ -312,6 +397,23 @@ expr_bin_op_str (expr_lor) {return "||";}
 
 %node expr_land expr_log = {}
 expr_bin_op_str (expr_land) {return "&&";}
+
+
+expr_bin_type (expr_limp, t_bool, t_bool),
+expr_bin_type (expr_leq, t_bool, t_bool),
+expr_bin_type (expr_lor, t_bool, t_bool),
+expr_bin_type (expr_land, t_bool, t_bool)
+{
+  return type_bool ();
+}
+
+expr_bin_type (expr_limp, type, type),
+expr_bin_type (expr_leq, type, type),
+expr_bin_type (expr_lor, type, type),
+expr_bin_type (expr_land, type, type)
+{
+  return type_unknown ();
+}
 
 
 %node expr_un expression %abstract = {
@@ -384,8 +486,7 @@ expr_to_str (expr_call)
 
 expr_type (expr_call)
 {
-  // @TODO: fixme
-  return type_int ();
+  return ast_as (t_proc, self->sym->type)->ret_type;
 }
 
 expr_resolve_symbols (expr_call)

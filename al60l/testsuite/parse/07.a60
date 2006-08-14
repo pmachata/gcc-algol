@@ -1,6 +1,7 @@
  'begin'
   'integer' a;
   'Boolean' b;
+  'real' c;
 
 #
 # few wild tests
@@ -26,8 +27,8 @@ D a := ((-(-a)) ** (-(-a)));
 
 C a :=   a ** a  *  a ** a  ;
 D a := ((a ** a) * (a ** a));
-C a :=   a ** a  /  a ** a  ;
-D a := ((a ** a) / (a ** a));
+C c :=   a ** a  /  a ** a  ;
+D c := ((a ** a) / (a ** a));
 C a :=   a ** a  'div'  a ** a  ;
 D a := ((a ** a) 'div' (a ** a));
 C a :=    a ** a  ** a  ** a ;
@@ -35,34 +36,30 @@ D a := (((a ** a) ** a) ** a);
 
 C a :=   a * a  +  a * a  ;
 D a := ((a * a) + (a * a));
-C a :=   a / a  +  a / a  ;
-D a := ((a / a) + (a / a));
+C c :=   a / a  +  a / a  ;
+D c := ((a / a) + (a / a));
 C a :=   a 'div' a  +  a 'div' a  ;
 D a := ((a 'div' a) + (a 'div' a));
 C a :=   a * a  -  a * a  ;
 D a := ((a * a) - (a * a));
-C a :=   a / a  -  a / a  ;
-D a := ((a / a) - (a / a));
+C c :=   a / a  -  a / a  ;
+D c := ((a / a) - (a / a));
 C a :=   a 'div' a  -  a 'div' a  ;
 D a := ((a 'div' a) - (a 'div' a));
 C a :=    a * a  * a  * a ;
 D a := (((a * a) * a) * a);
-C a :=    a / a  / a  / a ;
-D a := (((a / a) / a) / a);
+C c :=    c / c  / c  / c ;
+D c := (((c / c) / c) / c);
 C a :=    a 'div' a  'div' a  'div' a ;
 D a := (((a 'div' a) 'div' a) 'div' a);
-C a :=    a * a  / a  / a ;
-D a := (((a * a) / a) / a);
-C a :=    a / a  * a  / a ;
-D a := (((a / a) * a) / a);
+C c :=    c * c  / c  / c ;
+D c := (((c * c) / c) / c);
+C c :=    c / c  * c  / c ;
+D c := (((c / c) * c) / c);
 C a :=    a * a  'div' a  'div' a ;
 D a := (((a * a) 'div' a) 'div' a);
 C a :=    a 'div' a  * a  'div' a ;
 D a := (((a 'div' a) * a) 'div' a);
-C a :=    a / a  'div' a  'div' a ;
-D a := (((a / a) 'div' a) 'div' a);
-C a :=    a 'div' a  / a  'div' a ;
-D a := (((a 'div' a) / a) 'div' a);
 
 C b :=   a + a  <  a + a  ;
 D b := ((a + a) < (a + a));
@@ -132,14 +129,14 @@ D a := ((a ** (a * a)) ** a);
 
 C a :=   a * (a + a) * a  ;
 D a := ((a * (a + a)) * a);
-C a :=   a / (a + a) / a  ;
-D a := ((a / (a + a)) / a);
+C c :=   c / (c + c) / c  ;
+D c := ((c / (c + c)) / c);
 C a :=   a 'div' (a + a) 'div' a  ;
 D a := ((a 'div' (a + a)) 'div' a);
 C a :=   a * (a - a) * a  ;
 D a := ((a * (a - a)) * a);
-C a :=   a / (a - a) / a  ;
-D a := ((a / (a - a)) / a);
+C c :=   c / (c - c) / c  ;
+D c := ((c / (c - c)) / c);
 C a :=   a 'div' (a - a) 'div' a  ;
 D a := ((a 'div' (a - a)) 'div' a);
 

@@ -74,6 +74,12 @@ is_metatype (type)
   return 0;
 }
 
+
+%decls %end %{
+/// Check if given type is `unknown'.
+int is_unknown (type * self);
+%}
+
 %{
 #include "util.h"
 
@@ -91,6 +97,12 @@ type_to_str_canon (type * self, estring_t * buf)
   buf = tmpbuild (buf, (void*(*)(void))new_estring);
   type_to_str_private (self, buf, 1);
   return buf;
+}
+
+int
+is_unknown (type * self)
+{
+  return types_same (self, type_unknown ());
 }
 %}
 

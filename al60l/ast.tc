@@ -110,8 +110,8 @@ padding (int level)
 %include "label.tc"
 %include "symbol.tc"
 %include "statement.tc"
-%include "expression.tc"
 %include "type.tc"
+%include "expression.tc"
 
 /*
  * Local Variables:
