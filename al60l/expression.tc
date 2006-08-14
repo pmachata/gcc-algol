@@ -223,7 +223,8 @@ expr_resolve_symbols (expr_if)
 /// Answer the string that represents the operator
 %operation char const* expr_bin_op_str (expr_bin * self) = { NULL }
 
-/// Answer the type of the binary expression
+/// Answer the type of the binary expression.  The methods for this
+/// operation are in expr_types.tc.
 %operation type* expr_bin_type ([expr_bin * self], [type * ltype], [type * rtype]) = { NULL }
 
 
@@ -246,62 +247,6 @@ expr_type (expr_bin)
   return expr_bin_type (self, expr_type (self->left), expr_type (self->right));
 }
 
-
-%node expr_arith expr_bin %abstract = {
-}
-
-%node expr_aadd expr_arith = {}
-expr_bin_op_str (expr_aadd) {return "+";}
-
-%node expr_asub expr_arith = {}
-expr_bin_op_str (expr_asub) {return "-";}
-
-%node expr_amul expr_arith = {}
-expr_bin_op_str (expr_amul) {return "*";}
-
-%node expr_aidiv expr_arith = {}
-expr_bin_op_str (expr_aidiv) {return "'div'";}
-
-%node expr_ardiv expr_arith = {}
-expr_bin_op_str (expr_ardiv) {return "/";}
-
-%node expr_apow expr_arith = {}
-expr_bin_op_str (expr_apow) {return "**";}
-
-expr_bin_type (expr_aadd, t_int, t_int),
-expr_bin_type (expr_asub, t_int, t_int),
-expr_bin_type (expr_amul, t_int, t_int),
-expr_bin_type (expr_aidiv, t_int, t_int),
-expr_bin_type (expr_apow, t_int, t_int)
-{
-  return type_int ();
-}
-
-expr_bin_type (expr_aadd, t_real, t_real),
-expr_bin_type (expr_asub, t_real, t_real),
-expr_bin_type (expr_amul, t_real, t_real),
-expr_bin_type (expr_ardiv, t_int, t_int),
-expr_bin_type (expr_ardiv, t_real, t_real)
-{
-  return type_real ();
-}
-
-expr_bin_type (expr_aadd, type, type),
-expr_bin_type (expr_asub, type, type),
-expr_bin_type (expr_amul, type, type),
-expr_bin_type (expr_aidiv, type, type),
-expr_bin_type (expr_ardiv, type, type),
-expr_bin_type (expr_apow, type, type)
-{
-  return type_unknown ();
-}
-
-expr_resolve_symbols (expr_aadd),
-expr_resolve_symbols (expr_asub),
-expr_resolve_symbols (expr_amul),
-expr_resolve_symbols (expr_aidiv),
-expr_resolve_symbols (expr_ardiv),
-expr_resolve_symbols (expr_apow),
 expr_resolve_symbols (expr_bin)
 {
   expr_resolve_symbols (self->left, block, log);
@@ -333,6 +278,28 @@ expr_resolve_symbols (expr_bin)
 }
 
 
+%node expr_arith expr_bin %abstract = {
+}
+
+%node expr_aadd expr_arith = {}
+expr_bin_op_str (expr_aadd) {return "+";}
+
+%node expr_asub expr_arith = {}
+expr_bin_op_str (expr_asub) {return "-";}
+
+%node expr_amul expr_arith = {}
+expr_bin_op_str (expr_amul) {return "*";}
+
+%node expr_aidiv expr_arith = {}
+expr_bin_op_str (expr_aidiv) {return "'div'";}
+
+%node expr_ardiv expr_arith = {}
+expr_bin_op_str (expr_ardiv) {return "/";}
+
+%node expr_apow expr_arith = {}
+expr_bin_op_str (expr_apow) {return "**";}
+
+
 %node expr_rel expr_bin %abstract = {}
 
 
@@ -354,32 +321,6 @@ expr_bin_op_str (expr_rgt) {return ">";}
 %node expr_rgte expr_rel = {}
 expr_bin_op_str (expr_rgte) {return ">=";}
 
-expr_bin_type (expr_req, t_int, t_int),
-expr_bin_type (expr_rneq, t_int, t_int),
-expr_bin_type (expr_rlt, t_int, t_int),
-expr_bin_type (expr_rlte, t_int, t_int),
-expr_bin_type (expr_rgt, t_int, t_int),
-expr_bin_type (expr_rgte, t_int, t_int),
-expr_bin_type (expr_req, t_real, t_real),
-expr_bin_type (expr_rneq, t_real, t_real),
-expr_bin_type (expr_rlt, t_real, t_real),
-expr_bin_type (expr_rlte, t_real, t_real),
-expr_bin_type (expr_rgt, t_real, t_real),
-expr_bin_type (expr_rgte, t_real, t_real)
-{
-  return type_bool ();
-}
-
-expr_bin_type (expr_req, type, type),
-expr_bin_type (expr_rneq, type, type),
-expr_bin_type (expr_rlt, type, type),
-expr_bin_type (expr_rlte, type, type),
-expr_bin_type (expr_rgt, type, type),
-expr_bin_type (expr_rgte, type, type)
-{
-  return type_unknown ();
-}
-
 
 
 %node expr_log expr_bin %abstract = {}
@@ -399,29 +340,16 @@ expr_bin_op_str (expr_lor) {return "||";}
 expr_bin_op_str (expr_land) {return "&&";}
 
 
-expr_bin_type (expr_limp, t_bool, t_bool),
-expr_bin_type (expr_leq, t_bool, t_bool),
-expr_bin_type (expr_lor, t_bool, t_bool),
-expr_bin_type (expr_land, t_bool, t_bool)
-{
-  return type_bool ();
-}
-
-expr_bin_type (expr_limp, type, type),
-expr_bin_type (expr_leq, type, type),
-expr_bin_type (expr_lor, type, type),
-expr_bin_type (expr_land, type, type)
-{
-  return type_unknown ();
-}
-
-
 %node expr_un expression %abstract = {
   expression * operand;
 }
 
 /// Answer the string that represents the operator
 %operation char const* expr_un_op_str (expr_un * self) = { NULL }
+
+/// Answer the type of the unary expression.  The methods for this
+/// operation are in expr_types.tc.
+%operation type * expr_un_type ([expr_un * self], [type * operand_type]) = { NULL }
 
 expr_to_str (expr_un)
 {
@@ -432,19 +360,22 @@ expr_to_str (expr_un)
   return buf;
 }
 
+expr_type (expr_un)
+{
+  return expr_un_type (self, expr_type (self->operand));
+}
+
 expr_resolve_symbols (expr_un)
 {
   expr_resolve_symbols (self->operand, block, log);
 }
 
+
 %node expr_uminus expr_un = {}
 expr_un_op_str (expr_uminus) {return "-";}
-expr_type (expr_uminus) {return expr_type (self->operand);}
 
 %node expr_not expr_un = {}
 expr_un_op_str (expr_not) {return "!";}
-expr_type (expr_not) {return expr_type (self->operand);}
-
 
 
 
@@ -506,7 +437,6 @@ expr_resolve_symbols (expr_call)
   self->sym = container_find_name_rec_add_undefined (block, self->lbl, match_type, log);
   delete_slist (argtypes);
 }
-
 
 /*
  * Local Variables:

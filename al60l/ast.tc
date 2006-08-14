@@ -112,6 +112,7 @@ padding (int level)
 %include "statement.tc"
 %include "type.tc"
 %include "expression.tc"
+%include "expr_types.tc"
 
 /*
  * Local Variables:

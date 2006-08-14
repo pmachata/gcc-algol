@@ -1,0 +1,90 @@
+// this file contains rules for result type of binary and unary
+// expressions.  At first part, all legal operand combinations are
+// enumerated, second part contains fallbacks.
+
+expr_bin_type (expr_aadd, t_int, t_int),
+expr_bin_type (expr_asub, t_int, t_int),
+expr_bin_type (expr_amul, t_int, t_int),
+expr_bin_type (expr_aidiv, t_int, t_int),
+expr_bin_type (expr_apow, t_int, t_int)
+{
+  return type_int ();
+}
+
+expr_bin_type (expr_aadd, t_real, t_real),
+expr_bin_type (expr_asub, t_real, t_real),
+expr_bin_type (expr_amul, t_real, t_real),
+expr_bin_type (expr_ardiv, t_int, t_int),
+expr_bin_type (expr_ardiv, t_real, t_real)
+{
+  return type_real ();
+}
+
+expr_bin_type (expr_req, t_int, t_int),
+expr_bin_type (expr_rneq, t_int, t_int),
+expr_bin_type (expr_rlt, t_int, t_int),
+expr_bin_type (expr_rlte, t_int, t_int),
+expr_bin_type (expr_rgt, t_int, t_int),
+expr_bin_type (expr_rgte, t_int, t_int),
+expr_bin_type (expr_req, t_real, t_real),
+expr_bin_type (expr_rneq, t_real, t_real),
+expr_bin_type (expr_rlt, t_real, t_real),
+expr_bin_type (expr_rlte, t_real, t_real),
+expr_bin_type (expr_rgt, t_real, t_real),
+expr_bin_type (expr_rgte, t_real, t_real)
+{
+  return type_bool ();
+}
+
+expr_bin_type (expr_limp, t_bool, t_bool),
+expr_bin_type (expr_leq, t_bool, t_bool),
+expr_bin_type (expr_lor, t_bool, t_bool),
+expr_bin_type (expr_land, t_bool, t_bool)
+{
+  return type_bool ();
+}
+
+expr_un_type (expr_uminus, t_int),
+expr_un_type (expr_uminus, t_real),
+expr_un_type (expr_not, t_bool)
+{
+  return ast_as (type, operand_type);
+}
+
+
+// fallbacks.  We don't use fallbacks for node type, so that when
+// adding new node types, addition to these rules will be requested
+
+expr_bin_type (expr_aadd, type, type),
+expr_bin_type (expr_asub, type, type),
+expr_bin_type (expr_amul, type, type),
+expr_bin_type (expr_aidiv, type, type),
+expr_bin_type (expr_ardiv, type, type),
+expr_bin_type (expr_apow, type, type),
+expr_bin_type (expr_req, type, type),
+expr_bin_type (expr_rneq, type, type),
+expr_bin_type (expr_rlt, type, type),
+expr_bin_type (expr_rlte, type, type),
+expr_bin_type (expr_rgt, type, type),
+expr_bin_type (expr_rgte, type, type),
+expr_bin_type (expr_limp, type, type),
+expr_bin_type (expr_leq, type, type),
+expr_bin_type (expr_lor, type, type),
+expr_bin_type (expr_land, type, type)
+{
+  return type_unknown ();
+}
+
+expr_un_type (expr_uminus, type),
+expr_un_type (expr_not, type)
+{
+  return type_unknown ();
+}
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */
