@@ -2,9 +2,9 @@ language="algol60"
 
 #build_by_default=no
 
-stagestuff=
-
 compilers="algol601\$(exeext)"
 
+stagestuff="algol601\$(exeext) algol60\$(exeext)"
+
 # files for garbage collection
-gtfiles="\$(srcdir)/algol60/algol601.c \$(srcdir)/algol60/lang.c"
+gtfiles="\$(srcdir)/algol60/algol-tree.h"

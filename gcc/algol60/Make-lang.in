@@ -19,24 +19,19 @@
 ALGOL60_INSTALL_NAME := $(shell echo ga60|sed '$(program_transform_name)')
 ALGOL60_TARGET_INSTALL_NAME := $(target_noncanonical)-$(shell echo ga60|sed '$(program_transform_name)')
 
-ALGOL60_GENERATED = lexer-tab.c lexer-tab.h parser-tab.c parser-tab.h parser-tab.output ast-tab.c ast-tab.h
+ALGOL60_GENERATED =
 ALGOL60_EXES = ga60
 
 .PHONY: algol60
 
 # Define the names for selecting Algol 60 in LANGUAGES.
-algol60: algol60.done
-
-algol60.done: ga60$(exeext) algol601$(exeext)
-	$(STAMP) algol60.done
-
-# no preprocessor
+algol60: algol601$(exeext) ga60$(exeext)
 
 # core compiler
-algol601$(exeext): algol60/algol601.o algol60/lang.o algol60/tree-convert.o \
+algol601$(exeext): algol60/algol601.o algol60/lang.o algol60/algol-tree.o algol60/tree-convert.o \
 		$(BACKEND) $(LIBSDEPS) attribs.o
 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
-		algol60/algol601.o algol60/lang.o algol60/tree-convert.o \
+		algol60/algol601.o algol60/lang.o algol60/algol-tree.o algol60/tree-convert.o \
 		$(BACKEND) $(LIBS) attribs.o
 
 # Create the compiler driver ga60
@@ -48,23 +43,35 @@ ga60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
 #
 # Compiling object files from source files.
 
+ALGOL60_GTFILES =
+#gt-algol60-algol-tree.h
+
 algol60/algol601.o: algol60/algol601.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
 		flags.h toplev.h $(GGC_H) $(TREE_H) diagnostic.h \
-		input.h algol60/lang.h options.h opts.h \
-		algol60/lang.h gt-algol60-algol601.h gtype-algol60.h
+		input.h algol60/algol-tree.h options.h opts.h \
+		$(ALGOL60_GTFILES) gtype-algol60.h
 
 algol60/lang.o: algol60/lang.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
 		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
 		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
-		algol60/lang.h $(TARGET_H)
+		algol60/algol-tree.h $(TARGET_H) \
+		$(ALGOL60_GTFILES) gtype-algol60.h
+
+algol60/algol-tree.o: algol60/algol-tree.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
+		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
+		algol60/algol-tree.h $(TARGET_H) \
+		$(ALGOL60_GTFILES) gtype-algol60.h
 
 algol60/tree-convert.o: algol60/tree-convert.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
 		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
 		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
-		algol60/lang.h $(TARGET_H)
+		algol60/algol-tree.h $(TARGET_H) \
+		$(ALGOL60_GTFILES) gtype-algol60.h
 
 algol60/spec.o: algol60/spec.c $(CONFIG_H) $(SYSTEM_H) \
-		coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H)
+		coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H) \
+		$(ALGOL60_GTFILES) gtype-algol60.h
 
 # generated files are put into the source directory in case someone
 # wants to build but does not have lex/yacc

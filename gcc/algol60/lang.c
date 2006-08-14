@@ -10,24 +10,13 @@
 #include "options.h"/* generated from lang.opt; here included for
 		       CL_Algol60 define */
 
-#include "coretypes.h" /* contains definition of `tree', required by
-			  tree.h */
-
-#include "tree.h"   /* treecodes used in tree.def, required to define
-		       tree_code_* arrays */
-
-#include "lang.h"   /* our own file, contains declarations for
-		       functions in this file.  Needs definition of
-		       tree for prototypes of hooks. */
-
+#include "coretypes.h"
+#include "tree.h"
 #include "langhooks-def.h" /* for LANG_HOOKS_INITIALIZER macro */
 #include "langhooks.h"
 
 #include "toplev.h" /* for error and pedwarn; also rest_of_* stuff is
 		       declared here */
-
-#include "tm.h"     /* machine dependent defines of BITS_PER_UNIT and
-		       UNITS_PER_WORD */
 
 #include "target.h" /* for targetm used in init */
 #include "flags.h"  /* for flag_signed_char in init */
@@ -37,54 +26,7 @@
 #include "tree-dump.h" /* for dump_function */
 
 
-/* Language-specific identifier information */
-struct lang_identifier GTY(())
-{
-  struct tree_identifier common;
-};
-
-/* Language-specific tree node information.  */
-union lang_tree_node 
-  GTY((desc ("TREE_CODE (&%h.generic) == IDENTIFIER_NODE")))
-{
-  union tree_node GTY ((tag ("0"), 
-			desc ("tree_node_structure (&%h)"))) 
-    generic;
-  struct lang_identifier GTY ((tag ("1"))) identifier;
-};
-
-
-/* Language-specific type information.  */
-struct lang_type GTY(())
-{
-  char junk; /* dummy field to ensure struct is not empty */
-};
-
-
-/* Language-specific declaration information.  */
-struct lang_decl GTY(())
-{
-  char junk; /* dummy field to ensure struct is not empty */
-};
-
-struct language_function GTY(())
-{
-  char junk; /* dummy field to ensure struct is not empty */
-};
-
-/* These are used to build types for various sizes.  The code below
-   is a simplified version of that of GNAT.  */
-#ifndef MAX_BITS_PER_WORD
-#define MAX_BITS_PER_WORD  BITS_PER_WORD
-#endif
-
-/* This variable keeps a table for types for each precision so that we only 
-   allocate each of them once. Signed and unsigned types are kept separate.  */
-static GTY(()) tree signed_and_unsigned_types[MAX_BITS_PER_WORD + 1][2];
-
-#include "debug.h"           /* for debug_hooks */
-#include "ggc.h"             /* for ggc_root_tab */
-#include "gt-algol60-lang.h" /* garbage collecting definitions */
+#include "algol-tree.h"
 
 
 /* The front end language hooks (addresses of code for this front
@@ -380,103 +322,4 @@ algol60_expand_function (tree fndecl)
 {
   /* We have nothing special to do while expanding functions for Algol60.  */
   tree_rest_of_compilation (fndecl);
-}
-
-
-#define DEFTREECODE(SYM, NAME, TYPE, LENGTH) TYPE,
-
-const enum tree_code_class tree_code_type[] = {
-#include "tree.def"
-  tcc_exceptional
-};
-#undef DEFTREECODE
-
-#define DEFTREECODE(SYM, NAME, TYPE, LENGTH) LENGTH,
-
-const unsigned char tree_code_length[] = {
-#include "tree.def"
-  0
-};
-#undef DEFTREECODE
-
-#define DEFTREECODE(SYM, NAME, TYPE, LEN) NAME,
-
-const char *const tree_code_name[] = {
-#include "tree.def"
-  "@@dummy"
-};
-#undef DEFTREECODE
-
-
-/* Record a decl-node X as belonging to the current lexical scope.
-   Check for errors (such as an incompatible declaration for the same
-   name already seen in the same scope). */
-tree
-pushdecl (tree x)
-{
-  return x;
-}
-
-/* Return the list of declarations of the current level. */
-tree
-getdecls (void)
-{
-  return NULL;
-}
-
-/* Nonzero if we are currently in the global binding level.  */
-int
-global_bindings_p (void)
-{
-  return 0;/*current_binding_level == global_binding_level;*/
-}
-
-/* Insert BLOCK at the end of the list of subblocks of the current
-   binding level.  This is used when a BIND_EXPR is expanded, to
-   handle the BLOCK node inside the BIND_EXPR.  */
-void
-insert_block (tree block ATTRIBUTE_UNUSED)
-{
-  fprintf (stderr, "insert_block\n");
-  /*
-  TREE_USED (block) = 1;
-  current_binding_level->blocks
-    = chainon (current_binding_level->blocks, block);
-  */
-}
-
-/* Return a definition for a builtin function named NAME and whose
-   data type is TYPE.  TYPE should be a function type with argument
-   types.  FUNCTION_CODE tells later passes how to compile calls to
-   this function.  See tree.h for its possible values.
-
-   If LIBRARY_NAME is nonzero, use that for DECL_ASSEMBLER_NAME, the
-   name to be called if we can't opencode the function.  If ATTRS is
-   nonzero, use that for the function's attribute list.
-
-   copied from gcc/c-decl.c */
-tree
-builtin_function (const char *name,
-		  tree type ATTRIBUTE_UNUSED,
-		  int function_code ATTRIBUTE_UNUSED,
-		  enum built_in_class cl ATTRIBUTE_UNUSED,
-		  const char *library_name,
-		  tree attrs ATTRIBUTE_UNUSED)
-{
-  tree decl = build_decl (FUNCTION_DECL, get_identifier (name), type);
-  DECL_EXTERNAL (decl) = 1;
-  TREE_PUBLIC (decl) = 1;
-  if (library_name)
-    SET_DECL_ASSEMBLER_NAME (decl, get_identifier (library_name));
-  pushdecl (decl);
-  DECL_BUILT_IN_CLASS (decl) = cl;
-  DECL_FUNCTION_CODE (decl) = function_code;
-
-  /* Possibly apply some default attributes to this built-in function.  */
-  if (attrs)
-    decl_attributes (&decl, attrs, ATTR_FLAG_BUILT_IN);
-  else
-    decl_attributes (&decl, NULL_TREE, 0);
-
-  return decl;
 }
