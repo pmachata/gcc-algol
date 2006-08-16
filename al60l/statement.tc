@@ -93,15 +93,24 @@ stmt_resolve_symbols (stmt_assign)
 	  estring_t * s2 = expr_to_str (self->rhs, NULL);
 	  estring_t * s3 = type_to_str (t1, NULL);
 	  estring_t * s4 = type_to_str (tt, NULL);
-	  log_printf (log, ll_error, "type mismatch in assignment %s := %s (%s doesn't match %s)",
+	  log_printf (log, ll_error,
+		      "type mismatch in assignment %s := %s (%s doesn't match %s)",
 		      estr_cstr (s1), estr_cstr (s2), estr_cstr (s3), estr_cstr (s4));
 	  delete_estring (s1);
 	  delete_estring (s2);
+	  delete_estring (s3);
+	  delete_estring (s4);
+	}
+      if (!expr_is_lvalue (lhs))
+	{
+	  estring_t * s1 = expr_to_str (lhs, NULL);
+	  log_printf (log, ll_error,
+		      "%s has to be an lvalue",
+		      estr_cstr (s1));
+	  delete_estring (s1);
 	}
     }
   delete_slist_it (it);
-
-  // @TODO: also check for lvalues
 }
 
 

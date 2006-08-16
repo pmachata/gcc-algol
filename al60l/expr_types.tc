@@ -52,8 +52,10 @@ expr_un_type (expr_not, t_bool)
 }
 
 
-// fallbacks.  We don't use fallbacks for node type, so that when
-// adding new node types, addition to these rules will be requested
+// fallbacks.  We don't use fallbacks for expression nodes, just for
+// type nodes.  This way, when adding new node types, treecc will
+// automatically check if you have expr_*_type implemented for given
+// node.  New type nodes are unlikely in algol setting.
 
 expr_bin_type (expr_aadd, type, type),
 expr_bin_type (expr_asub, type, type),

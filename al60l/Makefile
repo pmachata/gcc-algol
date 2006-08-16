@@ -86,7 +86,7 @@ ast-tab.h: ast.tc statement.tc symbol.tc expression.tc type.tc ast-tab.c Makefil
 ast.o: ast-tab.c ast-tab.h slist.h Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-tab.c -c -o ast.o
 
-ast-test: ast-tab.o slist.o logger.o util.o estring.o ast-test.c Makefile
+ast-test: ast.o slist.o logger.o util.o estring.o ast-test.c Makefile
 	$(CC) $(DEBUG) $(PROFILE) $(CFLAGS) ast-test.c ast.o  \
 		slist.o logger.o util.o estring.o -o ast-test
 

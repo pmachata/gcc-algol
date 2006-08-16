@@ -17,6 +17,15 @@
 /// also performed here.
 %operation void expr_resolve_symbols (expression * self, container * block, logger_t * log);
 
+/// Answer whether this expression is lvalue.
+%operation int expr_is_lvalue (expression * self) = { 0 }
+
+expr_is_lvalue (expression)
+{
+  // fallback: ordinary expressions aren't lvalues
+  return 0;
+}
+
 
 
 // ------------------------------------
@@ -160,6 +169,11 @@ expr_resolve_symbols (expr_idref)
   self->sym = found;
 }
 
+expr_is_lvalue (expr_idref)
+{
+  return 1;
+}
+
 
 
 // ------------------------------------
@@ -206,6 +220,18 @@ expr_resolve_symbols (expr_if)
       log_printf (log, ll_error, "both `if' branches have to have same types");
       self->exp_f = expr_primitive_for_type (tt);
     }
+}
+
+expr_is_lvalue (expr_if)
+{
+  // @TODO
+  // Technically this is ok:
+  //   if cond then a else b := 4;
+  // but Algol doesn't allow this, plus with the most trivial scenario
+  // of `gimme lvalue target' this doesn't work statically and
+  // requires extra support.  So yes, do this as an extension if you
+  // have tons of time, but for the time being...
+  return 0;
 }
 
 
