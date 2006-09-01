@@ -37,7 +37,7 @@ typedef struct struct_lexer_rep_t
 static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
 static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
 static token_kind_t private_lexer_got_eof_token (void * flex_scanner, char const* error);
-static token_kind_t private_lexer_got_real (void * flex_scanner, YYSTYPE * val);
+static token_kind_t private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
 
@@ -370,22 +370,25 @@ DIGIT		[0-9]
  /* Real numbers take up many different forms in ALGOL.  For the sake
     of clarity, the rule was broken to several instances, covering the
     various formats.  The action taken was moved to function
-    private_lexer_got_number, where further parsing takes place.*/
+    private_lexer_got_real, where further parsing takes place.*/
 
 ([0-9]+"."[0-9]*) {
-  return private_lexer_got_real (yyscanner, yylval);
+  return private_lexer_got_real (yyscanner, yylval, NULL);
 }
 ([0-9]*"."[0-9]+) {
-  return private_lexer_got_real (yyscanner, yylval);
+  return private_lexer_got_real (yyscanner, yylval, NULL);
 }
-([0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_real (yyscanner, yylval);
+([0-9]*"'e'"[+-]?[0-9]+) {
+  return private_lexer_got_real (yyscanner, yylval, "'e'");
 }
-([0-9]+"."[0-9]*("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_real (yyscanner, yylval);
+([0-9]*"'E'"[+-]?[0-9]+) {
+  return private_lexer_got_real (yyscanner, yylval, "'E'");
 }
-([0-9]*"."[0-9]+("'E'"|"'e'")[+-]?[0-9]+) {
-  return private_lexer_got_real (yyscanner, yylval);
+(([0-9]+"."[0-9]*|[0-9]*"."[0-9]+)"'e'"[+-]?[0-9]+) {
+  return private_lexer_got_real (yyscanner, yylval, "'e'");
+}
+(([0-9]+"."[0-9]*|[0-9]*"."[0-9]+)"'E'"[+-]?[0-9]+) {
+  return private_lexer_got_real (yyscanner, yylval, "'E'");
 }
 
  /* Integer numbers, on the other hand, are quite simple.  We don't
@@ -571,16 +574,17 @@ private_lexer_got_eof_token (void * flex_scanner, char const* error)
 }
 
 static token_kind_t
-private_lexer_got_real (void * flex_scanner, YYSTYPE * val)
+private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr)
 {
   lexer_rep_t * lexer = yyget_extra (flex_scanner);
   char * lit = yyget_text (flex_scanner);
   char * pos;
 
-  if ((pos = strstr (lit, "'e'")) != NULL)
+  if ((pos = strstr (lit, expstr)) != NULL)
     {
       *pos = 0; // trim original literal
-      pos += 3; // move pointer to beginning of exponential part
+      pos += strlen (expstr); // move pointer to the beginning of
+                              // exponential part
       // ugly, but safe
       sprintf (lit, "%se%s", ((*lit == 0)?"1":lit), pos);
     }

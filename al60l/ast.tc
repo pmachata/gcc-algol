@@ -114,6 +114,8 @@ padding (int level)
 %include "expression.tc"
 %include "expr_types.tc"
 
+%include "gcc.tc"
+
 /*
  * Local Variables:
  * mode: c

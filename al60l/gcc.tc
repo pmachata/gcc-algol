@@ -1,0 +1,143 @@
+/*
+ * Copyright (c) 2006 Petr Machata
+ * All rights reserved.
+ */
+
+%decls %end %{
+void * stmt_dummy_build_generic (stmt_dummy * self);
+void * stmt_assign_build_generic (stmt_assign * self);
+void * stmt_call_build_generic (stmt_call * self);
+void * stmt_container_build_generic (container * self);
+%}
+
+%end %{
+#ifndef BUILD_GCC_FRONTEND
+// Dummy definitions for GENERIC emit.
+
+void NORETURN
+no_gcc_frontend (void)
+{
+  fprintf (stderr, "GCC frontend not built.\n");
+  abort ();
+}
+
+void *
+stmt_dummy_build_generic (stmt_dummy * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+stmt_assign_build_generic (stmt_assign * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+stmt_call_build_generic (stmt_call * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+stmt_container_build_generic (container * self)
+{
+  no_gcc_frontend ();
+}
+
+#endif
+%}
+
+/// Return GENERIC for given statement and all its substatements.
+/// This actually returns tree*, but treecc limits us to this hack.
+%operation void* stmt_build_generic (statement * self) = { NULL }
+
+/// Return GENERIC for given expression. This actually returns tree*,
+/// but treecc limits us to this hack.
+%operation void* expr_build_generic (expression * self) = { NULL }
+
+
+stmt_build_generic (stmt_dummy)
+{
+  return stmt_dummy_build_generic (self);
+}
+
+stmt_build_generic (stmt_assign)
+{
+  return stmt_assign_build_generic (self);
+}
+
+stmt_build_generic (stmt_call)
+{
+  return stmt_call_build_generic (self);
+}
+
+stmt_build_generic (container)
+{
+  return stmt_container_build_generic (self);
+}
+
+
+
+expr_build_generic (expr_int)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_real)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_string)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_bool)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_idref)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_if)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_arith)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_rel)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_log)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_un)
+{
+  return NULL; /// nyi
+}
+
+expr_build_generic (expr_call)
+{
+  return NULL; /// nyi
+}
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-syntactic-indentation: nil
+ * End:
+ */
