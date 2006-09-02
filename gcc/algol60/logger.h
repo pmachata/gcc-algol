@@ -28,15 +28,15 @@ typedef struct struct_logger_t { } logger_t;
 /// Allocate new debug log context.  The default output stream is
 /// stderr, the default threshold level is ll_warning.
 logger_t * new_logger (char const* name)
-     MALLOC_LIKE
-     ARG_NONNULL(1);
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
 
 /// Destroy the log.
 void delete_logger (logger_t * logger);
 
 /// Convert void* to logger, if it is logger, or return NULL.
 logger_t * logger (void * ptr)
-     ARG_NONNULL(1);
+  ATTRIBUTE_NONNULL(1);
 
 
 /// This function is used for logging compiler messages.  Depending on
@@ -58,8 +58,8 @@ logger_t * logger (void * ptr)
 /// answered.  Filtered out messages return 0.
 int log_printf (logger_t * logger, debug_level_t level,
 		char const* format_string, ...)
-     PRINTF_LIKE(3,4)
-     ARG_NONNULL(1);
+  ATTRIBUTE_PRINTF(3,4)
+  ATTRIBUTE_NONNULL(1);
 
 
 /// Use this function to set up message filtering based on their
@@ -72,7 +72,7 @@ int log_printf (logger_t * logger, debug_level_t level,
 /// has to have to get displayed.  Application will print out all
 /// messages with severity higher or the same as provided level.
 void log_set_filter (logger_t * logger, debug_level_t level)
-     ARG_NONNULL(1);
+  ATTRIBUTE_NONNULL(1);
 
 
 /// Set the stream where the output should be sent.
@@ -82,7 +82,7 @@ void log_set_filter (logger_t * logger, debug_level_t level)
 ///
 /// \arg stream The stream where unfiltered output will appear on.
 void log_set_stream (logger_t * logger, FILE * stream)
-     ARG_NONNULL(1);
+  ATTRIBUTE_NONNULL(1);
 
 
 /// Answer count of messages with a severity higher than or same as
@@ -94,6 +94,6 @@ void log_set_stream (logger_t * logger, FILE * stream)
 ///
 /// \return Number of messages.
 int log_count_messages (logger_t const* logger, debug_level_t level)
-     ARG_NONNULL(1);
+  ATTRIBUTE_NONNULL(1);
 
 #endif //_AL60L_DEBUG_H_

@@ -109,8 +109,9 @@ log_count_messages (logger_t const* _logger, debug_level_t level)
 {
   int ret = 0;
   logger_rep_t const* logger = (void*)_logger;
+  debug_level_t l = level;
 
-  for (debug_level_t l = level; l < debug_level_t_count; ++l)
+  for (; l < debug_level_t_count; ++l)
     ret += logger->ct[l];
 
   return ret;

@@ -4,7 +4,7 @@ language="algol60"
 
 compilers="algol601\$(exeext)"
 
-stagestuff="algol601\$(exeext) algol60\$(exeext)"
+stagestuff="algol601\$(exeext) ga60\$(exeext)"
 
 # files for garbage collection
 gtfiles="\$(srcdir)/algol60/algol-tree.h"

@@ -1,3 +1,5 @@
+/* GCC includes: */
+
 #include "config.h" /* system.h needs to know if it's safe to include
 		       <string.h>/<strings.h> stuff; this is
 		       host-specific, and config.h knows it */
@@ -25,8 +27,17 @@
 
 #include "tree-dump.h" /* for dump_function */
 
+#include "errors.h" /* for error/warning/etc */
+
 
 #include "algol-tree.h"
+
+
+/* Al60l parsing library includes: */
+
+#include "lexer.h"
+#include "parser.h"
+#include "ast-tab.h"
 
 
 /* The front end language hooks (addresses of code for this front
@@ -66,6 +77,10 @@
 /* Each front end provides its own.  */
 const struct lang_hooks lang_hooks = LANG_HOOKS_INITIALIZER;
 
+/* Global input file.  */
+char const* g_ifname;
+FILE * g_ifile;
+
 bool
 algol60_init (void)
 {
@@ -79,6 +94,7 @@ algol60_init (void)
   set_sizetype (size_type_node);
   build_common_builtin_nodes ();
   (*targetm.init_builtins) ();
+
   return true;
 }
 
@@ -111,15 +127,23 @@ bool
 algol60_post_options (char const* * pfilename)
 {
   char const* filename = *pfilename;
+  FILE * finput = NULL;
   fprintf (stderr, "algol60_post_options\n");
   if (filename == 0 || strcmp (filename, "-") == 0)
     {
       filename = "stdin";
-      /*
-      if (dependency_tracking)
-	error ("can't do dependency tracking with input from stdin");
-      */
+      finput = stdin;
     }
+  else
+    {
+      finput = fopen (filename, "r");
+      if (finput == NULL)
+	internal_error ("can't open file %s\n", filename);
+    }
+
+  g_ifname = filename;
+  g_ifile = finput;
+
   fprintf (stderr, "algol60_post_options: filename=`%s'\n", filename);
 
   /* Initialize the compiler back end.  */
@@ -131,19 +155,42 @@ void
 algol60_parse_file (int debug)
 {
   fprintf (stderr, "algol60_parse_file: debug=%d\n", debug);
-  /* dummy compilation emits code for this snippet:
 
-     'integer' 'procedure' main;
-     'begin'
-         main := 4;
-     'end';
-   */
+  lexer_t * a_lexer = new_lexer (g_ifile, g_ifname, true);
+  gcc_assert (a_lexer != NULL);
+  lexer_set_logging (a_lexer, ll_warning, 1);
+  parser_t * a_parser = new_parser (a_lexer, 1);
+  gcc_assert (a_parser != NULL);
 
-  /* Build declaration of `main' functions */
+  statement * ast = parser_parse (a_parser);
+  logger_t * anal_log = new_logger ("analys");
+  log_set_filter (anal_log, ll_filter_nothing);
+
+  if (ast)
+    {
+      gcc_assert (ast_isa (ast, statement));
+      log_printf (anal_log, ll_info, "entering analysis...");
+      stmt_resolve_symbols (ast, anal_log);
+    }
+
+  int errors =
+    log_count_messages (lexer_log (a_lexer), ll_error)
+    + log_count_messages (parser_log (a_parser), ll_error)
+    + log_count_messages (anal_log, ll_error);
+
+  if (errors)
+    {
+      error ("%d errors encountered.\n", errors);
+      goto leave;
+    }
+
+
+  // Build declaration of `main' functions
   tree param_types = tree_cons (NULL_TREE, void_type_node, NULL_TREE);
   param_types = nreverse (param_types);
   tree fn_type = build_function_type (integer_type_node, param_types);
   tree decl = build_decl (FUNCTION_DECL, get_identifier ("main"), fn_type);
+
   DECL_CONTEXT (decl) = NULL_TREE;
   TREE_PUBLIC (decl) = 1;
   DECL_EXTERNAL (decl) = 0;
@@ -152,8 +199,8 @@ algol60_parse_file (int debug)
 
   rest_of_decl_compilation (decl, 1, 0);
 
-  /* Build RESULT DECLARATION, which is used for storing function
-     return value. */
+  // Build RESULT DECLARATION, which is used for storing function
+  // return value.
   announce_function (decl);
   pushdecl (decl);
   current_function_decl = decl;
@@ -164,21 +211,13 @@ algol60_parse_file (int debug)
   DECL_IGNORED_P (resultdecl) = 1;
   DECL_RESULT (decl) = resultdecl;
 
-  /* Build function BODY:
-     `(<block> (return (init_expr resultdecl (int_cst 4))))' */
-  tree assign = build2 (INIT_EXPR, void_type_node,
-			resultdecl, build_int_cst (integer_type_node, 4));
-  TREE_USED (assign) = 1;
-  TREE_SIDE_EFFECTS (assign) = 1;
-  tree body = build1 (RETURN_EXPR, void_type_node,
-		      assign);
-  TREE_USED (body) = 1;
-  tree block = build_block (/* tree vars =*/ NULL_TREE,
-			    /* tree subblocks = */ NULL_TREE,
-			    /* tree supercontext = */ NULL_TREE,
-			    /* tree chain = */ NULL_TREE);
-  DECL_SAVED_TREE (decl) = build3 (BIND_EXPR, void_type_node,
-				   NULL_TREE, body, block);
+  ast->extra = resultdecl;
+
+  // toplev 'begin'-'end' block is the body of `main'
+  statement * stmt0 = slist_front (ast_as (container, ast)->commands);
+  statement_dump (stmt0, stdout, 0);
+  tree block = stmt_build_generic (stmt0);
+
   DECL_INITIAL (decl) = block;
   TREE_USED (block) = 1;
 
@@ -193,6 +232,9 @@ algol60_parse_file (int debug)
 
   /* For -funit-at-time; finalize whole unit */
   cgraph_finalize_compilation_unit ();
+
+ leave:
+  delete_parser (a_parser);
 }
 
 /* Mark EXP saying that we need to be able to take the

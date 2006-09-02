@@ -5,6 +5,7 @@
 /// Root AST node for statements.
 %node statement %abstract %typedef = {
   %nocreate container * parent = { NULL };
+  %nocreate void * extra = { NULL };
 }
 
 /// Dump (i.e. rewrite from AST back to code) the tree to given file
@@ -459,8 +460,8 @@ stmt_toplev_define_internals (stmt_toplev * self)
     {NULL,   NULL}
   };
 
-  for (struct interfun * ptr = builtins;
-       ptr->n != NULL; ptr++)
+  struct interfun * ptr = builtins;
+  for (; ptr->n != NULL; ptr++)
     {
       symbol * s = symbol_create (label_id_create (new_estring_from (ptr->n)));
       symbol_set_type (s, ptr->t);

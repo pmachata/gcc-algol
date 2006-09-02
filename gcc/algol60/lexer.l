@@ -484,7 +484,7 @@ new_lexer (FILE * stream, char const* filename, int manage)
 
       ret->current_tok = -1;
       ret->prev_tok = -1;
-
+      ret->managed = manage;
       return (void*)ret;
     }
   else

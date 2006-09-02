@@ -11,10 +11,10 @@ void * stmt_container_build_generic (container * self);
 %}
 
 %end %{
-#ifndef BUILD_GCC_FRONTEND
+#ifndef IN_GCC
 // Dummy definitions for GENERIC emit.
 
-void NORETURN
+void ATTRIBUTE_NORETURN
 no_gcc_frontend (void)
 {
   fprintf (stderr, "GCC frontend not built.\n");
@@ -41,6 +41,72 @@ stmt_call_build_generic (stmt_call * self)
 
 void *
 stmt_container_build_generic (container * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_int_build_generic (expr_int * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_real_build_generic (expr_real * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_string_build_generic (expr_string * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_bool_build_generic (expr_bool * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_idref_build_generic (expr_idref * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_if_build_generic (expr_if * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_arith_build_generic (expr_arith * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_rel_build_generic (expr_rel * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_log_build_generic (expr_log * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_un_build_generic (expr_un * self)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_call_build_generic (expr_call * self)
 {
   no_gcc_frontend ();
 }
@@ -81,57 +147,57 @@ stmt_build_generic (container)
 
 expr_build_generic (expr_int)
 {
-  return NULL; /// nyi
+  return expr_int_build_generic (self);
 }
 
 expr_build_generic (expr_real)
 {
-  return NULL; /// nyi
+  return expr_real_build_generic (self);
 }
 
 expr_build_generic (expr_string)
 {
-  return NULL; /// nyi
+  return expr_string_build_generic (self);
 }
 
 expr_build_generic (expr_bool)
 {
-  return NULL; /// nyi
+  return expr_bool_build_generic (self);
 }
 
 expr_build_generic (expr_idref)
 {
-  return NULL; /// nyi
+  return expr_idref_build_generic (self);
 }
 
 expr_build_generic (expr_if)
 {
-  return NULL; /// nyi
+  return expr_if_build_generic (self);
 }
 
 expr_build_generic (expr_arith)
 {
-  return NULL; /// nyi
+  return expr_arith_build_generic (self);
 }
 
 expr_build_generic (expr_rel)
 {
-  return NULL; /// nyi
+  return expr_rel_build_generic (self);
 }
 
 expr_build_generic (expr_log)
 {
-  return NULL; /// nyi
+  return expr_log_build_generic (self);
 }
 
 expr_build_generic (expr_un)
 {
-  return NULL; /// nyi
+  return expr_un_build_generic (self);
 }
 
 expr_build_generic (expr_call)
 {
-  return NULL; /// nyi
+  return expr_call_build_generic (self);
 }
 
 

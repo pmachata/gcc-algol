@@ -23,6 +23,13 @@ AL60L_DIR := /home/ant/stud/dp/gcc-algol/trunk/al60l
 ALGOL60_GENERATED =
 ALGOL60_EXES = ga60
 
+TREECC  := treecc
+
+# for referring to all objects that make up AL60L parsing library
+AL60L_OBJS = algol60/lexer-tab.o algol60/parser-tab.o algol60/ast-tab.o \
+		algol60/estring.o algol60/logger.o algol60/cursor.o \
+		algol60/slist.o algol60/util.o
+
 .PHONY: algol60
 
 # Define the names for selecting Algol 60 in LANGUAGES.
@@ -31,11 +38,11 @@ algol60: algol601$(exeext) ga60$(exeext)
 # core compiler
 algol601$(exeext): algol60/algol601.o algol60/lang.o algol60/algol-tree.o \
 		algol60/tree-convert.o algol60/al60l_bind.o\
-		$(BACKEND) $(LIBSDEPS) attribs.o algol60/al60l.a
+		$(BACKEND) $(LIBSDEPS) attribs.o $(AL60L_OBJS)
 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
 		algol60/algol601.o algol60/lang.o algol60/algol-tree.o \
 		algol60/tree-convert.o algol60/al60l_bind.o\
-		$(BACKEND) $(LIBS) attribs.o algol60/al60l.a
+		$(BACKEND) $(LIBS) attribs.o $(AL60L_OBJS)
 
 # Create the compiler driver ga60
 ga60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
@@ -44,54 +51,95 @@ ga60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
 		$(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) $(LIBS)
 
 #
-# Compiling object files from source files.
 
 ALGOL60_GTFILES =
 #gt-algol60-algol-tree.h
 
-algol60/al60l.a: $(AL60L_DIR)/stamp
-	make -C $(AL60L_DIR) BUILD_GCC_FRONTEND=1 al60l.a
-	cp $(AL60L_DIR)/al60l.a algol60/al60l.a
+# GCC side
 
-algol60/algol601.o: algol60/algol601.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
-		flags.h toplev.h $(GGC_H) $(TREE_H) diagnostic.h \
-		input.h algol60/algol-tree.h options.h opts.h \
+algol60/gcc-stuff: $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TM_H) $(GGC_H) \
+		$(TREE_H) $(LANGHOOKS_DEF_H) $(TARGET_H)\
+		coretypes.h flags.h toplev.h diagnostic.h varray.h\
+		input.h options.h opts.h output.h langhooks.h\
+		algol60/algol-tree.h
+	touch algol60/gcc-stuff
+
+algol60/algol601.o: algol60/algol601.c algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/lang.o: algol60/lang.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
-		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
-		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
-		algol60/algol-tree.h $(TARGET_H) \
+algol60/lang.o: algol60/lang.c algol60/ast-tab.h algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/algol-tree.o: algol60/algol-tree.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
-		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
-		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
-		algol60/algol-tree.h $(TARGET_H) \
+algol60/algol-tree.o: algol60/algol-tree.c algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/tree-convert.o: algol60/tree-convert.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
-		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
-		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
-		algol60/algol-tree.h $(TARGET_H) \
+algol60/tree-convert.o: algol60/tree-convert.c algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
 algol60/spec.o: algol60/spec.c $(CONFIG_H) $(SYSTEM_H) \
 		coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H) \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/al60l_bind.o: algol60/al60l_bind.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
-		$(TM_H) $(TREE_H) flags.h output.h $(RTL_H) $(GGC_H) toplev.h \
-		varray.h $(LANGHOOKS_DEF_H) langhooks.h input.h \
-		algol60/algol-tree.h $(TARGET_H) \
+algol60/al60l_bind.o: algol60/al60l_bind.c algol60/gcc-stuff algol60/ast-tab.h \
 		$(ALGOL60_GTFILES) gtype-algol60.h
+
+# AL60L side
+
+algol60.srcextra: algol60/parse-tab.c algol60/parse-tab.h \
+		algol60/lexer-tab.c algol60/lexer-tab.h \
+		algol60/ast-tab.c algol60/ast-tab.h
+	-cp -p $^ $(srcdir)/algol60
+
+algol60/util.o: algol60/util.c algol60/util.h algol60/gcc-stuff
+
+algol60/slist.o: algol60/slist.c algol60/slist.h algol60/pd.h algol60/gcc-stuff
+
+algol60/cursor.o: algol60/cursor.c algol60/cursor.h algol60/pd.h algol60/util.h algol60/gcc-stuff
+
+algol60/logger.o: algol60/logger.c algol60/logger.h algol60/pd.h algol60/gcc-stuff
+
+algol60/estring.o: algol60/estring.c algol60/estring.h algol60/pd.h algol60/gcc-stuff
+
+algol60/ast-tab.c: algol60/ast.tc algol60/statement.tc algol60/symbol.tc \
+		algol60/expression.tc algol60/type.tc algol60/gcc.tc \
+		algol60/gcc-stuff
+	$(TREECC) -o algol60/ast-tab.c -h algol60/ast-tab.h $(srcdir)/algol60/ast.tc
+
+algol60/ast-tab.h: algol60/ast.tc algol60/statement.tc algol60/symbol.tc \
+		algol60/expression.tc algol60/type.tc algol60/gcc.tc \
+		algol60/ast-tab.c algol60/gcc-stuff
+	[ -f algol60/ast-tab.h ]
+
+algol60/ast-tab.o: algol60/ast-tab.c algol60/ast-tab.h algol60/slist.h algol60/gcc-stuff
+
+algol60/parser-tab.o: algol60/parser-tab.c algol60/ast-tab.o algol60/gcc-stuff
+
+algol60/parser-tab.c: algol60/parser.y algol60/parser.h algol60/lexer.h \
+		algol60/logger.h algol60/pd.h algol60/cursor.h algol60/gcc-stuff
+	$(BISON) -t -v -d $(BISONFLAGS) -o algol60/parser-tab.c $(srcdir)/algol60/parser.y
+
+algol60/parser-tab.h: algol60/parser-tab.c
+	[ -f algol60/parser-tab.h ]
+
+algol60/lexer-tab.o: algol60/lexer-tab.c algol60/gcc-stuff
+
+algol60/lexer-tab.c: algol60/lexer.l algol60/lexer.h algol60/parser-tab.h \
+		algol60/estring.h algol60/logger.h algol60/pd.h algol60/cursor.h \
+		algol60/gcc-stuff
+	$(FLEX) -R --never-interactive $(FLEXFLAGS) -o algol60/lexer-tab.c \
+		--header-file=algol60/lexer-tab.h $(srcdir)/algol60/lexer.l
+	sed -i -e '/static void yyunput/s/;/__attribute__((unused));/' algol60/lexer-tab.c
+
+algol60/lexer-tab.h: algol60/lexer-tab.c
+	[ -f algol60/lexer-tab.h ]
+
+
+
 
 # generated files are put into the source directory in case someone
 # wants to build but does not have lex/yacc
 
 # -- NEEDS TO BE COMPARED AGAINST THE REAL MAKEFILE FROM AL60L LIBRARY --
-#algol60.srcextra: algol60/parse-tab.c algol60/parse-tab.h algol60/lexer-tab.c algol60/lexer-tab.h
-#	-cp -p $^ $(srcdir)/algol60
 #
 #algol60/lexer-tab.c: algol60/lexer.l
 #	-$(FLEX) $(FLEXFLAGS) -o$@ $<

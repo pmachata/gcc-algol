@@ -40,7 +40,7 @@ new_cursor (char const* filename)
 }
 
 cursor_t *
-new_cursor_copy (cursor_t * _cursor)
+clone_cursor (cursor_t * _cursor)
 {
   cursor_rep_t * cursor = (void*)_cursor;
   cursor_rep_t * ret = (void*) new_cursor (cursor->filename);

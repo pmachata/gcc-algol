@@ -102,8 +102,8 @@ clone_slist (slist_t * _slist)
   assert (_slist != NULL);
   slist_t * ret = new_slist ();
   slist_rep_t * slist = (void*)_slist;
-  for (slist_node_rep_t * node = slist->head;
-       node != NULL; node = node->link)
+  slist_node_rep_t * node = slist->head;
+  for (; node != NULL; node = node->link)
     slist_pushback (ret, node->object);
 
   return ret;
@@ -115,9 +115,9 @@ delete_slist (slist_t * _list)
   if (_list != NULL)
     {
       slist_rep_t * list = (void*)_list;
+      slist_node_rep_t * node = list->head;
 
-      for (slist_node_rep_t * node = list->head;
-	   node != NULL; )
+      for (; node != NULL; )
 	{
 	  slist_node_rep_t * next = node->link;
 	  free (node);
@@ -213,6 +213,22 @@ slist_popfront (slist_t * _list)
   return object;
 }
 
+void *
+slist_front (slist_t * _list)
+{
+  assert (_list != NULL);
+  slist_rep_t * list = (void*)_list;
+  return list->head->object;
+}
+
+void *
+slist_back (slist_t * _list)
+{
+  assert (_list != NULL);
+  slist_rep_t * list = (void*)_list;
+  return list->tail->object;
+}
+
 int
 slist_empty (slist_t * _list)
 {
@@ -232,8 +248,8 @@ void slist_each (
   slist_rep_t * list = (void*)_list;
   assert (fn != NULL);
 
-  for (slist_node_rep_t * node = list->head;
-       node != NULL; node = node->link)
+  slist_node_rep_t * node = list->head;
+  for (; node != NULL; node = node->link)
     {
       void * obj = node->object;
       fn (_list, obj, userdata);
@@ -252,9 +268,8 @@ slist_filter (
   assert (pred != NULL);
 
   slist_t * ret = new_slist ();
-
-  for (slist_node_rep_t * node = list->head;
-       node != NULL; node = node->link)
+  slist_node_rep_t * node = list->head;
+  for (; node != NULL; node = node->link)
     {
       if (pred (_list, node->object, userdata))
 	slist_pushback (ret, node->object);
@@ -366,6 +381,7 @@ main (void)
 	{
 	  slist_pushback (l, (void*)i);
 	  assert (!slist_empty (l));
+	  assert (slist_back (l) == (void*)i);
 	}
 
       int ctr = 0;
@@ -385,7 +401,10 @@ main (void)
 
       while (!slist_empty (l))
 	{
-	  slist_pushfront (l2, slist_popfront (l));
+	  void * fr = slist_front (l);
+	  void * fr2 = slist_popfront (l);
+	  assert (fr == fr2);
+	  slist_pushfront (l2, l2);
 	  --ctr;
 	}
       assert (ctr == 5);
