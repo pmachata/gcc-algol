@@ -5,7 +5,6 @@
 /// Root AST node for statements.
 %node statement %abstract %typedef = {
   %nocreate container * parent = { NULL };
-  %nocreate void * extra = { NULL };
 }
 
 /// Dump (i.e. rewrite from AST back to code) the tree to given file
@@ -141,7 +140,7 @@ stmt_resolve_symbols (stmt_call)
 // ------------------------------------
 
 %node container statement %abstract = {
-  %nocreate slist_t * commands = { new_slist () };
+  %nocreate slist_t * statements = { new_slist () };
   %nocreate slist_t * symtab = { new_slist () };
 }
 
@@ -176,7 +175,7 @@ typedef enum enum_symtab_entry_kind_t
 
 stmt_resolve_symbols (container)
 {
-  slist_it_t * it = slist_iter (self->commands);
+  slist_it_t * it = slist_iter (self->statements);
   for (; slist_it_has (it); slist_it_next (it))
     stmt_resolve_symbols (slist_it_get (it), log);
   delete_slist_it (it);
@@ -326,7 +325,7 @@ private_dump_container (container * self, FILE * ofile, int level)
   delete_slist_it (it);
 
   // dump all statemenets
-  it = slist_iter (self->commands);
+  it = slist_iter (self->statements);
   for (;slist_it_has (it);)
     {
       statement * stmt = slist_it_get (it);
@@ -369,7 +368,7 @@ statement_dump (container)
 
 container_add_stmt (container)
 {
-  slist_pushback (self->commands, stmt);
+  slist_pushback (self->statements, stmt);
   stmt->parent = self;
 }
 
@@ -467,6 +466,9 @@ stmt_toplev_define_internals (stmt_toplev * self)
       symbol_set_type (s, ptr->t);
       symbol_set_hidden (s, 1);
       int fail = container_add_symbol (ast_as (container, self), s, sek_internal);
+#ifdef IN_GCC
+      symbol_set_extra (s, builtin_decl_get_generic (s));
+#endif
       assert (fail == 0);
     }
 }

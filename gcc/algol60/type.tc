@@ -250,7 +250,10 @@ type_get_root (t_own)
   return type_get_root (self->host);
 }
 
-expr_primitive_for_type (t_own) { return expr_primitive_for_type (self->host); }
+expr_primitive_for_type (t_own)
+{
+  return expr_primitive_for_type (self->host);
+}
 
 
 // ------------------------------------

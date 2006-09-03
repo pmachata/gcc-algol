@@ -794,8 +794,9 @@ parser_t *
 new_parser (lexer_t * lexer, int manage)
 {
   assert (lexer != NULL);
-  parser_rep_t * ret = malloc (sizeof (parser_rep_t));
-  memset (ret, 0, sizeof (parser_rep_t));
+  parser_rep_t * ret = calloc (1, sizeof (parser_rep_t));
+  if (ret == NULL)
+    return NULL;
 
   jmp_buf buf;
   if (setjmp (buf) == 0)

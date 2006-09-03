@@ -7,6 +7,7 @@
   %nocreate statement * stmt = { NULL };
   %nocreate type * type = { NULL };
   %nocreate int hidden = { 0 };
+  %nocreate void * extra = { NULL };
 }
 
 /// Dump a symbol to a buffer.  If buffer is NULL, new buffer is
@@ -21,6 +22,9 @@
 
 /// Make the symbol hidden / visible.
 %operation void symbol_set_hidden (symbol * self, int hidden)
+
+/// Assign extra to given symbol.
+%operation void symbol_set_extra (symbol * self, void * extra)
 
 symbol_to_str (symbol)
 {
@@ -40,6 +44,11 @@ symbol_set_stmt (symbol)
 symbol_set_hidden (symbol)
 {
   self->hidden = hidden;
+}
+
+symbol_set_extra (symbol)
+{
+  self->extra = extra;
 }
 
 

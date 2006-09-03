@@ -4,10 +4,42 @@
  */
 
 %decls %end %{
-void * stmt_dummy_build_generic (stmt_dummy * self);
-void * stmt_assign_build_generic (stmt_assign * self);
-void * stmt_call_build_generic (stmt_call * self);
-void * stmt_container_build_generic (container * self);
+void * stmt_dummy_build_generic (stmt_dummy * self, void * data);
+void * stmt_assign_build_generic (stmt_assign * self, void * data);
+void * stmt_call_build_generic (stmt_call * self, void * data);
+void * stmt_container_build_generic (container * self, void * data);
+
+void * expr_int_build_generic (expr_int * self, void * data);
+void * expr_real_build_generic (expr_real * self, void * data);
+void * expr_string_build_generic (expr_string * self, void * data);
+void * expr_bool_build_generic (expr_bool * self, void * data);
+void * expr_idref_build_generic (expr_idref * self, void * data);
+void * expr_if_build_generic (expr_if * self, void * data);
+void * expr_arith_build_generic (expr_arith * self, void * data);
+void * expr_rel_build_generic (expr_rel * self, void * data);
+void * expr_log_build_generic (expr_log * self, void * data);
+void * expr_un_build_generic (expr_un * self, void * data);
+void * expr_call_build_generic (expr_call * self, void * data);
+
+void * type_int_build_generic (t_int * self, void * data);
+void * type_void_build_generic (t_void * self, void * data);
+void * type_real_build_generic (t_real * self, void * data);
+void * type_string_build_generic (t_string * self, void * data);
+void * type_bool_build_generic (t_bool * self, void * data);
+void * type_label_build_generic (t_label * self, void * data);
+void * type_array_build_generic (t_array * self, void * data);
+void * type_proc_build_generic (t_proc * self, void * data);
+
+void * builtin_decl_get_generic (symbol * sym);
+
+void * symbol_decl_for_int (symbol * sym, void * data);
+void * symbol_decl_for_void (symbol * sym, void * data);
+void * symbol_decl_for_real (symbol * sym, void * data);
+void * symbol_decl_for_string (symbol * sym, void * data);
+void * symbol_decl_for_bool (symbol * sym, void * data);
+void * symbol_decl_for_label (symbol * sym, void * data);
+void * symbol_decl_for_array (symbol * sym, void * data);
+void * symbol_decl_for_proc (symbol * sym, void * data);
 %}
 
 %end %{
@@ -21,185 +53,394 @@ no_gcc_frontend (void)
   abort ();
 }
 
+// stmts ----
 void *
-stmt_dummy_build_generic (stmt_dummy * self)
+stmt_dummy_build_generic (stmt_dummy * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-stmt_assign_build_generic (stmt_assign * self)
+stmt_assign_build_generic (stmt_assign * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-stmt_call_build_generic (stmt_call * self)
+stmt_call_build_generic (stmt_call * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-stmt_container_build_generic (container * self)
+stmt_container_build_generic (container * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+// exprs ----
+void *
+expr_int_build_generic (expr_int * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_int_build_generic (expr_int * self)
+expr_real_build_generic (expr_real * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_real_build_generic (expr_real * self)
+expr_string_build_generic (expr_string * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_string_build_generic (expr_string * self)
+expr_bool_build_generic (expr_bool * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_bool_build_generic (expr_bool * self)
+expr_idref_build_generic (expr_idref * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_idref_build_generic (expr_idref * self)
+expr_if_build_generic (expr_if * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_if_build_generic (expr_if * self)
+expr_arith_build_generic (expr_arith * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_arith_build_generic (expr_arith * self)
+expr_rel_build_generic (expr_rel * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_rel_build_generic (expr_rel * self)
+expr_log_build_generic (expr_log * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_log_build_generic (expr_log * self)
+expr_un_build_generic (expr_un * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_un_build_generic (expr_un * self)
+expr_call_build_generic (expr_call * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+// types ----
+void *
+type_int_build_generic (t_int * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_call_build_generic (expr_call * self)
+type_void_build_generic (t_void * self, void * data)
 {
   no_gcc_frontend ();
 }
 
+void *
+type_real_build_generic (t_real * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+type_string_build_generic (t_string * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+type_bool_build_generic (t_bool * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+type_label_build_generic (t_label * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+type_array_build_generic (t_array * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+type_proc_build_generic (t_proc * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+// decls ----
+void *
+builtin_decl_get_generic (symbol * sym)
+{
+  no_gcc_frontend ();
+}
+
+// more decls ----
+void *
+symbol_decl_for_int (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_void (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_real (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_string (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_bool (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_label (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_array (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+symbol_decl_for_proc (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
 #endif
 %}
 
 /// Return GENERIC for given statement and all its substatements.
-/// This actually returns tree*, but treecc limits us to this hack.
-%operation void* stmt_build_generic (statement * self) = { NULL }
+/// This actually returns tree, but treecc limits us to this hack.
+%operation void* stmt_build_generic (statement * self, void * data) = { NULL }
 
-/// Return GENERIC for given expression. This actually returns tree*,
+/// Return GENERIC for given expression. This actually returns tree,
 /// but treecc limits us to this hack.
-%operation void* expr_build_generic (expression * self) = { NULL }
+%operation void* expr_build_generic (expression * self, void * data) = { NULL }
+
+/// Return GENERIC for given type. This actually returns tree, but
+/// treecc limits us to this hack.
+%operation void* type_build_generic (type * self, void * data) = { NULL }
+
+/// Return GENERIC decl for given symbol. This actually returns tree,
+/// but treecc limits us to this hack.
+%operation void* symbol_decl_for_type (type * self, symbol * symbol, void * data) = { NULL }
 
 
 stmt_build_generic (stmt_dummy)
 {
-  return stmt_dummy_build_generic (self);
+  return stmt_dummy_build_generic (self, data);
 }
 
 stmt_build_generic (stmt_assign)
 {
-  return stmt_assign_build_generic (self);
+  return stmt_assign_build_generic (self, data);
 }
 
 stmt_build_generic (stmt_call)
 {
-  return stmt_call_build_generic (self);
+  return stmt_call_build_generic (self, data);
 }
 
 stmt_build_generic (container)
 {
-  return stmt_container_build_generic (self);
+  return stmt_container_build_generic (self, data);
 }
 
 
 
 expr_build_generic (expr_int)
 {
-  return expr_int_build_generic (self);
+  return expr_int_build_generic (self, data);
 }
 
 expr_build_generic (expr_real)
 {
-  return expr_real_build_generic (self);
+  return expr_real_build_generic (self, data);
 }
 
 expr_build_generic (expr_string)
 {
-  return expr_string_build_generic (self);
+  return expr_string_build_generic (self, data);
 }
 
 expr_build_generic (expr_bool)
 {
-  return expr_bool_build_generic (self);
+  return expr_bool_build_generic (self, data);
 }
 
 expr_build_generic (expr_idref)
 {
-  return expr_idref_build_generic (self);
+  return expr_idref_build_generic (self, data);
 }
 
 expr_build_generic (expr_if)
 {
-  return expr_if_build_generic (self);
+  return expr_if_build_generic (self, data);
 }
 
 expr_build_generic (expr_arith)
 {
-  return expr_arith_build_generic (self);
+  return expr_arith_build_generic (self, data);
 }
 
 expr_build_generic (expr_rel)
 {
-  return expr_rel_build_generic (self);
+  return expr_rel_build_generic (self, data);
 }
 
 expr_build_generic (expr_log)
 {
-  return expr_log_build_generic (self);
+  return expr_log_build_generic (self, data);
 }
 
 expr_build_generic (expr_un)
 {
-  return expr_un_build_generic (self);
+  return expr_un_build_generic (self, data);
 }
 
 expr_build_generic (expr_call)
 {
-  return expr_call_build_generic (self);
+  return expr_call_build_generic (self, data);
 }
 
+
+type_build_generic (t_unknown),
+type_build_generic (t_any),
+type_build_generic (t_own)
+{
+  assert (!"You should never ask to emit GENERIC for metatypes.");
+}
+
+type_build_generic (t_int)
+{
+  return type_int_build_generic (self, data);
+}
+
+type_build_generic (t_void)
+{
+  return type_void_build_generic (self, data);
+}
+
+type_build_generic (t_real)
+{
+  return type_real_build_generic (self, data);
+}
+
+type_build_generic (t_string)
+{
+  return type_string_build_generic (self, data);
+}
+
+type_build_generic (t_bool)
+{
+  return type_bool_build_generic (self, data);
+}
+
+type_build_generic (t_label)
+{
+  return type_label_build_generic (self, data);
+}
+
+type_build_generic (t_array)
+{
+  return type_array_build_generic (self, data);
+}
+
+type_build_generic (t_proc)
+{
+  return type_proc_build_generic (self, data);
+}
+
+
+symbol_decl_for_type (t_unknown),
+symbol_decl_for_type (t_any),
+symbol_decl_for_type (t_own)
+{
+  assert (!"You should never ask to emit GENERIC for metatypes.");
+}
+
+symbol_decl_for_type (t_int)
+{
+  return symbol_decl_for_int (symbol, data);
+}
+
+symbol_decl_for_type (t_void)
+{
+  return symbol_decl_for_void (symbol, data);
+}
+
+symbol_decl_for_type (t_real)
+{
+  return symbol_decl_for_real (symbol, data);
+}
+
+symbol_decl_for_type (t_string)
+{
+  return symbol_decl_for_string (symbol, data);
+}
+
+symbol_decl_for_type (t_bool)
+{
+  return symbol_decl_for_bool (symbol, data);
+}
+
+symbol_decl_for_type (t_label)
+{
+  return symbol_decl_for_label (symbol, data);
+}
+
+symbol_decl_for_type (t_array)
+{
+  return symbol_decl_for_array (symbol, data);
+}
+
+symbol_decl_for_type (t_proc)
+{
+  return symbol_decl_for_proc (symbol, data);
+}
 
 /*
  * Local Variables:

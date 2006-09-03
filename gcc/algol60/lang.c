@@ -31,6 +31,7 @@
 
 
 #include "algol-tree.h"
+#include "al60l-bind.h"
 
 
 /* Al60l parsing library includes: */
@@ -211,13 +212,23 @@ algol60_parse_file (int debug)
   DECL_IGNORED_P (resultdecl) = 1;
   DECL_RESULT (decl) = resultdecl;
 
-  ast->extra = resultdecl;
-
   // toplev 'begin'-'end' block is the body of `main'
-  statement * stmt0 = slist_front (ast_as (container, ast)->commands);
+  statement * stmt0 = slist_front (ast_as (container, ast)->statements);
   statement_dump (stmt0, stdout, 0);
-  tree block = stmt_build_generic (stmt0);
 
+  al60l_bind_state_t * state = new_bind_state ();
+  bind_state_push_function (state, resultdecl, decl);
+  tree stmts = stmt_build_generic (stmt0, state);
+  fprintf (stderr, "0\n");
+  tree block = build_block (NULL_TREE, NULL_TREE, NULL_TREE, NULL_TREE);
+  DECL_SAVED_TREE (decl) = build3 (BIND_EXPR, void_type_node,
+				   BLOCK_VARS(block), stmts, block);
+  bind_state_pop_function (state);
+  delete_bind_state (state);
+
+  // @@@ Hack. We would like to tie this with stmt_build_generic, but
+  // don't know how ATM.  So we just dig the body out the bind expr.
+  //tree block = BIND_EXPR_BLOCK (bind);
   DECL_INITIAL (decl) = block;
   TREE_USED (block) = 1;
 
@@ -226,12 +237,15 @@ algol60_parse_file (int debug)
   dump_function (TDI_original, decl);
   gimplify_function_tree (decl);
   dump_function (TDI_generic, decl);
+  fprintf (stderr, "5\n");
   cgraph_finalize_function (decl, /*bool nested = */ false);
+  fprintf (stderr, "6\n");
 
   current_function_decl = NULL_TREE;
 
   /* For -funit-at-time; finalize whole unit */
   cgraph_finalize_compilation_unit ();
+  cgraph_optimize ();
 
  leave:
   delete_parser (a_parser);

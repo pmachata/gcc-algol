@@ -37,11 +37,11 @@ algol60: algol601$(exeext) ga60$(exeext)
 
 # core compiler
 algol601$(exeext): algol60/algol601.o algol60/lang.o algol60/algol-tree.o \
-		algol60/tree-convert.o algol60/al60l_bind.o\
+		algol60/tree-convert.o algol60/al60l-bind.o\
 		$(BACKEND) $(LIBSDEPS) attribs.o $(AL60L_OBJS)
 	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ \
 		algol60/algol601.o algol60/lang.o algol60/algol-tree.o \
-		algol60/tree-convert.o algol60/al60l_bind.o\
+		algol60/tree-convert.o algol60/al60l-bind.o\
 		$(BACKEND) $(LIBS) attribs.o $(AL60L_OBJS)
 
 # Create the compiler driver ga60
@@ -80,7 +80,8 @@ algol60/spec.o: algol60/spec.c $(CONFIG_H) $(SYSTEM_H) \
 		coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H) \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/al60l_bind.o: algol60/al60l_bind.c algol60/gcc-stuff algol60/ast-tab.h \
+algol60/al60l-bind.o: algol60/al60l-bind.c algol60/al60l-bind.h algol60/ast-tab.h \
+		algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
 # AL60L side
