@@ -85,9 +85,11 @@ backend (fingers crossed it's true).
 How does GCC work.  What's driver, what's the frontend proper.  Bird's
 eye view of compilation passes, internal structure, references to
 other documents with more detailed description.  Main source will be
-Diego Novillo's OLS paper.  Mention garbage collector.  Also mention
-hooks, but don't go into depth (go as far as Tom Tromey's Linux
-Journal article).
+Diego Novillo's OLS paper.  Mention garbage collector and poisoned
+malloc/calloc (probably leave the mentions here, but move the proper
+of argument to the section of its own, under ``Targeting GCC'').  Also
+mention hooks, but don't go into depth (go as far as Tom Tromey's
+Linux Journal article).
 
 Mention that there are two approaches: targeting GENERIC, and using
 GENERIC as AST rep.  This work aims at the former scenario.  Under
