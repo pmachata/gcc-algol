@@ -67,7 +67,8 @@ algol60/gcc-stuff: $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TM_H) $(GGC_H) \
 algol60/algol601.o: algol60/algol601.c algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/lang.o: algol60/lang.c algol60/ast-tab.h algol60/gcc-stuff \
+algol60/lang.o: algol60/lang.c algol60/lexer.h algol60/parser.h algol60/ast-tab.h\
+		algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
 algol60/algol-tree.o: algol60/algol-tree.c algol60/gcc-stuff \
@@ -122,7 +123,9 @@ algol60/parser-tab.c: algol60/parser.y algol60/parser.h algol60/lexer.h \
 algol60/parser-tab.h: algol60/parser-tab.c
 	[ -f algol60/parser-tab.h ]
 
-algol60/lexer-tab.o: algol60/lexer-tab.c algol60/gcc-stuff
+algol60/lexer.h: algol60/parser-tab.h algol60/ast-tab.h
+
+algol60/lexer-tab.o: algol60/lexer.h algol60/lexer-tab.c algol60/gcc-stuff
 
 algol60/lexer-tab.c: algol60/lexer.l algol60/lexer.h algol60/parser-tab.h \
 		algol60/estring.h algol60/logger.h algol60/pd.h algol60/cursor.h \

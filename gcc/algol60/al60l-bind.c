@@ -16,6 +16,9 @@
 #include "tree.h"   /* treecodes used in tree.def, here required to be
 		       able to call actual tree-building functions */
 
+#include "tree-gimple.h" /* alloc_stmt_list */
+#include "toplev.h" /* rest_of_decl_compilation */
+
 #include "al60l-bind.h"
 
 #include "ast-tab.h"
@@ -150,15 +153,9 @@ stmt_container_build_generic (container * self, void * state)
 
   tree stmts = alloc_stmt_list ();
   append_to_statement_list (body, &stmts);
-  return stmts;
 
-  //tree block = build_block (/* tree vars =*/ NULL_TREE,
-  //			    /* tree subblocks = */ NULL_TREE,
-  //			    /* tree supercontext = */ NULL_TREE,
-  //			    /* tree chain = */ NULL_TREE);
-  //tree ret = build3 (BIND_EXPR, void_type_node,
-  //                   NULL_TREE, body, block);
-  //return ret;
+  debug_tree (stmts);
+  return stmts;
 }
 
 void *
@@ -240,10 +237,6 @@ expr_call_build_generic (expr_call * self, void * state)
   tree proc_decl = sym->extra;
   gcc_assert (proc_decl != NULL);
 
-  //tree ptrtype = build_pointer_type (TREE_TYPE (proc_decl));
-  //tree proc_addr = build1 (ADDR_EXPR, ptrtype, proc_decl);
-
-  /*
   tree arg_list = NULL_TREE;
   slist_it_t * it = slist_iter (self->arguments);
   for (; slist_it_has (it); slist_it_next (it))
@@ -254,35 +247,12 @@ expr_call_build_generic (expr_call * self, void * state)
     }
   delete_slist_it (it);
   arg_list = nreverse (arg_list);
-  */
-  tree cst9 = build_int_cst (integer_type_node, 9);
-  tree arg_list = tree_cons (NULL_TREE, cst9, NULL_TREE);
 
   tree call_expr = build_function_call_expr (proc_decl, arg_list);
-  //tree call_expr = build3 (CALL_EXPR, TREE_TYPE (TREE_TYPE (proc_decl)),
-  //                         proc_addr, arg_list, NULL_TREE);
   TREE_SIDE_EFFECTS (call_expr) = 1;
   TREE_USED (call_expr) = 1;
 
-  debug_tree (call_expr);
   return call_expr;
-
-  // @@@FIXME: dummy code ATM, emits the 'return 9;'
-  // ===================================
-  // The single command inside this container:
-  //   `(<block> (return (init_expr resultdecl (int_cst 9))))'
-  /*
-  tree resultdecl = bind_state_enclosing_resultdecl (state);
-  tree assign = build2 (INIT_EXPR, void_type_node,
-			resultdecl, build_int_cst (integer_type_node, 9));
-  TREE_USED (assign) = 1;
-  TREE_SIDE_EFFECTS (assign) = 1;
-  tree body = build1 (RETURN_EXPR, void_type_node,
-		      assign);
-  TREE_USED (body) = 1;
-  return body;
-  */
-  // ===================================
 }
 
 void *
@@ -291,7 +261,6 @@ builtin_decl_get_generic (symbol * sym)
   label * lbl = sym->lbl;
   type * t = sym->type;
   gcc_assert (ast_isa (lbl, label_id));
-  char const* name = estr_cstr (ast_as (label_id, lbl)->id);
 
   int own = 0;
   if (ast_isa (t, t_own))
@@ -327,90 +296,104 @@ builtin_decl_get_generic (symbol * sym)
 }
 
 void *
-type_int_build_generic (t_int * self, void * data)
+type_int_build_generic (t_int * self ATTRIBUTE_UNUSED,
+			void * data ATTRIBUTE_UNUSED)
 {
   return integer_type_node;
 }
 void *
-symbol_decl_for_int (symbol * sym, void * data)
+symbol_decl_for_int (symbol * sym ATTRIBUTE_UNUSED,
+		     void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 
 void *
-type_void_build_generic (t_void * self, void * data)
+type_void_build_generic (t_void * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
 {
   return void_type_node;
 }
 
 void *
-symbol_decl_for_void (symbol * sym, void * data)
+symbol_decl_for_void (symbol * sym ATTRIBUTE_UNUSED,
+		      void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 
 void *
-type_real_build_generic (t_real * self, void * data)
+type_real_build_generic (t_real * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
 {
   return double_type_node;
 }
 
 void *
-symbol_decl_for_real (symbol * sym, void * data)
+symbol_decl_for_real (symbol * sym ATTRIBUTE_UNUSED,
+		      void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 
 void *
-type_string_build_generic (t_string * self, void * data)
+type_string_build_generic (t_string * self ATTRIBUTE_UNUSED,
+			   void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 void *
-symbol_decl_for_string (symbol * sym, void * data)
+symbol_decl_for_string (symbol * sym ATTRIBUTE_UNUSED,
+			void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 
 void *
-type_bool_build_generic (t_bool * self, void * data)
+type_bool_build_generic (t_bool * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
 {
   return boolean_type_node;
 }
 
 void *
-symbol_decl_for_bool (symbol * sym, void * data)
+symbol_decl_for_bool (symbol * sym ATTRIBUTE_UNUSED,
+		      void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 
 void *
-type_label_build_generic (t_label * self, void * data)
+type_label_build_generic (t_label * self ATTRIBUTE_UNUSED,
+			  void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 void *
-symbol_decl_for_label (symbol * sym, void * data)
+symbol_decl_for_label (symbol * sym ATTRIBUTE_UNUSED,
+		       void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 
 void *
-type_array_build_generic (t_array * self, void * data)
+type_array_build_generic (t_array * self ATTRIBUTE_UNUSED,
+			  void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 void *
-symbol_decl_for_array (symbol * sym, void * data)
+symbol_decl_for_array (symbol * sym ATTRIBUTE_UNUSED,
+		       void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
@@ -425,8 +408,7 @@ type_proc_build_generic (t_proc * self, void * data)
   for (; slist_it_has (it); slist_it_next (it))
     {
       tree t1 = type_build_generic (slist_it_get (it), data);
-      param_types = tree_cons (/*purpose=*/NULL_TREE, /*value=*/t1,
-			       /*chain=*/param_types);
+      param_types = tree_cons (NULL_TREE, t1, param_types);
     }
   delete_slist_it (it);
   param_types = nreverse (param_types);
@@ -439,7 +421,7 @@ void *
 symbol_decl_for_proc (symbol * sym, void * data)
 {
   gcc_assert (ast_isa (sym->type, t_proc));
-  tree fn_type = type_proc_build_generic (sym->type, data);
+  tree fn_type = type_proc_build_generic ((t_proc*)sym->type, data);
 
   // build declaration; assume procedures have string names
   gcc_assert (ast_isa (sym->lbl, label_id));
@@ -449,7 +431,6 @@ symbol_decl_for_proc (symbol * sym, void * data)
   // build declaration parameters
   tree param_decls = NULL_TREE;
 
-  /*
   char buf[15];
   int num = 0;
   slist_it_t * it = slist_iter (ast_as (t_proc, sym->type)->arg_types);
@@ -466,7 +447,6 @@ symbol_decl_for_proc (symbol * sym, void * data)
   delete_slist_it (it);
   param_decls = nreverse (param_decls);
 
-  DECL_ARGUMENTS (fn_decl) = param_decls;
-  */
+  //DECL_ARGUMENTS (fn_decl) = param_decls;
   return fn_decl;
 }
