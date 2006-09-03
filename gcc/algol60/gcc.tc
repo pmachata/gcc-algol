@@ -15,7 +15,12 @@ void * expr_string_build_generic (expr_string * self, void * data);
 void * expr_bool_build_generic (expr_bool * self, void * data);
 void * expr_idref_build_generic (expr_idref * self, void * data);
 void * expr_if_build_generic (expr_if * self, void * data);
-void * expr_arith_build_generic (expr_arith * self, void * data);
+void * expr_aadd_build_generic (expr_aadd * self, void * data);
+void * expr_asub_build_generic (expr_asub * self, void * data);
+void * expr_amul_build_generic (expr_amul * self, void * data);
+void * expr_aidiv_build_generic (expr_aidiv * self, void * data);
+void * expr_ardiv_build_generic (expr_ardiv * self, void * data);
+void * expr_apow_build_generic (expr_apow * self, void * data);
 void * expr_rel_build_generic (expr_rel * self, void * data);
 void * expr_log_build_generic (expr_log * self, void * data);
 void * expr_un_build_generic (expr_un * self, void * data);
@@ -116,7 +121,37 @@ expr_if_build_generic (expr_if * self, void * data)
 }
 
 void *
-expr_arith_build_generic (expr_arith * self, void * data)
+expr_aadd_build_generic (expr_aadd * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_asub_build_generic (expr_asub * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_amul_build_generic (expr_amul * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_aidiv_build_generic (expr_aidiv * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_ardiv_build_generic (expr_ardiv * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_apow_build_generic (expr_apow * self, void * data)
 {
   no_gcc_frontend ();
 }
@@ -321,9 +356,34 @@ expr_build_generic (expr_if)
   return expr_if_build_generic (self, data);
 }
 
-expr_build_generic (expr_arith)
+expr_build_generic (expr_aadd)
 {
-  return expr_arith_build_generic (self, data);
+  return expr_aadd_build_generic (self, data);
+}
+
+expr_build_generic (expr_asub)
+{
+  return expr_asub_build_generic (self, data);
+}
+
+expr_build_generic (expr_amul)
+{
+  return expr_amul_build_generic (self, data);
+}
+
+expr_build_generic (expr_aidiv)
+{
+  return expr_aidiv_build_generic (self, data);
+}
+
+expr_build_generic (expr_ardiv)
+{
+  return expr_ardiv_build_generic (self, data);
+}
+
+expr_build_generic (expr_apow)
+{
+  return expr_apow_build_generic (self, data);
 }
 
 expr_build_generic (expr_rel)

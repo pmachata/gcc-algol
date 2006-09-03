@@ -116,7 +116,7 @@ void *
 stmt_dummy_build_generic (stmt_dummy * self ATTRIBUTE_UNUSED,
 			  void * state ATTRIBUTE_UNUSED)
 {
-  return NULL_TREE;
+  return build_empty_stmt ();
 }
 
 void *
@@ -137,23 +137,16 @@ void *
 stmt_container_build_generic (container * self, void * state)
 {
   slist_it_t * it = slist_iter (self->statements);
-  int i = 0;
-  tree body = NULL;
+  tree stmts = alloc_stmt_list ();
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement * st = slist_it_get (it);
-      if (!ast_isa (st, stmt_dummy)) // temporary hack...
-	{
-	  body = stmt_build_generic (st, state);
-	  ++i;
-	}
+      tree body = stmt_build_generic (st, state);
+      // @FIX: note that this actually appends obtained statement list
+      // to our statement list.  It doesn't handle subblocks properly
+      // at all.
+      append_to_statement_list (body, &stmts);
     }
-  gcc_assert (body != NULL);
-  gcc_assert (i == 1); // handle exactly one command for now
-
-  tree stmts = alloc_stmt_list ();
-  append_to_statement_list (body, &stmts);
-
   debug_tree (stmts);
   return stmts;
 }
@@ -169,6 +162,7 @@ void *
 expr_real_build_generic (expr_real * self ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
+
   gcc_unreachable ();
 }
 
@@ -200,10 +194,55 @@ expr_if_build_generic (expr_if * self ATTRIBUTE_UNUSED,
   gcc_unreachable ();
 }
 
-void *
-expr_arith_build_generic (expr_arith * self ATTRIBUTE_UNUSED,
-			  void * data ATTRIBUTE_UNUSED)
+static tree
+private_expr_build_arith_generic (expression * self, void * data, int op)
 {
+  gcc_assert (ast_isa (self, expr_bin));
+  expr_bin * e = ast_as (expr_bin, self);
+  type * t = expr_type (e);
+  tree ttt = type_build_generic (t, data);
+  tree op1 = expr_build_generic (e->left, data);
+  tree op2 = expr_build_generic (e->right, data);
+  tree ret = build2 (op, ttt, op1, op2);
+  return ret;
+}
+
+void *
+expr_aadd_build_generic (expr_aadd * self, void * data)
+{
+  return private_expr_build_arith_generic (self, data, PLUS_EXPR);
+}
+
+void *
+expr_asub_build_generic (expr_asub * self, void * data)
+{
+  return private_expr_build_arith_generic (self, data, MINUS_EXPR);
+}
+
+void *
+expr_amul_build_generic (expr_amul * self, void * data)
+{
+  return private_expr_build_arith_generic (self, data, MULT_EXPR);
+}
+
+void *
+expr_aidiv_build_generic (expr_aidiv * self, void * data)
+{
+  // @TODO: check algol 60 reference if this is the right operator
+  return private_expr_build_arith_generic (self, data, TRUNC_DIV_EXPR);
+}
+
+void *
+expr_ardiv_build_generic (expr_ardiv * self, void * data)
+{
+  return private_expr_build_arith_generic (self, data, RDIV_EXPR);
+}
+
+void *
+expr_apow_build_generic (expr_apow * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
+{
+  // @TODO: this requires a funcall, leaving alone for now
   gcc_unreachable ();
 }
 
