@@ -218,25 +218,19 @@ algol60_parse_file (int debug)
 
   al60l_bind_state_t * state = new_bind_state ();
   bind_state_push_function (state, resultdecl, decl);
-  tree stmts = stmt_build_generic (stmt0, state);
-  { // add return to the body
+  {
+    tree bind = stmt_build_generic (stmt0, state);
+
+    // add fallback return to the body
     tree ret_expr = build1 (RETURN_EXPR, void_type_node, NULL_TREE);
     TREE_USED (ret_expr) = 1;
-    append_to_statement_list (ret_expr, &stmts);
+    append_to_statement_list (ret_expr, &BIND_EXPR_BODY (bind));
+
+    DECL_SAVED_TREE (decl) = bind;
+    DECL_INITIAL (decl) = BIND_EXPR_BLOCK (bind);
   }
   bind_state_pop_function (state);
   delete_bind_state (state);
-
-  // build block... @FIX this is probably wrongly situated here, we'd
-  // actually like to build block when calling stmt_build_generic on
-  // container, but then we have no way to get both block and the stmt
-  // list out...  I think we can't assume that the body of a function
-  // is always container.  This has to be fixed properly.
-  tree block = build_block (NULL_TREE, NULL_TREE, NULL_TREE, NULL_TREE);
-  DECL_SAVED_TREE (decl) = build3 (BIND_EXPR, void_type_node,
-				   BLOCK_VARS(block), stmts, block);
-  DECL_INITIAL (decl) = block;
-  TREE_USED (block) = 1;
 
   /* Emit code for the function */
   allocate_struct_function (decl);

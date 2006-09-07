@@ -311,6 +311,14 @@ slist_it_get (slist_it_t * _it)
 }
 
 void
+slist_it_put (slist_it_t * _it, void * object)
+{
+  assert (_it != NULL);
+  slist_it_rep_t * it = (void*)_it;
+  it->pointee->object = object;
+}
+
+void
 slist_it_next (slist_it_t * _it)
 {
   assert (_it != NULL);

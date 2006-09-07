@@ -121,6 +121,10 @@ int slist_it_has (slist_it_t * it)
 void * slist_it_get (slist_it_t * it)
   ATTRIBUTE_NONNULL(1);
 
+/// Put given object to the position pointed to by this iterator.
+void slist_it_put (slist_it_t * it, void * object)
+  ATTRIBUTE_NONNULL(1);
+
 /// Advance to next item.
 void slist_it_next (slist_it_t * it)
   ATTRIBUTE_NONNULL(1);

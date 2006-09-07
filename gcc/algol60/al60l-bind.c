@@ -35,6 +35,11 @@ typedef struct struct_al60l_bind_state_rep_t
   /// fundecls, n-th resultdecl from top of this stack matches n-th
   /// fundecl from top of fundecl stack.
   slist_t * resultdecls;
+
+  /// Stack of subblocks on current binding level.  This is slist of
+  /// tree lists.  It's pushed-on in push_function and when handling
+  /// container.
+  slist_t * subblocks;
 } al60l_bind_state_rep_t;
 
 #ifndef IN_GCC
@@ -53,6 +58,7 @@ new_bind_state (void)
     {
       guard_ptr (buf, 1, ret->fundecls = new_slist ());
       guard_ptr (buf, 1, ret->resultdecls = new_slist ());
+      guard_ptr (buf, 1, ret->subblocks = new_slist ());
       return (void*)ret;
     }
   else
@@ -69,6 +75,8 @@ delete_bind_state (al60l_bind_state_t * _state)
   if (state != NULL)
     {
       delete_slist (state->fundecls);
+      delete_slist (state->resultdecls);
+      delete_slist (state->subblocks);
       free (state);
     }
 }
@@ -80,6 +88,7 @@ bind_state_push_function (al60l_bind_state_t * _state, tree resultdecl, tree dec
   gcc_assert (state != NULL);
   slist_pushfront (state->fundecls, decl);
   slist_pushfront (state->resultdecls, resultdecl);
+  slist_pushfront (state->subblocks, NULL_TREE);
 }
 
 tree
@@ -109,6 +118,7 @@ bind_state_pop_function (al60l_bind_state_t * _state)
   gcc_assert (!slist_empty (state->resultdecls));
   slist_popfront (state->fundecls);
   slist_popfront (state->resultdecls);
+  slist_popfront (state->subblocks);
 }
 
 
@@ -134,21 +144,55 @@ stmt_call_build_generic (stmt_call * self, void * state)
 }
 
 void *
-stmt_container_build_generic (container * self, void * state)
+stmt_container_build_generic (container * self, void * _state)
 {
-  slist_it_t * it = slist_iter (self->statements);
+  al60l_bind_state_rep_t * state = _state;
   tree stmts = alloc_stmt_list ();
+
+  // open new subblock level
+  slist_pushfront (state->subblocks, NULL_TREE);
+
+  slist_it_t * it = slist_iter (self->statements);
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement * st = slist_it_get (it);
-      tree body = stmt_build_generic (st, state);
-      // @FIX: note that this actually appends obtained statement list
-      // to our statement list.  It doesn't handle subblocks properly
-      // at all.
-      append_to_statement_list (body, &stmts);
+      tree stmt = stmt_build_generic (st, state);
+      append_to_statement_list (stmt, &stmts);
     }
-  debug_tree (stmts);
-  return stmts;
+  delete_slist_it (it);
+
+  // Collect the subblocks that might be added during translation of
+  // container statements.
+  tree subblocks = slist_popfront (state->subblocks);
+  if (subblocks)
+    subblocks = nreverse (subblocks);
+
+  // Create new block.
+  tree block = build_block (NULL_TREE, subblocks, NULL_TREE, NULL_TREE);
+  if (subblocks)
+    {
+      tree subblock_node;
+      for (subblock_node = subblocks; subblock_node != NULL_TREE;
+	   subblock_node = TREE_CHAIN (subblock_node))
+	{
+	  tree subblock = TREE_VALUE (subblock_node);
+	  BLOCK_SUPERCONTEXT (subblock) = block;
+	}
+    }
+
+  // Then add the block to super's subblocks.
+  it = slist_iter (state->subblocks);
+  tree super_subs = slist_it_get (it);
+  super_subs = tree_cons (NULL_TREE, block, super_subs);
+  slist_it_put (it, super_subs);
+
+  // Finally return the binding expression that represents our block.
+  tree bind = build3 (BIND_EXPR, void_type_node,
+		      BLOCK_VARS (block), stmts, block);
+  TREE_USED (block) = 1;
+
+  debug_tree (bind);
+  return bind;
 }
 
 void *
@@ -198,8 +242,8 @@ static tree
 private_expr_build_arith_generic (expression * self, void * data, int op)
 {
   gcc_assert (ast_isa (self, expr_bin));
+  type * t = expr_type (self);
   expr_bin * e = ast_as (expr_bin, self);
-  type * t = expr_type (e);
   tree ttt = type_build_generic (t, data);
   tree op1 = expr_build_generic (e->left, data);
   tree op2 = expr_build_generic (e->right, data);
@@ -210,32 +254,32 @@ private_expr_build_arith_generic (expression * self, void * data, int op)
 void *
 expr_aadd_build_generic (expr_aadd * self, void * data)
 {
-  return private_expr_build_arith_generic (self, data, PLUS_EXPR);
+  return private_expr_build_arith_generic (ast_as (expression, self), data, PLUS_EXPR);
 }
 
 void *
 expr_asub_build_generic (expr_asub * self, void * data)
 {
-  return private_expr_build_arith_generic (self, data, MINUS_EXPR);
+  return private_expr_build_arith_generic (ast_as (expression, self), data, MINUS_EXPR);
 }
 
 void *
 expr_amul_build_generic (expr_amul * self, void * data)
 {
-  return private_expr_build_arith_generic (self, data, MULT_EXPR);
+  return private_expr_build_arith_generic (ast_as (expression, self), data, MULT_EXPR);
 }
 
 void *
 expr_aidiv_build_generic (expr_aidiv * self, void * data)
 {
   // @TODO: check algol 60 reference if this is the right operator
-  return private_expr_build_arith_generic (self, data, TRUNC_DIV_EXPR);
+  return private_expr_build_arith_generic (ast_as (expression, self), data, TRUNC_DIV_EXPR);
 }
 
 void *
 expr_ardiv_build_generic (expr_ardiv * self, void * data)
 {
-  return private_expr_build_arith_generic (self, data, RDIV_EXPR);
+  return private_expr_build_arith_generic (ast_as (expression, self), data, RDIV_EXPR);
 }
 
 void *
