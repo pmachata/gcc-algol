@@ -116,6 +116,7 @@ bind_state_pop_function (al60l_bind_state_t * _state)
   gcc_assert (state != NULL);
   gcc_assert (!slist_empty (state->fundecls));
   gcc_assert (!slist_empty (state->resultdecls));
+  gcc_assert (!slist_empty (state->subblocks));
   slist_popfront (state->fundecls);
   slist_popfront (state->resultdecls);
   slist_popfront (state->subblocks);
@@ -130,10 +131,18 @@ stmt_dummy_build_generic (stmt_dummy * self ATTRIBUTE_UNUSED,
 }
 
 void *
-stmt_assign_build_generic (stmt_assign * self ATTRIBUTE_UNUSED,
-			   void * data ATTRIBUTE_UNUSED)
+stmt_assign_build_generic (stmt_assign * self, void * data)
 {
-  gcc_unreachable ();
+  // @FIXME: limit ourselves to simple case `x := something`.  General
+  // case is pretty simple right now that we don't support array
+  // access.  But compilation of `b := a[b] := b + 1;` will be rather
+  // tricky in that we will have to extract the array indices into
+  // temporaries as part of array access expression compilation.
+  gcc_assert (slist_front (self->lhss) == slist_back (self->lhss));
+  tree op1 = expr_build_generic (slist_front (self->lhss), data);
+  tree op2 = expr_build_generic (self->rhs, data);
+  tree ret = build2 (MODIFY_EXPR, void_type_node, op1, op2);
+  return ret;
 }
 
 void *
@@ -147,12 +156,38 @@ void *
 stmt_container_build_generic (container * self, void * _state)
 {
   al60l_bind_state_rep_t * state = _state;
-  tree stmts = alloc_stmt_list ();
+  slist_it_t * it;
 
-  // open new subblock level
+  // Open new subblock level.  All substatements that are containers
+  // will add their bind_exprs to the _front of state->subblocks.
   slist_pushfront (state->subblocks, NULL_TREE);
 
-  slist_it_t * it = slist_iter (self->statements);
+  tree vars = NULL_TREE;
+  it = slist_iter (self->symtab);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      symbol * sym = slist_it_get (it);
+      gcc_assert (sym->extra == NULL);
+
+      // Handle only regular symbols, no labels for now.
+      label_id * lbl = ast_as (label_id, sym->lbl);
+      gcc_assert (lbl != NULL);
+      tree id = get_identifier (estr_cstr (lbl->id));
+
+      tree tt = type_build_generic (sym->type, _state);
+      tree decl = build_decl (VAR_DECL, id, tt);
+      sym->extra = decl;
+      debug_tree (decl);
+
+      // Add variable to the chain.  This really has to be chain of
+      // variables, not a list of conses.
+      TREE_CHAIN (decl) = vars;
+      vars = decl;
+    }
+  delete_slist_it (it);
+
+  tree stmts = alloc_stmt_list ();
+  it = slist_iter (self->statements);
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement * st = slist_it_get (it);
@@ -161,14 +196,14 @@ stmt_container_build_generic (container * self, void * _state)
     }
   delete_slist_it (it);
 
-  // Collect the subblocks that might be added during translation of
-  // container statements.
+  // Collect the subblocks that might have been added during
+  // translation of container statements.
   tree subblocks = slist_popfront (state->subblocks);
   if (subblocks)
     subblocks = nreverse (subblocks);
 
-  // Create new block.
-  tree block = build_block (NULL_TREE, subblocks, NULL_TREE, NULL_TREE);
+  // Create new block and make it a superblock of all subblocks.
+  tree block = build_block (vars, subblocks, NULL_TREE, NULL_TREE);
   if (subblocks)
     {
       tree subblock_node;
@@ -225,10 +260,16 @@ expr_bool_build_generic (expr_bool * self ATTRIBUTE_UNUSED,
 }
 
 void *
-expr_idref_build_generic (expr_idref * self ATTRIBUTE_UNUSED,
-			  void * data ATTRIBUTE_UNUSED)
+expr_idref_build_generic (expr_idref * self, void * data ATTRIBUTE_UNUSED)
 {
-  gcc_unreachable ();
+  // see if the idref was resolved
+  symbol * sym = self->sym;
+  gcc_assert (sym != NULL);
+
+  // see if it has declaration, and answer it, if it has
+  tree * decl = sym->extra;
+  gcc_assert (decl);
+  return decl;
 }
 
 void *
