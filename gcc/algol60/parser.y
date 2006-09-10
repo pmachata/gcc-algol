@@ -853,6 +853,14 @@ parser_parse (parser_t * _parser)
     return NULL;
 }
 
+void
+parser_set_logging (parser_t * _parser, debug_level_t filter)
+{
+  assert (_parser != NULL);
+  parser_rep_t * parser = (void*)_parser;
+  log_set_filter (parser->log, filter);
+}
+
 logger_t const*
 parser_log (parser_t * _parser)
 {

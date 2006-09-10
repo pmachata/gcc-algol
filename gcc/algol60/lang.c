@@ -29,6 +29,9 @@
 
 #include "errors.h" /* for error/warning/etc */
 
+#include "tree-gimple.h" /* only append_to_statement_list, should be
+			    able to remove later */
+
 
 #include "algol-tree.h"
 #include "al60l-bind.h"
@@ -88,7 +91,6 @@ algol60_init (void)
   /* current_function_decl: tree.h */
   current_function_decl = NULL;
 
-  fprintf (stderr, "algol60_init\n");
   build_common_tree_nodes (flag_signed_char, false);
   build_common_tree_nodes_2 (/* short_double= */ 0);
   size_type_node = make_unsigned_type (POINTER_SIZE);
@@ -102,24 +104,27 @@ algol60_init (void)
 void
 algol60_finish (void)
 {
-  fprintf (stderr, "algol60_finish\n");
 }
 
 unsigned int
-algol60_init_options (unsigned int argc, const char ** argv)
+algol60_init_options (unsigned int argc ATTRIBUTE_UNUSED,
+		      const char ** argv ATTRIBUTE_UNUSED)
 {
+  /*
   unsigned int i;
   fprintf (stderr, "algol60_init_options\n");
   for (i = 0; i < argc; ++i)
     fprintf (stderr, " + `%s'\n", argv[i]);
+  */
   return CL_Algol60;
 }
 
 /* process algol60-specific compiler command-line options */
 int
-algol60_handle_option (size_t scode, const char *arg, int value)
+algol60_handle_option (size_t scode ATTRIBUTE_UNUSED,
+		       const char *arg ATTRIBUTE_UNUSED,
+		       int value ATTRIBUTE_UNUSED)
 {
-  fprintf (stderr, "algol60_handle_option: scode=%d arg=`%s' value=%d\n", scode, arg, value);
   return 1;
 }
 
@@ -129,7 +134,6 @@ algol60_post_options (char const* * pfilename)
 {
   char const* filename = *pfilename;
   FILE * finput = NULL;
-  fprintf (stderr, "algol60_post_options\n");
   if (filename == 0 || strcmp (filename, "-") == 0)
     {
       filename = "stdin";
@@ -145,27 +149,24 @@ algol60_post_options (char const* * pfilename)
   g_ifname = filename;
   g_ifile = finput;
 
-  fprintf (stderr, "algol60_post_options: filename=`%s'\n", filename);
-
   /* Initialize the compiler back end.  */
   return false;
 }
 
-/* Parse a file.  Debug flag doesn't seem to work. */
+/* Parse a file.*/
 void
-algol60_parse_file (int debug)
+algol60_parse_file (int debug ATTRIBUTE_UNUSED)
 {
-  fprintf (stderr, "algol60_parse_file: debug=%d\n", debug);
-
   lexer_t * a_lexer = new_lexer (g_ifile, g_ifname, true);
   gcc_assert (a_lexer != NULL);
-  lexer_set_logging (a_lexer, ll_warning, 1);
-  parser_t * a_parser = new_parser (a_lexer, 1);
+  lexer_set_logging (a_lexer, ll_warning, false);
+  parser_t * a_parser = new_parser (a_lexer, true);
   gcc_assert (a_parser != NULL);
+  parser_set_logging (a_parser, ll_warning);
 
   statement * ast = parser_parse (a_parser);
   logger_t * anal_log = new_logger ("analys");
-  log_set_filter (anal_log, ll_filter_nothing);
+  log_set_filter (anal_log, ll_warning);
 
   if (ast)
     {
@@ -214,7 +215,6 @@ algol60_parse_file (int debug)
 
   // toplev 'begin'-'end' block is the body of `main'
   statement * stmt0 = slist_front (ast_as (container, ast)->statements);
-  statement_dump (stmt0, stdout, 0);
 
   al60l_bind_state_t * state = new_bind_state ();
   bind_state_push_function (state, resultdecl, decl);
@@ -257,8 +257,6 @@ algol60_parse_file (int debug)
 bool
 algol60_mark_addressable (tree exp)
 {
-  fprintf (stderr, "algol60_mark_addressable\n");
-
   tree x = exp;
 
   while (1)
@@ -313,7 +311,6 @@ algol60_mark_addressable (tree exp)
 tree
 algol60_lang_signed_type (tree type_node)
 {
-  fprintf (stderr, "algol60_lang_signed_type\n");
   return algol60_lang_type_for_size (TYPE_PRECISION (type_node), 0);
 }
 
@@ -321,7 +318,6 @@ algol60_lang_signed_type (tree type_node)
 tree
 algol60_lang_unsigned_type (tree type_node)
 {
-  fprintf (stderr, "algol60_lang_unsigned_type\n");
   return algol60_lang_type_for_size (TYPE_PRECISION (type_node), 1);
 }
 
@@ -330,7 +326,6 @@ algol60_lang_unsigned_type (tree type_node)
 tree
 algol60_lang_signed_or_unsigned_type (int unsignedp, tree type)
 {
-  fprintf (stderr, "algol60_lang_signed_or_unsigned_type\n");
   if (! INTEGRAL_TYPE_P (type) || TYPE_UNSIGNED (type) == unsignedp)
     return type;
   else
@@ -354,7 +349,6 @@ algol60_lang_type_for_mode (enum machine_mode mode, int unsignedp)
 tree
 algol60_lang_type_for_size (unsigned precision, int unsignedp)
 {
-  fprintf (stderr, "algol60_lang_type_for_size\n");
   tree t;
 
   if (precision <= MAX_BITS_PER_WORD

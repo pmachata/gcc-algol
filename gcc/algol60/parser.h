@@ -32,6 +32,10 @@ parser_t * parser (void * ptr)
 statement * parser_parse (parser_t * parser)
   ATTRIBUTE_NONNULL(1);
 
+/// Controls what logging messages get printed.
+void parser_set_logging (parser_t * parser, debug_level_t filter)
+  ATTRIBUTE_NONNULL(1);
+
 /// Get underlying logging device.
 logger_t const* parser_log (parser_t * parser)
   ATTRIBUTE_NONNULL(1);

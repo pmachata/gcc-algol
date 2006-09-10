@@ -16,7 +16,7 @@
 #include "tree.h"   /* treecodes used in tree.def, here required to be
 		       able to call actual tree-building functions */
 
-#include "tree-gimple.h" /* alloc_stmt_list */
+#include "tree-gimple.h" /* alloc_stmt_list, append_to_statement_list */
 #include "toplev.h" /* rest_of_decl_compilation */
 
 #include "al60l-bind.h"
@@ -177,7 +177,6 @@ stmt_container_build_generic (container * self, void * _state)
       tree tt = type_build_generic (sym->type, _state);
       tree decl = build_decl (VAR_DECL, id, tt);
       sym->extra = decl;
-      debug_tree (decl);
 
       // Add variable to the chain.  This really has to be chain of
       // variables, not a list of conses.
@@ -226,7 +225,6 @@ stmt_container_build_generic (container * self, void * _state)
 		      BLOCK_VARS (block), stmts, block);
   TREE_USED (block) = 1;
 
-  debug_tree (bind);
   return bind;
 }
 
@@ -413,8 +411,6 @@ builtin_decl_get_generic (symbol * sym)
     TREE_STATIC (decl) = own;
 
   rest_of_decl_compilation (decl, /*top_level=*/1, /*at_end=*/0);
-
-  debug_tree (decl);
 
   return decl;
 }

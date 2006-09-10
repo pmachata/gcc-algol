@@ -16,7 +16,7 @@
 # - the compiler proper (algol601)
 # - define the names for selecting the language in LANGUAGES.
 
-ALGOL60_INSTALL_NAME := $(shell echo ga60|sed '$(program_transform_name)')
+GA60_INSTALL_NAME := $(shell echo ga60|sed '$(program_transform_name)')
 ALGOL60_TARGET_INSTALL_NAME := $(target_noncanonical)-$(shell echo ga60|sed '$(program_transform_name)')
 AL60L_DIR := /home/ant/stud/dp/gcc-algol/trunk/al60l
 
@@ -173,20 +173,20 @@ algol60.srcinfo: doc/algol60.info
 
 algol60.dvi: doc/algol60.dvi
 
-TEXI_ALGOL60_FILES = algol60/algol60.texi \
+TEXI_ALGOL60_FILES = algol60/ga60.texi \
 	 $(gcc_docdir)/include/gcc-common.texi \
 	 $(gcc_docdir)/include/gpl.texi \
 	 $(gcc_docdir)/include/fdl.texi \
 	 $(gcc_docdir)/include/funding.texi \
 	 gcc-vers.texi
 
-doc/algol60.info: $(TEXI_ALGOL60_FILES)
+doc/ga60.info: $(TEXI_ALGOL60_FILES)
 	$(MAKEINFO) $(MAKEINFOFLAGS) -I $(gcc_docdir)/include -o $@ $<
 
-doc/algol60.dvi: $(TEXI_ALGOL60_FILES)
+doc/ga60.dvi: $(TEXI_ALGOL60_FILES)
 	$(TEXI2DVI) -I $(abs_docdir)/include -o $@ $<
 
-algol60.html: $(build_htmldir)/algol60/index.html
+ga60.html: $(build_htmldir)/algol60/index.html
 
 $(build_htmldir)/algol60/index.html: $(TEXI_ALGOL60_FILES)
 	$(mkinstalldirs) $(@D)
@@ -200,36 +200,37 @@ $(build_htmldir)/algol60/index.html: $(TEXI_ALGOL60_FILES)
 .phony:algol60.install.common
 .phony:algol60.install
 
-algol60.install algol60.install.common algol60.install-common: algol60.install.common.done
-
-algol60.install.common.done:  installdirs algol60.done
-	for name in $(ALGOL60_EXES); \
-	do \
-	   if [ -f $$name ] ; then \
-	    name2="`echo \`basename $$name\` | sed -e '$(program_transform_name)' `"; \
-	    rm -f $(DESTDIR)$(bindir)/$$name2$(exeext); \
-	    echo $(INSTALL_PROGRAM) $$name$(exeext) $(DESTDIR)$(bindir)/$$name2$(exeext); \
-	    $(INSTALL_PROGRAM) $$name$(exeext) $(DESTDIR)$(bindir)/$$name2$(exeext); \
-	    chmod a+x $(DESTDIR)$(bindir)/$$name2$(exeext); \
+algol60.install-common: installdirs
+	-if [ -f algol601$(exeext) ] ; then \
+	  rm -f $(DESTDIR)$(bindir)/$(GA60_INSTALL_NAME)$(exeext); \
+	  $(INSTALL_PROGRAM) ga60$(exeext) $(DESTDIR)$(bindir)/$(GA60_INSTALL_NAME)$(exeext); \
+	  chmod a+x $(DESTDIR)$(bindir)/$(GA60_INSTALL_NAME)$(exeext); \
+	  if [ -f ga60-cross$(exeext) ] ; then \
+	    if [ -d $(DESTDIR)$(gcc_tooldir)/bin/. ] ; then \
+	      rm -f $(DESTDIR)$(gcc_tooldir)/bin/ga60$(exeext); \
+	      $(INSTALL_PROGRAM) ga60-cross$(exeext) $(DESTDIR)$(gcc_tooldir)/bin/ga60$(exeext); \
+	    else true; fi; \
+	  else \
+	    rm -f $(DESTDIR)$(bindir)/$(GA60_TARGET_INSTALL_NAME)$(exeext); \
+	    $(LN) $(DESTDIR)$(bindir)/$(GA60_INSTALL_NAME)$(exeext) $(DESTDIR)$(bindir)/$(GA60_TARGET_INSTALL_NAME)$(exeext); \
 	  fi ; \
-	done
-	$(STAMP) algol60.install.common.done
+	fi
 
-# We might not be able to build the info files
-algol60.install-info: $(DESTDIR)$(infodir)/algol60.info
+algol60.install-info: $(DESTDIR)$(infodir)/ga60.info
 
 algol60.install-man:
+#$(DESTDIR)$(man1dir)/$(GA60_INSTALL_NAME)$(man1ext)
 
 algol60.uninstall:
-	for name in $(ALGOL60_EXES); \
-	do \
-	  echo $$name; \
-	  name2="`echo $$name | sed -e '$(program_transform_name)' `"; \
-	  echo becomes $$name2; \
-	  echo -rm -rf $(DESTDIR)$(bindir)/$$name2$(exeext); \
-	  rm -rf $(DESTDIR)$(bindir)/$$name2$(exeext); \
-	done
-	-rm algol60.install.common.done
+	if $(SHELL) -c 'install-info --version | sed 1q | fgrep -s -v -i debian' >/dev/null 2>&1; then \
+	  echo " install-info --delete --info-dir=$(DESTDIR)$(infodir) $(DESTDIR)$(infodir)/ga60.info"; \
+	  install-info --delete --info-dir=$(DESTDIR)$(infodir) $(DESTDIR)$(infodir)/ga60.info || : ; \
+	else : ; fi; \
+	rm -rf $(DESTDIR)$(bindir)/$(GA60_INSTALL_NAME)$(exeext); \
+	rm -rf $(DESTDIR)$(man1dir)/$(GA60_INSTALL_NAME)$(man1ext); \
+	rm -rf $(DESTDIR)$(bindir)/$(GA60_TARGET_INSTALL_NAME)$(exeext); \
+	rm -rf $(DESTDIR)$(infodir)/ga60.info*
+
 
 #
 # Clean hooks:
@@ -237,32 +238,18 @@ algol60.uninstall:
 # We just have to delete files specific to us.
 
 algol60.mostlyclean:
-	for name in $(ALGOL60_EXES); \
-	do \
-	  echo deleting $$name; \
-	  if [ -f algol60/$$name$(exeext) ] ; then \
-	    rm -f algol60/$$name$(exeext); \
-	  fi ; \
-	done
-	-rm -f algol60/*$(objext)
-	-rm -f algol60/*$(coverageexts)
-	-rm algol60.done
-
+	-rm -f algol601$(exeext)
+	-rm -f algol60/*.o
 
 algol60.clean: algol60.mostlyclean
 
 algol60.distclean: algol60.clean
 	-rm -f algol60/config.status
-	-rm -f algol60/*.output
 
 algol60.maintainer-clean: algol60.distclean
-	for name in $(ALGOL60_GENERATED); \
-	do \
-	  if [ -f $(srcdir)/algol60/$$name ] ; then \
-             echo deleting $(srcdir)/algol60/$$name; \
-	     rm -f $(srcdir)/algol60/$$name; \
-	  fi ; \
-	done
+	-rm -f algol60/parser-tab.output algol60/parser-tab.c algol60/parser-tab.h
+	-rm -f algol60/lexer-tab.c algol60/lexer-tab.h
+	-rm -f algol60/ast-tab.c algol60/ast-tab.h
 	-rm -R $(srcdir)/algol60/*~
 
 #
