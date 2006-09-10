@@ -1,0 +1,38 @@
+Build Instructions
+Required source packages
+
+    * The core package of a recent 4.0.x release.
+    * The GCC Algol 60 package from the main page.
+
+Required software
+
+    * The usual GCC requirements
+      (http://gcc.gnu.org/install/prerequisites.html)
+    * An existing C compiler (even if you use make bootstrap).  gcc
+      3.x and newer will probably work.
+
+Directories
+
+    * <srcdir> -- Location of the GCC sources
+    * <builddir> -- Build directory for GCC
+    * <prefix> -- Install directory for GCC
+
+Building the Compiler and Runtime Library
+
+   1. Unpack the GCC archive.  This creates <srcdir>.
+   2. Change the the <srcdir>/gcc directory.
+   3. Unpack the gcc-algol60 archive.  This will create a subdirectory
+      named "algol60".
+   4. Build GCC using the normal install instructions.  The only difference is
+      that "algol60" is added to the --enable-languages option.
+      Remember to always use "gmake" if GNU Make is not the system's default.
+   6. Install with "make install". 
+
+
+Building a Cross Compiler
+
+GCC Algol 60 was not tested as cross compiler yet.
+
+Runtime Library Notes
+
+No runtime library as of yet.
