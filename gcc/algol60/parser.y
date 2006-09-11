@@ -66,7 +66,6 @@ container * private_close_block (parser_rep_t * parser);
   // lexer portion
   estring_t * slit;
   long int ilit;
-  double dlit;
 
   // parser portion
   int flag;
@@ -153,7 +152,7 @@ container * private_close_block (parser_rep_t * parser);
 
 %token <slit> IDENTIFIER
 
-%token <dlit> LITREAL
+%token <slit> LITREAL
 %token <ilit> LITINTEGER
 %token <slit> LITSTRING
 

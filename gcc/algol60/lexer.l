@@ -580,7 +580,8 @@ private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr)
   char * lit = yyget_text (flex_scanner);
   char * pos;
 
-  if ((pos = strstr (lit, expstr)) != NULL)
+  if (expstr != NULL
+      && (pos = strstr (lit, expstr)) != NULL)
     {
       *pos = 0; // trim original literal
       pos += strlen (expstr); // move pointer to the beginning of
@@ -589,17 +590,7 @@ private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr)
       sprintf (lit, "%se%s", ((*lit == 0)?"1":lit), pos);
     }
 
-  double value = strtod (lit, &pos);
-
-  if ((value == +HUGE_VAL
-       || value == -HUGE_VAL)
-      && errno == ERANGE)
-    log_printf (lexer->log, ll_warning, "Too big a number: `%s'", lit);
-
-  if (*pos != 0)
-    log_printf (lexer->log, ll_error, "Invalid number: `%s'", lit);
-
-  val->dlit = value;
+  val->slit = new_estring_from (lit);
 
   return private_lexer_got_token (flex_scanner, LITREAL);
 }

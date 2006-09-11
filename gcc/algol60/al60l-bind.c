@@ -16,8 +16,11 @@
 #include "tree.h"   /* treecodes used in tree.def, here required to be
 		       able to call actual tree-building functions */
 
+#include "real.h"   /* methods for real number manipulations, such as
+		       build_real */
+
 #include "tree-gimple.h" /* alloc_stmt_list, append_to_statement_list */
-#include "toplev.h" /* rest_of_decl_compilation */
+#include "toplev.h" /* rest_of_decl_compilation, pedwarn */
 
 #include "al60l-bind.h"
 
@@ -236,11 +239,19 @@ expr_int_build_generic (expr_int * self, void * data ATTRIBUTE_UNUSED)
 }
 
 void *
-expr_real_build_generic (expr_real * self ATTRIBUTE_UNUSED,
-			 void * data ATTRIBUTE_UNUSED)
+expr_real_build_generic (expr_real * self, void * data)
 {
+  REAL_VALUE_TYPE real;
+  type * t = expr_type (ast_as (expression, self));
+  tree ttt = type_build_generic (t, data);
 
-  gcc_unreachable ();
+  real_from_string3 (&real, estr_cstr (self->value), TYPE_MODE (ttt));
+
+  if (REAL_VALUE_ISINF (real))
+    pedwarn ("floating constant exceeds range of %qT", ttt);
+
+  tree ret = build_real (ttt, real);
+  return ret;
 }
 
 void *

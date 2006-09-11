@@ -61,14 +61,14 @@ expr_resolve_symbols (expr_int)
 // ------------------------------------
 
 %node expr_real expression = {
-  double value;
+  estring_t * value;
 }
 
 expr_to_str (expr_real)
 {
   if (buf == NULL)
     buf = new_estring ();
-  estr_printf (buf, "%f", self->value);
+  estr_assign (buf, self->value);
   return buf;
 }
 
