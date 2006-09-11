@@ -118,3 +118,5 @@ builtin_function (const char *name,
 
   return decl;
 }
+
+tree string_type_node;

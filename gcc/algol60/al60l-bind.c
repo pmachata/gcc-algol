@@ -22,6 +22,7 @@
 #include "tree-gimple.h" /* alloc_stmt_list, append_to_statement_list */
 #include "toplev.h" /* rest_of_decl_compilation, pedwarn */
 
+#include "algol-tree.h"
 #include "al60l-bind.h"
 
 #include "ast-tab.h"
@@ -255,17 +256,18 @@ expr_real_build_generic (expr_real * self, void * data)
 }
 
 void *
-expr_string_build_generic (expr_string * self ATTRIBUTE_UNUSED,
-			   void * data ATTRIBUTE_UNUSED)
+expr_string_build_generic (expr_string * self, void * data ATTRIBUTE_UNUSED)
 {
-  gcc_unreachable ();
+  int len = estr_length (self->value) + 1; // +1 for trailing zero
+  tree ret = build_string_literal (len, estr_cstr (self->value));
+  return ret;
 }
 
 void *
-expr_bool_build_generic (expr_bool * self ATTRIBUTE_UNUSED,
-			 void * data ATTRIBUTE_UNUSED)
+expr_bool_build_generic (expr_bool * self, void * data ATTRIBUTE_UNUSED)
 {
-  gcc_unreachable ();
+  tree ret = build_int_cst (boolean_type_node, self->value);
+  return ret;
 }
 
 void *
@@ -474,7 +476,7 @@ void *
 type_string_build_generic (t_string * self ATTRIBUTE_UNUSED,
 			   void * data ATTRIBUTE_UNUSED)
 {
-  gcc_unreachable ();
+  return string_type_node;
 }
 
 void *

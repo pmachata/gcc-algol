@@ -167,6 +167,7 @@ type* type_proc_int_int (void);
 type* type_proc_real_int (void);
 type* type_proc_int_real (void);
 type* type_proc_real_real (void);
+type* type_proc_int_string (void);
 %}
 
 %{
@@ -203,6 +204,7 @@ MEMOIZEPROC1(int, real)
 MEMOIZEPROC1(real, int)
 MEMOIZEPROC1(int, int)
 MEMOIZEPROC1(real, real)
+MEMOIZEPROC1(int, string)
 
 #undef MEMOIZE
 #undef MEMOIZE2

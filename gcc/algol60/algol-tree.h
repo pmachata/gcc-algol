@@ -69,3 +69,5 @@ tree getdecls (void);
 int global_bindings_p (void);
 void insert_block (tree);
 tree builtin_function (const char *, tree, int, enum built_in_class, const char *, tree);
+
+extern tree string_type_node;

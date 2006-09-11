@@ -94,6 +94,7 @@ algol60_init (void)
   build_common_tree_nodes (flag_signed_char, false);
   build_common_tree_nodes_2 (/* short_double= */ 0);
   size_type_node = make_unsigned_type (POINTER_SIZE);
+  string_type_node = build_pointer_type (char_type_node);
   set_sizetype (size_type_node);
   build_common_builtin_nodes ();
   (*targetm.init_builtins) ();
