@@ -124,12 +124,16 @@ blocks, loops, funcalls, automatic and global variables, variable
 sized arrays, global, local (nested), overloaded, internal, external,
 anonymous functions, visibility (static or public), pass by value,
 reference and name, varargs, modules, module ctors and dtors, jumps,
-cases, expressions, typechecking, name mangling and C-compatible
-interfacing (extern "C"), (OpenMP?), and other to GENERIC (with the
-help of proper hooks).  Show examples taken from \Algol 60 code.
+cases, expressions, typechecking, structures, objects, namespaces,
+name mangling and C-compatible interfacing (extern "C"), (OpenMP?),
+and other to GENERIC (with the help of proper hooks).  Show examples
+taken from \Algol 60 code.
 
 What are custom GENERIC codes, how to declare them, how to handle
 them, what's gimplification, how to gimplify them.
+
+Optimizing on tree level: how to emit IL that is compiled the fastest,
+that emits the fastest code.  Does it even matter?
 
 \chapter{Language Services}
 
@@ -182,6 +186,15 @@ document the interface of front ends to GCC"
 \chapter*{Appendix: \Algol 60 Compiler}
 
 Installation, supported GCCs, usual stuff.
+
+
+
+\chapter{Notes}
+
+Functions need a return statements.  Look how it's done for noreturn
+functions.
+
+COND\_EXPR breaks when other value than 0 or 1 is used as condition.
 
 
 \end{document}
