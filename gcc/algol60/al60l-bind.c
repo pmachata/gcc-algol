@@ -284,14 +284,19 @@ expr_idref_build_generic (expr_idref * self, void * data ATTRIBUTE_UNUSED)
 }
 
 void *
-expr_if_build_generic (expr_if * self ATTRIBUTE_UNUSED,
-		       void * data ATTRIBUTE_UNUSED)
+expr_if_build_generic (expr_if * self, void * data)
 {
-  gcc_unreachable ();
+  type * t  = expr_type (ast_as (expression, self));
+  tree ttt  = type_build_generic (t, data);
+  tree cond = expr_build_generic (self->cond, data);
+  tree expt = expr_build_generic (self->exp_t, data);
+  tree expf = expr_build_generic (self->exp_f, data);
+  tree ret  = build3 (COND_EXPR, ttt, cond, expt, expf);
+  return ret;
 }
 
 static tree
-private_expr_build_arith_generic (expression * self, void * data, int op)
+private_expr_build_binary_generic (expression * self, void * data, int op)
 {
   gcc_assert (ast_isa (self, expr_bin));
   type * t = expr_type (self);
@@ -303,35 +308,52 @@ private_expr_build_arith_generic (expression * self, void * data, int op)
   return ret;
 }
 
+static tree
+private_expr_build_unary_generic (expression * self, void * data, int op)
+{
+  gcc_assert (ast_isa (self, expr_un));
+  type * t = expr_type (self);
+  expr_un * e = ast_as (expr_un, self);
+  tree ttt = type_build_generic (t, data);
+  tree op1 = expr_build_generic (e->operand, data);
+  tree ret = build1 (op, ttt, op1);
+  return ret;
+}
+
 void *
 expr_aadd_build_generic (expr_aadd * self, void * data)
 {
-  return private_expr_build_arith_generic (ast_as (expression, self), data, PLUS_EXPR);
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, PLUS_EXPR);
 }
 
 void *
 expr_asub_build_generic (expr_asub * self, void * data)
 {
-  return private_expr_build_arith_generic (ast_as (expression, self), data, MINUS_EXPR);
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, MINUS_EXPR);
 }
 
 void *
 expr_amul_build_generic (expr_amul * self, void * data)
 {
-  return private_expr_build_arith_generic (ast_as (expression, self), data, MULT_EXPR);
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, MULT_EXPR);
 }
 
 void *
 expr_aidiv_build_generic (expr_aidiv * self, void * data)
 {
   // @TODO: check algol 60 reference if this is the right operator
-  return private_expr_build_arith_generic (ast_as (expression, self), data, TRUNC_DIV_EXPR);
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, TRUNC_DIV_EXPR);
 }
 
 void *
 expr_ardiv_build_generic (expr_ardiv * self, void * data)
 {
-  return private_expr_build_arith_generic (ast_as (expression, self), data, RDIV_EXPR);
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, RDIV_EXPR);
 }
 
 void *
@@ -343,25 +365,92 @@ expr_apow_build_generic (expr_apow * self ATTRIBUTE_UNUSED,
 }
 
 void *
-expr_rel_build_generic (expr_rel * self ATTRIBUTE_UNUSED,
-			void * data ATTRIBUTE_UNUSED)
+expr_req_build_generic (expr_req * self, void * data)
 {
-  gcc_unreachable ();
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, EQ_EXPR);
 }
 
 void *
-expr_log_build_generic (expr_log * self ATTRIBUTE_UNUSED,
-			void * data ATTRIBUTE_UNUSED)
+expr_rneq_build_generic (expr_rneq * self, void * data)
 {
-  gcc_unreachable ();
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, NE_EXPR);
 }
 
 void *
-expr_un_build_generic (expr_un * self ATTRIBUTE_UNUSED,
-		       void * data ATTRIBUTE_UNUSED)
+expr_rlt_build_generic (expr_rlt * self, void * data)
 {
-  gcc_unreachable ();
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, LT_EXPR);
 }
+
+void *
+expr_rlte_build_generic (expr_rlte * self, void * data)
+{
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, LE_EXPR);
+}
+
+void *
+expr_rgt_build_generic (expr_rgt * self, void * data)
+{
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, GT_EXPR);
+}
+
+void *
+expr_rgte_build_generic (expr_rgte * self, void * data)
+{
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, GE_EXPR);
+}
+
+void *
+expr_limp_build_generic (expr_limp * self, void * data)
+{
+  // `a => b` translates as `or (not (a), b)`
+  // @@@TODO: btw, this is candidate to custom tree node!
+  expression * e1 = expr_not_create (self->left);
+  expression * e2 = expr_lor_create (e1, self->right);
+  return expr_build_generic (e2, data);
+}
+
+void *
+expr_leq_build_generic (expr_leq * self, void * data)
+{
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, EQ_EXPR);
+}
+
+void *
+expr_lor_build_generic (expr_lor * self, void * data)
+{
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, TRUTH_OR_EXPR);
+}
+
+void *
+expr_land_build_generic (expr_land * self, void * data)
+{
+  return private_expr_build_binary_generic (ast_as (expression, self),
+					    data, TRUTH_AND_EXPR);
+}
+
+void *
+expr_uminus_build_generic (expr_uminus * self, void * data)
+{
+  return private_expr_build_unary_generic (ast_as (expression, self),
+					   data, NEGATE_EXPR);
+}
+
+void *
+expr_not_build_generic (expr_not * self, void * data)
+{
+  return private_expr_build_unary_generic (ast_as (expression, self),
+					   data, TRUTH_NOT_EXPR);
+}
+
 
 void *
 expr_call_build_generic (expr_call * self, void * state)

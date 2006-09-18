@@ -21,9 +21,18 @@ void * expr_amul_build_generic (expr_amul * self, void * data);
 void * expr_aidiv_build_generic (expr_aidiv * self, void * data);
 void * expr_ardiv_build_generic (expr_ardiv * self, void * data);
 void * expr_apow_build_generic (expr_apow * self, void * data);
-void * expr_rel_build_generic (expr_rel * self, void * data);
-void * expr_log_build_generic (expr_log * self, void * data);
-void * expr_un_build_generic (expr_un * self, void * data);
+void * expr_req_build_generic (expr_req * self, void * data);
+void * expr_rneq_build_generic (expr_rneq * self, void * data);
+void * expr_rlt_build_generic (expr_rlt * self, void * data);
+void * expr_rlte_build_generic (expr_rlte * self, void * data);
+void * expr_rgt_build_generic (expr_rgt * self, void * data);
+void * expr_rgte_build_generic (expr_rgte * self, void * data);
+void * expr_limp_build_generic (expr_limp * self, void * data);
+void * expr_leq_build_generic (expr_leq * self, void * data);
+void * expr_lor_build_generic (expr_lor * self, void * data);
+void * expr_land_build_generic (expr_land * self, void * data);
+void * expr_uminus_build_generic (expr_uminus * self, void * data);
+void * expr_not_build_generic (expr_not * self, void * data);
 void * expr_call_build_generic (expr_call * self, void * data);
 
 void * type_int_build_generic (t_int * self, void * data);
@@ -83,7 +92,7 @@ stmt_container_build_generic (container * self, void * data)
   no_gcc_frontend ();
 }
 
-// exprs ----
+// basic exprs ----
 void *
 expr_int_build_generic (expr_int * self, void * data)
 {
@@ -114,11 +123,15 @@ expr_idref_build_generic (expr_idref * self, void * data)
   no_gcc_frontend ();
 }
 
+// if ----
+
 void *
 expr_if_build_generic (expr_if * self, void * data)
 {
   no_gcc_frontend ();
 }
+
+// arith exprs ----
 
 void *
 expr_aadd_build_generic (expr_aadd * self, void * data)
@@ -156,23 +169,85 @@ expr_apow_build_generic (expr_apow * self, void * data)
   no_gcc_frontend ();
 }
 
+// rel exprs ----
+
 void *
-expr_rel_build_generic (expr_rel * self, void * data)
+expr_req_build_generic (expr_req * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_log_build_generic (expr_log * self, void * data)
+expr_rneq_build_generic (expr_rneq * self, void * data)
 {
   no_gcc_frontend ();
 }
 
 void *
-expr_un_build_generic (expr_un * self, void * data)
+expr_rlt_build_generic (expr_rlt * self, void * data)
 {
   no_gcc_frontend ();
 }
+
+void *
+expr_rlte_build_generic (expr_rlte * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_rgt_build_generic (expr_rgt * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_rgte_build_generic (expr_rgte * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+// log exprs ----
+
+void *
+expr_limp_build_generic (expr_limp * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_leq_build_generic (expr_leq * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_lor_build_generic (expr_lor * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_land_build_generic (expr_land * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+// unary exprs ----
+
+void *
+expr_uminus_build_generic (expr_uminus * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
+expr_not_build_generic (expr_not * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+// call ----
 
 void *
 expr_call_build_generic (expr_call * self, void * data)
@@ -181,6 +256,7 @@ expr_call_build_generic (expr_call * self, void * data)
 }
 
 // types ----
+
 void *
 type_int_build_generic (t_int * self, void * data)
 {
@@ -386,19 +462,64 @@ expr_build_generic (expr_apow)
   return expr_apow_build_generic (self, data);
 }
 
-expr_build_generic (expr_rel)
+expr_build_generic (expr_req)
 {
-  return expr_rel_build_generic (self, data);
+  return expr_req_build_generic (self, data);
 }
 
-expr_build_generic (expr_log)
+expr_build_generic (expr_rneq)
 {
-  return expr_log_build_generic (self, data);
+  return expr_rneq_build_generic (self, data);
 }
 
-expr_build_generic (expr_un)
+expr_build_generic (expr_rlt)
 {
-  return expr_un_build_generic (self, data);
+  return expr_rlt_build_generic (self, data);
+}
+
+expr_build_generic (expr_rlte)
+{
+  return expr_rlte_build_generic (self, data);
+}
+
+expr_build_generic (expr_rgt)
+{
+  return expr_rgt_build_generic (self, data);
+}
+
+expr_build_generic (expr_rgte)
+{
+  return expr_rgte_build_generic (self, data);
+}
+
+expr_build_generic (expr_limp)
+{
+  return expr_limp_build_generic (self, data);
+}
+
+expr_build_generic (expr_leq)
+{
+  return expr_leq_build_generic (self, data);
+}
+
+expr_build_generic (expr_lor)
+{
+  return expr_lor_build_generic (self, data);
+}
+
+expr_build_generic (expr_land)
+{
+  return expr_land_build_generic (self, data);
+}
+
+expr_build_generic (expr_uminus)
+{
+  return expr_uminus_build_generic (self, data);
+}
+
+expr_build_generic (expr_not)
+{
+  return expr_not_build_generic (self, data);
 }
 
 expr_build_generic (expr_call)

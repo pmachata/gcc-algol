@@ -212,8 +212,16 @@ expr_resolve_symbols (expr_if)
   expr_resolve_symbols (self->exp_t, block, log);
   expr_resolve_symbols (self->exp_f, block, log);
 
+  type* ct = expr_type (self->cond);
   type* tt = expr_type (self->exp_t);
   type* ft = expr_type (self->exp_f);
+
+  if (!types_same (ct, type_bool ()))
+    {
+      log_printf (log, ll_error, "`if' expression condition has to be boolean");
+      self->cond = expr_primitive_for_type (type_bool ());
+    }
+
   self->result_type = tt;
   if (!types_same (tt, ft)) // match is not enough
     {
