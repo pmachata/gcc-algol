@@ -139,7 +139,7 @@ type_to_str_private (t_void) { estr_assign_cstr (buf, "<void>"); }
 
 %node t_real type = { }
 type_to_str_private (t_real) { estr_assign_cstr (buf, "'real'"); }
-expr_primitive_for_type (t_real) { return expr_real_create ("0.0"); }
+expr_primitive_for_type (t_real) { return expr_real_create (new_estring_from ("0.0")); }
 
 %node t_string type = { }
 type_to_str_private (t_string) { estr_assign_cstr (buf, "'string'"); }
@@ -168,6 +168,10 @@ type* type_proc_real_int (void);
 type* type_proc_int_real (void);
 type* type_proc_real_real (void);
 type* type_proc_int_string (void);
+type* type_proc_int_int_int (void);
+type* type_proc_real_int_real (void);
+type* type_proc_real_real_int (void);
+type* type_proc_real_real_real (void);
 %}
 
 %{
@@ -189,6 +193,12 @@ type* type_proc_##TYPERET##_##TYPEARG (void) {\
   if (!inst) inst = t_proc_create (type_##TYPERET (), new_slist_from (1, type_##TYPEARG ()));\
   return inst;\
 }
+#define MEMOIZEPROC2(TYPERET,TYPEARG1,TYPEARG2)\
+type* type_proc_##TYPERET##_##TYPEARG1##_##TYPEARG2 (void) {\
+  static type * inst = NULL;\
+  if (!inst) inst = t_proc_create (type_##TYPERET (), new_slist_from (2, type_##TYPEARG1 (), type_##TYPEARG2 ()));\
+  return inst;\
+}
 
 MEMOIZE(unknown)
 MEMOIZE(any)
@@ -205,10 +215,15 @@ MEMOIZEPROC1(real, int)
 MEMOIZEPROC1(int, int)
 MEMOIZEPROC1(real, real)
 MEMOIZEPROC1(int, string)
+MEMOIZEPROC2(int, int, int)
+MEMOIZEPROC2(real, real, int)
+MEMOIZEPROC2(real, int, real)
+MEMOIZEPROC2(real, real, real)
 
 #undef MEMOIZE
 #undef MEMOIZE2
 #undef MEMOIZEPROC1
+#undef MEMOIZEPROC2
 %}
 
 

@@ -282,7 +282,7 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
   return found;
 }
 
-void
+static void
 private_dump_container (container * self, FILE * ofile, int level)
 {
   estring_t * buf = new_estring ();

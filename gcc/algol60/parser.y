@@ -40,16 +40,16 @@ yyerror (parser_rep_t * parser, const char *str)
   log_printf (parser->log, ll_error, "yyerror: %s", str);
 }
 
-void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
+static void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
 
 /// Take all labels in `slist', make symbols from them, bind these
 /// symbols with command `target', and add them to symbol table of
 /// containing block `cont'.
-void private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
-				   slist_t * slist, statement * target);
+static void private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
+					  slist_t * slist, statement * target);
 
-void private_open_block (parser_rep_t * parser, container * cont);
-container * private_close_block (parser_rep_t * parser);
+static void private_open_block (parser_rep_t * parser, container * cont);
+static container * private_close_block (parser_rep_t * parser);
 
 /// $0 in statement parts is used for referring to containing block of
 /// given statement.  This auxiliary macro is used to do copying of
@@ -868,7 +868,7 @@ parser_log (parser_t * _parser)
   return parser->log;
 }
 
-void
+static void
 private_dump_log_labels (parser_rep_t * parser, slist_t * slist)
 {
   slist_it_t * it = slist_iter (slist);
@@ -884,8 +884,9 @@ private_dump_log_labels (parser_rep_t * parser, slist_t * slist)
   delete_slist_it (it);
 }
 
-void
-private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
+static void
+private_add_labels_to_symtab (parser_rep_t * parser ATTRIBUTE_UNUSED,
+			      container * cont,
 			      slist_t * slist, statement * target)
 {
   slist_it_t * it = slist_iter (slist);
@@ -900,7 +901,7 @@ private_add_labels_to_symtab (parser_rep_t * parser, container * cont,
   delete_slist_it (it);
 }
 
-void
+static void
 private_open_block (parser_rep_t * parser, container * cont)
 {
   assert (cont != NULL);
@@ -908,7 +909,7 @@ private_open_block (parser_rep_t * parser, container * cont)
   parser->block = cont;
 }
 
-container *
+static container *
 private_close_block (parser_rep_t * parser)
 {
   assert (!slist_empty (parser->blockstack));

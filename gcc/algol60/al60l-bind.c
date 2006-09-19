@@ -357,11 +357,55 @@ expr_ardiv_build_generic (expr_ardiv * self, void * data)
 }
 
 void *
-expr_apow_build_generic (expr_apow * self ATTRIBUTE_UNUSED,
-			 void * data ATTRIBUTE_UNUSED)
+expr_apow_build_generic (expr_apow * self, void * data)
 {
-  // @TODO: this requires a funcall, leaving alone for now
-  gcc_unreachable ();
+  // Arithmetic power expressions are translated to function call into
+  // runtime library.  The resulting symbol is named _a60_pow_<a>_<b>,
+  // where `a' and `b' are either `i' or `r', depending on the type of
+  // each operand.
+
+  // @TODO: as of now, there is no runtime library in place yet.  The
+  // resulting binary has to be linked with apow.c and -lm explicitly.
+
+  type * tl = expr_type (self->left);
+  type * tr = expr_type (self->right);
+
+  static type * types[4] = {}; // NULLs by default
+  static int initialized = 0;
+  static char const sigs[] = {'i', 'r'};
+
+  if (! initialized)
+    {
+      types[0] = type_proc_int_int_int ();
+      types[1] = type_proc_real_int_real ();
+      types[2] = type_proc_real_real_int ();
+      types[3] = type_proc_real_real_real ();
+      initialized = 1;
+    }
+
+  // sl, sr are indices into the sigs array, and are used to compute
+  // index into types array
+  int sl = (types_same (tl, type_int ()) ? 0
+	    : (gcc_assert (types_same (tl, type_real ())), 1));
+  int sr = (types_same (tr, type_int ()) ? 0
+	    : (gcc_assert (types_same (tr, type_real ())), 1));
+  int typeidx = 2*sl + sr; // index into types array
+
+  label * l = label_id_create (new_estring_fmt ("_a60_pow_%c_%c", sigs[sl], sigs[sr]));
+  slist_t * args = new_slist_from (2, self->left, self->right);
+  expr_call * e = ast_as (expr_call, expr_call_create (l, args));
+
+  // Don't forget to do what resolve would do for us.  We can omit
+  // typechecking, and subexpression resolving has already been done
+  // by this point.
+  e->t = expr_type (ast_as (expression, self)); // return type
+  symbol * sym = symbol_create (l);
+  sym->type = types[typeidx]; // function type
+  sym->hidden = 1;
+  sym->extra = builtin_decl_get_generic (sym);
+  e->sym = sym;
+
+  return expr_build_generic (ast_as (expression, e), data);
 }
 
 void *

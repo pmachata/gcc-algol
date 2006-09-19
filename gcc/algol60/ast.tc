@@ -41,6 +41,13 @@ void * ast_as__ (void * node, int kind);
 
 /// Rerturn padding apropriate for given level.
 static char const* padding (int level);
+
+/// Create new ast state.  AST builder uses it for some bookkeeping
+/// and memory management.
+ast_state_t * new_ast_state (void);
+
+/// Destroy ast state.
+void delete_ast_state (ast_state_t * _state);
 %}
 
 %end %{

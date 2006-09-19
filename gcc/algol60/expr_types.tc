@@ -15,7 +15,10 @@ expr_bin_type (expr_aadd, t_real, t_real),
 expr_bin_type (expr_asub, t_real, t_real),
 expr_bin_type (expr_amul, t_real, t_real),
 expr_bin_type (expr_ardiv, t_int, t_int),
-expr_bin_type (expr_ardiv, t_real, t_real)
+expr_bin_type (expr_ardiv, t_real, t_real),
+expr_bin_type (expr_apow, t_int, t_real),
+expr_bin_type (expr_apow, t_real, t_int),
+expr_bin_type (expr_apow, t_real, t_real)
 {
   return type_real ();
 }
