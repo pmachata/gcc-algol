@@ -50,6 +50,10 @@ typedef struct struct_al60l_bind_state_rep_t
 # error It makes no sense to build this file outside the GCC
 #endif
 
+// ------------------------------------
+//   AUXILIARIES
+// ------------------------------------
+
 al60l_bind_state_t *
 new_bind_state (void)
 {
@@ -127,6 +131,10 @@ bind_state_pop_function (al60l_bind_state_t * _state)
 }
 
 
+// ------------------------------------
+//   STATEMENT
+// ------------------------------------
+
 void *
 stmt_dummy_build_generic (stmt_dummy * self ATTRIBUTE_UNUSED,
 			  void * state ATTRIBUTE_UNUSED)
@@ -173,13 +181,7 @@ stmt_container_build_generic (container * self, void * _state)
       symbol * sym = slist_it_get (it);
       gcc_assert (sym->extra == NULL);
 
-      // Handle only regular symbols, no labels for now.
-      label_id * lbl = ast_as (label_id, sym->lbl);
-      gcc_assert (lbl != NULL);
-      tree id = get_identifier (estr_cstr (lbl->id));
-
-      tree tt = type_build_generic (sym->type, _state);
-      tree decl = build_decl (VAR_DECL, id, tt);
+      tree decl = symbol_decl_for_type (sym->type, sym, _state);
       sym->extra = decl;
 
       // Add variable to the chain.  This really has to be chain of
@@ -231,6 +233,11 @@ stmt_container_build_generic (container * self, void * _state)
 
   return bind;
 }
+
+
+// ------------------------------------
+//   EXPRESSION
+// ------------------------------------
 
 void *
 expr_int_build_generic (expr_int * self, void * data ATTRIBUTE_UNUSED)
@@ -567,13 +574,6 @@ type_int_build_generic (t_int * self ATTRIBUTE_UNUSED,
 {
   return integer_type_node;
 }
-void *
-symbol_decl_for_int (symbol * sym ATTRIBUTE_UNUSED,
-		     void * data ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
 
 void *
 type_void_build_generic (t_void * self ATTRIBUTE_UNUSED,
@@ -583,27 +583,11 @@ type_void_build_generic (t_void * self ATTRIBUTE_UNUSED,
 }
 
 void *
-symbol_decl_for_void (symbol * sym ATTRIBUTE_UNUSED,
-		      void * data ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
-
-void *
 type_real_build_generic (t_real * self ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
   return double_type_node;
 }
-
-void *
-symbol_decl_for_real (symbol * sym ATTRIBUTE_UNUSED,
-		      void * data ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
 
 void *
 type_string_build_generic (t_string * self ATTRIBUTE_UNUSED,
@@ -613,33 +597,59 @@ type_string_build_generic (t_string * self ATTRIBUTE_UNUSED,
 }
 
 void *
-symbol_decl_for_string (symbol * sym ATTRIBUTE_UNUSED,
-			void * data ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
-
-void *
 type_bool_build_generic (t_bool * self ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
   return boolean_type_node;
 }
 
-void *
-symbol_decl_for_bool (symbol * sym ATTRIBUTE_UNUSED,
-		      void * data ATTRIBUTE_UNUSED)
+
+// ------------------------------------
+//   SYMBOL
+// ------------------------------------
+
+/// Build GENERIC for declaration of given symbol.  This function is
+/// called by many symbol_decl_for_<type> methods. Some of them may
+/// wish to handle the decl building themselves though.
+static tree
+private_decl_for_ordinary_symbol (symbol * sym, void * data)
 {
-  gcc_unreachable ();
+  // Handle only regular symbols
+  label_id * lbl = ast_as (label_id, sym->lbl);
+  gcc_assert (lbl != NULL);
+  tree id = get_identifier (estr_cstr (lbl->id));
+  tree tt = type_build_generic (sym->type, data);
+  return build_decl (VAR_DECL, id, tt);
 }
 
+void *
+symbol_decl_for_int (symbol * sym, void * data)
+{
+  return private_decl_for_ordinary_symbol (sym, data);
+}
 
 void *
-type_label_build_generic (t_label * self ATTRIBUTE_UNUSED,
-			  void * data ATTRIBUTE_UNUSED)
+symbol_decl_for_void (symbol * sym, void * data)
 {
-  gcc_unreachable ();
+  return private_decl_for_ordinary_symbol (sym, data);
+}
+
+void *
+symbol_decl_for_real (symbol * sym, void * data)
+{
+  return private_decl_for_ordinary_symbol (sym, data);
+}
+
+void *
+symbol_decl_for_string (symbol * sym, void * data)
+{
+  return private_decl_for_ordinary_symbol (sym, data);
+}
+
+void *
+symbol_decl_for_bool (symbol * sym, void * data)
+{
+  return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
@@ -649,38 +659,11 @@ symbol_decl_for_label (symbol * sym ATTRIBUTE_UNUSED,
   gcc_unreachable ();
 }
 
-
-void *
-type_array_build_generic (t_array * self ATTRIBUTE_UNUSED,
-			  void * data ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable ();
-}
-
 void *
 symbol_decl_for_array (symbol * sym ATTRIBUTE_UNUSED,
 		       void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
-}
-
-
-void *
-type_proc_build_generic (t_proc * self, void * data)
-{
-  tree fn_ret_type = type_build_generic (self->ret_type, data);
-  tree param_types = NULL_TREE;
-  slist_it_t * it = slist_iter (self->arg_types);
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      tree t1 = type_build_generic (slist_it_get (it), data);
-      param_types = tree_cons (NULL_TREE, t1, param_types);
-    }
-  delete_slist_it (it);
-  param_types = nreverse (param_types);
-
-  tree fn_type = build_function_type (fn_ret_type, param_types);
-  return fn_type;
 }
 
 void *
@@ -715,4 +698,41 @@ symbol_decl_for_proc (symbol * sym, void * data)
 
   //DECL_ARGUMENTS (fn_decl) = param_decls;
   return fn_decl;
+}
+
+
+// ------------------------------------
+//   TYPE
+// ------------------------------------
+
+void *
+type_label_build_generic (t_label * self ATTRIBUTE_UNUSED,
+			  void * data ATTRIBUTE_UNUSED)
+{
+  gcc_unreachable ();
+}
+
+void *
+type_array_build_generic (t_array * self ATTRIBUTE_UNUSED,
+			  void * data ATTRIBUTE_UNUSED)
+{
+  gcc_unreachable ();
+}
+
+void *
+type_proc_build_generic (t_proc * self, void * data)
+{
+  tree fn_ret_type = type_build_generic (self->ret_type, data);
+  tree param_types = NULL_TREE;
+  slist_it_t * it = slist_iter (self->arg_types);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      tree t1 = type_build_generic (slist_it_get (it), data);
+      param_types = tree_cons (NULL_TREE, t1, param_types);
+    }
+  delete_slist_it (it);
+  param_types = nreverse (param_types);
+
+  tree fn_type = build_function_type (fn_ret_type, param_types);
+  return fn_type;
 }
