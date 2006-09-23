@@ -8,6 +8,8 @@
 }
 
 %node label %abstract %typedef = {
+  // Details of handling the array bounds are described in parser.y
+  // at block declaration handling code.
   %nocreate slist_t * arr_bd_list = { new_slist () };
 }
 

@@ -233,6 +233,9 @@ MEMOIZEPROC2(real, real, real)
 
 %node t_array type = {
   type * host;
+  // Details of handling the array bounds are described in parser.y
+  // at block declaration handling code.
+  %nocreate boundspair * bounds = { NULL };
 }
 
 type_to_str_private (t_array)

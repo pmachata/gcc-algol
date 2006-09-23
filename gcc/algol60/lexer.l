@@ -576,7 +576,6 @@ private_lexer_got_eof_token (void * flex_scanner, char const* error)
 static token_kind_t
 private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr)
 {
-  lexer_rep_t * lexer = yyget_extra (flex_scanner);
   char * lit = yyget_text (flex_scanner);
   char * pos;
 

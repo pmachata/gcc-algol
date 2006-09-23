@@ -663,7 +663,7 @@ void *
 symbol_decl_for_array (symbol * sym ATTRIBUTE_UNUSED,
 		       void * data ATTRIBUTE_UNUSED)
 {
-  gcc_unreachable ();
+  return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
@@ -713,10 +713,16 @@ type_label_build_generic (t_label * self ATTRIBUTE_UNUSED,
 }
 
 void *
-type_array_build_generic (t_array * self ATTRIBUTE_UNUSED,
-			  void * data ATTRIBUTE_UNUSED)
+type_array_build_generic (t_array * self, void * data)
 {
-  gcc_unreachable ();
+  tree emtt = type_build_generic (self->host, data);
+  gcc_assert (self->bounds != NULL);
+  tree lowb = expr_build_generic (self->bounds->lobound, data);
+  tree highb = expr_build_generic (self->bounds->hibound, data);
+  tree arridxt = type_build_generic (type_int (), data);
+  tree arrbdst = build_range_type (arridxt, lowb, highb);
+  tree ret = build_array_type (emtt, arrbdst);
+  return ret;
 }
 
 void *

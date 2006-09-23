@@ -327,9 +327,21 @@ BlockDeclarations:
 			estr_cstr (type_to_str ($1, parser->tmp)));
 
 	  // If it was array, see if identifier has dimensions and
-	  // mangle `rt' to reflect number of dimensions.  Note that
-	  // 'own' doesn't influence matching.
-	  if (types_match ($1, type_array_any ()))
+	  // mangle `rt' to reflect number of dimensions.
+	  //
+	  // Initially, bounds pair lists are stored at the label node by a
+	  // parser.  During the translation process the list of bound pairs
+	  // is transformed to tree structure of arrays, each array level with
+	  // its own bounds.  E.g. this:
+	  //  (symbol type=(array host=(int))
+	  //          label=(id name="x" bounds=(1:5 1:10)))
+	  // becomes this:
+	  //  (symbol type=(array bounds=(1:5)
+	  //                      host=(array bounds=(1:10)
+	  //                                  host=(int)))
+	  //          label=(id name="x"))
+	  //
+	  if (types_match ($1, type_array_any ())) // 'own' doesn't influence matching
 	    {
 	      if (lbl->arr_bd_list == NULL)
 		log_printf (parser->log, ll_error,
@@ -342,9 +354,11 @@ BlockDeclarations:
 		  while (slist_it_has (jt))
 		    {
 		      rt = t_array_create (rt);
+		      ast_as (t_array, rt)->bounds = slist_it_get (jt);
 		      slist_it_next (jt);
 		    }
 		  delete_slist_it (jt);
+		  lbl->arr_bd_list = NULL;
 		}
 	    }
 
