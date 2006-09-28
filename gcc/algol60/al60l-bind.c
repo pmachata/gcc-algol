@@ -405,7 +405,6 @@ expr_apow_build_generic (expr_apow * self, void * data)
   // Don't forget to do what resolve would do for us.  We can omit
   // typechecking, and subexpression resolving has already been done
   // by this point.
-  e->t = expr_type (ast_as (expression, self)); // return type
   symbol * sym = symbol_create (l);
   sym->type = types[typeidx]; // function type
   sym->hidden = 1;
@@ -502,7 +501,6 @@ expr_not_build_generic (expr_not * self, void * data)
 					   data, TRUTH_NOT_EXPR);
 }
 
-
 void *
 expr_call_build_generic (expr_call * self, void * state)
 {
@@ -529,6 +527,17 @@ expr_call_build_generic (expr_call * self, void * state)
 
   return call_expr;
 }
+
+void *
+expr_subscript_build_generic (expr_subscript * self, void * data)
+{
+  tree array = self->sym->extra;
+  gcc_assert (array != NULL);
+  tree type = type_build_generic (expr_type (self), data);
+  tree index = expr_build_generic (slist_front (self->indices), data);
+  return build4 (ARRAY_REF, type, array, index, NULL_TREE, NULL_TREE);
+}
+
 
 void *
 builtin_decl_get_generic (symbol * sym)
@@ -660,8 +669,7 @@ symbol_decl_for_label (symbol * sym ATTRIBUTE_UNUSED,
 }
 
 void *
-symbol_decl_for_array (symbol * sym ATTRIBUTE_UNUSED,
-		       void * data ATTRIBUTE_UNUSED)
+symbol_decl_for_array (symbol * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
@@ -677,6 +685,7 @@ symbol_decl_for_proc (symbol * sym, void * data)
   char const* name = estr_cstr (ast_as (label_id, sym->lbl)->id);
   tree fn_decl = build_fn_decl (name, fn_type);
 
+  /*
   // build declaration parameters
   tree param_decls = NULL_TREE;
 
@@ -696,7 +705,9 @@ symbol_decl_for_proc (symbol * sym, void * data)
   delete_slist_it (it);
   param_decls = nreverse (param_decls);
 
-  //DECL_ARGUMENTS (fn_decl) = param_decls;
+  DECL_ARGUMENTS (fn_decl) = param_decls;
+  */
+
   return fn_decl;
 }
 

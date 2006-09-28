@@ -239,6 +239,20 @@ slist_empty (slist_t * _list)
   return (list->head == NULL);
 }
 
+int
+slist_length (slist_t * _list)
+{
+  assert (_list != NULL);
+  slist_rep_t * list = (void*)_list;
+
+  slist_node_rep_t * node = list->head;
+  int length = 0;
+  for (; node != NULL; node = node->link)
+    length++;
+
+  return length;
+}
+
 void slist_each (
   slist_t * _list,
   void (*fn)(slist_t *, void *, void *),

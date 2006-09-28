@@ -82,6 +82,10 @@ void * slist_front (slist_t * list)
 int slist_empty (slist_t * list)
   ATTRIBUTE_NONNULL(1);
 
+/// Answer the length of the list.  Note that this is O(n) operation.
+int slist_length (slist_t * list)
+  ATTRIBUTE_NONNULL(1);
+
 /// Apply the function `fn' to each element of the list `list'.  The
 /// argument `userdata' will be passed over to fn verbatim.  The
 /// arguments of `fn' are, respectively, the list that is iterated

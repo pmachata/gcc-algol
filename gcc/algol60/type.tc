@@ -65,7 +65,8 @@ expr_primitive_for_type (type)
 
 /// Check if given type is metatype (unknown, any, or maybe others in
 /// future), or basic type.  Note that array, own, etc. are not
-/// metatypes, but merely parametrized basic types.
+/// metatypes, but merely parametrized basic types.  Array of any is
+/// however again metatype.
 %operation int is_metatype (type * self) = { 0 }
 
 is_metatype (type)
@@ -249,6 +250,12 @@ type_get_root (t_array)
 {
   return type_get_root (self->host);
 }
+
+is_metatype (t_array)
+{
+  return is_metatype (self->host);
+}
+
 
 
 // ------------------------------------

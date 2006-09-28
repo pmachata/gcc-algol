@@ -34,6 +34,7 @@ void * expr_land_build_generic (expr_land * self, void * data);
 void * expr_uminus_build_generic (expr_uminus * self, void * data);
 void * expr_not_build_generic (expr_not * self, void * data);
 void * expr_call_build_generic (expr_call * self, void * data);
+void * expr_subscript_build_generic (expr_subscript * self, void * data);
 
 void * type_int_build_generic (t_int * self, void * data);
 void * type_void_build_generic (t_void * self, void * data);
@@ -247,13 +248,20 @@ expr_not_build_generic (expr_not * self, void * data)
   no_gcc_frontend ();
 }
 
-// call ----
+// misc ----
 
 void *
 expr_call_build_generic (expr_call * self, void * data)
 {
   no_gcc_frontend ();
 }
+
+void *
+expr_subscript_build_generic (expr_subscript * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
 
 // types ----
 
@@ -525,6 +533,11 @@ expr_build_generic (expr_not)
 expr_build_generic (expr_call)
 {
   return expr_call_build_generic (self, data);
+}
+
+expr_build_generic (expr_subscript)
+{
+  return expr_subscript_build_generic (self, data);
 }
 
 

@@ -417,20 +417,15 @@ expr_un_op_str (expr_not) {return "!";}
 //   FUNCALL NODE
 // ------------------------------------
 
-%node expr_call expression = {
-  label * lbl;
-  slist_t * arguments;
-  %nocreate type * t = { NULL };
-  %nocreate symbol * sym = { NULL };
-}
-
-expr_to_str (expr_call)
+%{
+static void
+private_render_exprs_slist (slist_t * slist, estring_t * buf,
+                            char const * open, char const * close)
 {
-  buf = label_to_str (self->lbl, buf);
-  if (!slist_empty (self->arguments))
+  if (!slist_empty (slist))
     {
-      estr_push (buf, '(');
-      slist_it_t * it = slist_iter (self->arguments);
+      estr_append_cstr (buf, open);
+      slist_it_t * it = slist_iter (slist);
       estring_t * tmp = new_estring ();
       while (1)
 	{
@@ -444,8 +439,22 @@ expr_to_str (expr_call)
 	}
       delete_slist_it (it);
       delete_estring (tmp);
-      estr_push (buf, ')');
+      estr_append_cstr (buf, close);
     }
+}
+
+%}
+
+%node expr_call expression = {
+  label * lbl;
+  slist_t * arguments;
+  %nocreate symbol * sym = { NULL };
+}
+
+expr_to_str (expr_call)
+{
+  buf = label_to_str (self->lbl, buf);
+  private_render_exprs_slist (self->arguments, buf, "(", ")");
   return buf;
 }
 
@@ -470,6 +479,71 @@ expr_resolve_symbols (expr_call)
   type * match_type = t_proc_create (type_any (), argtypes);
   self->sym = container_find_name_rec_add_undefined (block, self->lbl, match_type, log);
   delete_slist (argtypes);
+}
+
+
+// ------------------------------------
+//   SUBSCRIPT EXPR NODE
+// ------------------------------------
+
+%node expr_subscript expression = {
+  label * lbl;
+  slist_t * indices;
+  %nocreate symbol * sym = { NULL };
+}
+
+expr_to_str (expr_subscript)
+{
+  buf = label_to_str (self->lbl, buf);
+  private_render_exprs_slist (self->indices, buf, "[", "]");
+  return buf;
+}
+
+expr_type (expr_subscript)
+{
+  // Assume that the user provided just the right number of indices.
+  // We are actually checking for that in expr_resolve_symbols.
+  return type_get_root (self->sym->type);
+}
+
+expr_resolve_symbols (expr_subscript)
+{
+  slist_it_t * it = slist_iter (self->indices);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      expression * e = slist_it_get (it);
+      expr_resolve_symbols (e, block, log);
+    }
+  delete_slist_it (it);
+
+  self->sym = container_find_name_rec_add_undefined (block, self->lbl,
+						     type_array_any (), log);
+
+  if (types_match (self->sym->type, type_array_any ()))
+    // this may not be true if the symbol was added artificially by
+    // container_find_name_rec_add_undefined.  In such a case an error
+    // message was emitted already, and we don't have to care.
+    {
+      int num_indices = slist_length (self->indices);
+      int num_dimensions = 0;
+      type * t = self->sym->type;
+      if (ast_isa (t, t_own))
+	t = ast_as (t_own, t)->host;
+      for (; ast_isa (t, t_array); t = ast_as (t_array, t)->host)
+	++num_dimensions;
+
+      if (num_dimensions != num_indices)
+	{
+	  log_printf (log, ll_error,
+		      "%d indices provided for %dD array",
+		      num_indices, num_dimensions);
+	}
+    }
+}
+
+expr_is_lvalue (expr_subscript)
+{
+  return 1;
 }
 
 /*

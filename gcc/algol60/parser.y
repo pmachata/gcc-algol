@@ -189,6 +189,7 @@ static container * private_close_block (parser_rep_t * parser);
 %type <expr> Expression
 %type <expr> SimpleExpression
 %type <expr> FunctionDesignator
+%type <lst> SubscriptList
 %type <lst> ActualParamList
 %type <estr> ParameterDelimiter
 //%type <> StatementList
@@ -685,6 +686,12 @@ FunctionDesignator:
       $$ = expr_call_create ($1, $3);
     }
   |
+  Identifier SEPLBRACK SubscriptList SEPRBRACK
+    {
+      log_printf (parser->log, ll_debug, "Identifier SEPLBRACK Expression SEPRBRACK");
+      $$ = expr_subscript_create ($1, $3);
+    }
+  |
   Identifier
     {
       // note: identifier node may denote funcall without parameters.  The
@@ -708,7 +715,21 @@ ActualParamList:
 	  // to check match with formals
 	}
 
-      slist_pushback ($1, $3);
+      $$ = $1;
+      slist_pushback ($$, $3);
+    }
+
+SubscriptList:
+  Expression
+    {
+      $$ = new_slist ();
+      slist_pushback ($$, $1);
+    }
+  |
+  SubscriptList SEPCOMMA Expression
+    {
+      $$ = $1;
+      slist_pushback ($$, $3);
     }
 
 ParameterDelimiter:
