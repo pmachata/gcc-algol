@@ -532,10 +532,20 @@ void *
 expr_subscript_build_generic (expr_subscript * self, void * data)
 {
   tree array = self->sym->extra;
+  type * t = self->sym->type;
   gcc_assert (array != NULL);
-  tree type = type_build_generic (expr_type (self), data);
-  tree index = expr_build_generic (slist_front (self->indices), data);
-  return build4 (ARRAY_REF, type, array, index, NULL_TREE, NULL_TREE);
+  gcc_assert (t != NULL);
+
+  slist_it_t * it = slist_iter (self->indices);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      expression * idx_expr = slist_it_get (it);
+      tree idx_tree = expr_build_generic (idx_expr, data);
+      t = ast_as (t_array, t)->host;
+      tree type = type_build_generic (t, data);
+      array = build4 (ARRAY_REF, type, array, idx_tree, NULL_TREE, NULL_TREE);
+    }
+  return array;
 }
 
 
