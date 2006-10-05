@@ -26,12 +26,13 @@ typedef struct struct_cursor_rep_t
 } cursor_rep_t;
 
 cursor_t *
-new_cursor (char const* filename)
+new_cursor (char const* filename, int line)
 {
   cursor_rep_t * ret = malloc (sizeof (cursor_rep_t));
 
   ret->signature = private_cursor_signature;
-  ret->offset = ret->line = ret->column = 0;
+  ret->offset = ret->column = 0;
+  ret->line = line;
 
   ret->fnlen = strlen (filename);
   ret->filename = a_strdup (filename);
@@ -43,10 +44,9 @@ cursor_t *
 clone_cursor (cursor_t * _cursor)
 {
   cursor_rep_t * cursor = (void*)_cursor;
-  cursor_rep_t * ret = (void*) new_cursor (cursor->filename);
+  cursor_rep_t * ret = (void*) new_cursor (cursor->filename, cursor->line);
 
   ret->offset = cursor->offset;
-  ret->line = cursor->line;
   ret->column = cursor->column;
 
   return (void*)ret;
@@ -141,9 +141,9 @@ cursor_to_str (cursor_t * _cursor)
 
   if (cursor->fnlen == 0)
     // don't display empty filename
-    sprintf (buf, "%d:%d", cursor->line+1, cursor->column+1);
+    sprintf (buf, "%d", cursor->line);
   else
-    sprintf (buf, "%s:%d:%d", cursor->filename, cursor->line+1, cursor->column+1);
+    sprintf (buf, "%s:%d", cursor->filename, cursor->line);
 
   return buf;
 }
@@ -158,7 +158,7 @@ cursor_to_str (cursor_t * _cursor)
 int
 main (void)
 {
-  cursor_t * c = new_cursor ("<stdin>");
+  cursor_t * c = new_cursor ("<stdin>", 0);
   assert (cursor (c));
   cursor_t * c1 = NULL;
   int line = 0;

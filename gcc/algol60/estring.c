@@ -101,6 +101,7 @@ new_estring_from (char const* src)
 int
 private_printf_to_string (estring_rep_t * dest, char const* fmt, va_list ap)
 {
+  // almost pure cut'n'paste from printf man page...
   private_estr_realloc (dest, 5 * strlen (fmt)); // a wild guess
 
   while (1)
@@ -137,7 +138,6 @@ private_printf_to_string (estring_rep_t * dest, char const* fmt, va_list ap)
 estring_t *
 new_estring_fmt (char const* fmt, ...)
 {
-  // almost pure cut'n'paste from printf man page...
   estring_rep_t * ret = (void*)new_estring ();
   va_list ap;
   va_start(ap, fmt);

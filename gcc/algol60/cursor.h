@@ -12,7 +12,7 @@ typedef struct struct_cursor_t { } cursor_t;
 
 /// Create new cursor.  The cursor points to the beginning of file
 /// with given name.
-cursor_t * new_cursor (char const* filename)
+cursor_t * new_cursor (char const* filename, int line)
   ATTRIBUTE_MALLOC;
 
 /// Create new cursor by copying given other cursor.

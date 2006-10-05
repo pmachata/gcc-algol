@@ -130,7 +130,7 @@ algol60/lexer-tab.o: algol60/lexer.h algol60/lexer-tab.c algol60/gcc-stuff
 algol60/lexer-tab.c: algol60/lexer.l algol60/lexer.h algol60/parser-tab.h \
 		algol60/estring.h algol60/logger.h algol60/pd.h algol60/cursor.h \
 		algol60/gcc-stuff
-	$(FLEX) -R --never-interactive $(FLEXFLAGS) -o algol60/lexer-tab.c \
+	$(FLEX) --never-interactive $(FLEXFLAGS) -o algol60/lexer-tab.c \
 		--header-file=algol60/lexer-tab.h $(srcdir)/algol60/lexer.l
 	sed -i -e '/static void yyunput/s/;/__attribute__((unused));/' algol60/lexer-tab.c
 
@@ -272,35 +272,8 @@ algol60.stagefeedback: stagefeedback-start
 #
 # Maintenance hooks:
 
-# test hook
-
-check-algol60: algol60.check
-
-TESTSUITEDIR = testsuite
-
-algol60.check: $(TESTSUITEDIR)/site.exp
-	-mkdir testsuite/algol60
-
-# these three files are empty and it seems diff has trouble generating
-# patch files for new empty files as required for cvs.
-# STAMP does not cut it here as I need an empty file.
-	-rootme=`${PWD_COMMAND}`; export rootme; \
-	srcdir=`cd ${srcdir}; ${PWD_COMMAND}` ; export srcdir ; \
-	cd testsuite; \
-	EXPECT=${EXPECT} ; export EXPECT ; \
-	if [ -f $${rootme}/../expect/expect ] ; then  \
-	   TCL_LIBRARY=`cd .. ; cd ${srcdir}/../tcl/library ; ${PWD_COMMAND}` ; \
-	   export TCL_LIBRARY ; fi ; \
-	PATH=`cd ..;${PWD_COMMAND}`:$$PATH; export PATH; \
-	gcc_extras="-B`cd ..;${PWD_COMMAND}` -B`cd ..;${PWD_COMMAND}`/algol60"; export gcc_extras; \
-	$(RUNTEST) --tool algol60 $(RUNTESTFLAGS)
-
-# copy the output files from the current test to source ie say the new results are OK
-algol60.check.fix: force
-	srcdir=`cd ${srcdir}; ${PWD_COMMAND}` ; export srcdir ;
-	-cp testsuite/algol60/*.out* t
-	-cp testsuite/algol60/*runpgm* t
-	-rm -f t/*nofilename
+# List of targets that can use the generic check- rule and its // variant.
+lang_checks += check-algol60
 
 #
 

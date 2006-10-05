@@ -3,6 +3,7 @@
 // ------------------------------------
 
 %node expression %abstract %typedef = {
+  cursor_t * cursor;
 }
 
 /// Dump the expression to string.  Returns 'buf', or allocated buffer
@@ -218,14 +219,16 @@ expr_resolve_symbols (expr_if)
 
   if (!types_same (ct, type_bool ()))
     {
-      log_printf (log, ll_error, "`if' expression condition has to be boolean");
+      log_printfc (log, ll_error, self->cursor,
+		   "`if' expression condition has to be boolean");
       self->cond = expr_primitive_for_type (type_bool ());
     }
 
   self->result_type = tt;
   if (!types_same (tt, ft)) // match is not enough
     {
-      log_printf (log, ll_error, "both `if' branches have to have same types");
+      log_printfc (log, ll_error, self->cursor,
+                   "both `if' branches have to have same types");
       self->exp_f = expr_primitive_for_type (tt);
     }
 }
@@ -304,7 +307,7 @@ expr_resolve_symbols (expr_bin)
       type_to_str (expr_type (self->right), tmp);
       estr_append (es, tmp);
 
-      log_printf (log, ll_error, "%s", estr_cstr (es));
+      log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
 
       delete_estring (es);
       delete_estring (tmp);
@@ -534,9 +537,9 @@ expr_resolve_symbols (expr_subscript)
 
       if (num_dimensions != num_indices)
 	{
-	  log_printf (log, ll_error,
-		      "%d indices provided for %dD array",
-		      num_indices, num_dimensions);
+	  log_printfc (log, ll_error, self->cursor,
+		       "%d indices provided for %dD array",
+		       num_indices, num_dimensions);
 	}
     }
 }

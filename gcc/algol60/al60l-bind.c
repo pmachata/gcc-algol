@@ -400,7 +400,7 @@ expr_apow_build_generic (expr_apow * self, void * data)
 
   label * l = label_id_create (new_estring_fmt ("_a60_pow_%c_%c", sigs[sl], sigs[sr]));
   slist_t * args = new_slist_from (2, self->left, self->right);
-  expr_call * e = ast_as (expr_call, expr_call_create (l, args));
+  expr_call * e = ast_as (expr_call, expr_call_create (self->cursor, l, args));
 
   // Don't forget to do what resolve would do for us.  We can omit
   // typechecking, and subexpression resolving has already been done
@@ -461,8 +461,8 @@ expr_limp_build_generic (expr_limp * self, void * data)
 {
   // `a => b` translates as `or (not (a), b)`
   // @@@TODO: btw, this is candidate to custom tree node!
-  expression * e1 = expr_not_create (self->left);
-  expression * e2 = expr_lor_create (e1, self->right);
+  expression * e1 = expr_not_create (self->cursor, self->left);
+  expression * e2 = expr_lor_create (self->cursor, e1, self->right);
   return expr_build_generic (e2, data);
 }
 

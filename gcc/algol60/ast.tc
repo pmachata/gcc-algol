@@ -19,6 +19,7 @@
 #include "estring.h"
 #include "logger.h"
 #include "util.h"
+#include "cursor.h"
 %}
 
 %decls %end %{

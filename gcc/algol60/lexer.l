@@ -3,7 +3,6 @@
  * All rights reserved.
  */
 %{
-#include "cursor.h"
 #include "logger.h"
 #include "util.h"
 #include "lexer.h"
@@ -26,7 +25,7 @@ typedef struct struct_lexer_rep_t
 
   logger_t * log;
   logger_t * toklog;
-  cursor_t * cursor;
+  char const * filename;
   yyscan_t flex_scanner;
   FILE * stream;
   int managed;
@@ -52,6 +51,8 @@ static int string_level = 0;
 %option bison-bridge
 %option nodefault
 %option case-insensitive
+%option reentrant
+%option yylineno
 
  /* primitives (RRA60 2.1, 2.2) */
 SPACE		[ \t\n\r\v\f]
@@ -430,19 +431,10 @@ DIGIT		[0-9]
 }
 
 
- /* Whitespace */
-\n {
-  lexer_rep_t * lexer = yyget_extra (yyscanner);
-  cursor_nl (lexer->cursor);
-}
-" "+ {
-  lexer_rep_t * lexer = yyget_extra (yyscanner);
-  cursor_move (lexer->cursor, yyget_leng (yyscanner));
-}
-\t {
-  lexer_rep_t * lexer = yyget_extra (yyscanner);
-  cursor_tab (lexer->cursor, 8);
-}
+ /* Skip whitespace. In separate rules to speed up processing of
+    newlines for yylineno. */
+\n+ {}
+[ \t]+ {}
 
 
  /* Unmatched characters */
@@ -455,7 +447,6 @@ DIGIT		[0-9]
 
 . {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
-  cursor_move (lexer->cursor, 1);
   private_lexer_invalid_character (lexer, *yytext);
 }
 
@@ -474,7 +465,6 @@ new_lexer (FILE * stream, char const* filename, int manage)
 
       guard_ptr (buf, 1, ret->toklog = new_logger ("token"));
       guard_ptr (buf, 1, ret->log = new_logger ("lexer"));
-      guard_ptr (buf, 1, ret->cursor = new_cursor (filename));
 
       guard_int (buf, 1, yylex_init (&ret->flex_scanner));
       yyset_extra (ret, ret->flex_scanner);
@@ -482,6 +472,7 @@ new_lexer (FILE * stream, char const* filename, int manage)
       ret->stream = stream;
       yyrestart (stream, ret->flex_scanner);
 
+      ret->filename = filename;
       ret->current_tok = -1;
       ret->prev_tok = -1;
       ret->managed = manage;
@@ -489,8 +480,7 @@ new_lexer (FILE * stream, char const* filename, int manage)
     }
   else
     {
-      delete_logger (ret->log);
-      delete_cursor (ret->cursor);
+      delete_lexer ((void*)ret);
       // yylex_init is called the last, and nothing will fail
       // afterwards.  So we don't call yylex_destroy at all.
       free (ret);
@@ -521,7 +511,7 @@ delete_lexer (lexer_t * _lexer)
 	perror ("yylex_destroy");
 
       delete_logger (lexer->log);
-      delete_cursor (lexer->cursor);
+      delete_logger (lexer->toklog);
 
       free (lexer);
     }
@@ -534,6 +524,13 @@ lexer (void * ptr)
     return ptr;
   else
     return NULL;
+}
+
+char const *
+lexer_filename (lexer_t const * _lexer)
+{
+  assert (_lexer != NULL);
+  return ((lexer_rep_t const *)_lexer)->filename;
 }
 
 /// Procedure to write out that bad character has been hit.
@@ -550,12 +547,10 @@ private_lexer_got_token (void * flex_scanner, token_kind_t token_kind)
 {
   lexer_rep_t * lexer = yyget_extra (flex_scanner);
   char const* lexeme = yyget_text (flex_scanner);
-  cursor_move (lexer->cursor, yyget_leng (flex_scanner));
 
   log_printf (lexer->toklog, ll_debug,
 	      "%s: hit [tok:%d] [lex:%s]",
-	      cursor_to_str (lexer->cursor),
-	      token_kind, lexeme);
+	      lexer->filename, token_kind, lexeme);
 
   return token_kind;
 }
@@ -597,12 +592,19 @@ private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr)
 
 
 int
-lexer_tok (lexer_t * _lexer, YYSTYPE * val)
+lexer_tok (lexer_t * _lexer, YYSTYPE * val, YYLTYPE * loc)
 {
   assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   lexer->prev_tok = lexer->current_tok;
   lexer->current_tok = yylex (val, lexer->flex_scanner);
+
+  // This is a hack.  yylineno needs declared variable yyg, in a
+  // reentrant scanner anyway.
+  struct yyguts_t * yyg = (void*)lexer->flex_scanner;
+  loc->first_line = loc->last_line = yylineno;
+  loc->first_column = loc->last_column = 0;
+
   return lexer->current_tok;
 }
 

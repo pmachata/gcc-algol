@@ -70,24 +70,48 @@ logger (void * ptr)
     return NULL;
 }
 
-int
-log_printf (logger_t * _logger, debug_level_t level,
-	    char const* fmt, ...)
+static int
+private_log_printf (logger_rep_t * logger, debug_level_t level,
+		    cursor_t * cursor, char const * fmt, va_list ap0)
 {
-  logger_rep_t * logger = (void*)_logger;
   int ret = 0;
   va_list ap;
-  va_start (ap, fmt);
+  va_copy(ap, ap0);
 
   if (logger->stream != NULL
       && level >= logger->threshold)
     {
-      ret += fprintf (logger->stream, "%s:\t%s:\t", logger->name, debug_level_str[level]);
+      if (cursor != NULL)
+	ret += fprintf (logger->stream, "%s: ", cursor_to_str (cursor));
+      ret += fprintf (logger->stream, "%s: ", debug_level_str[level]);
       ret += vfprintf (logger->stream, fmt, ap);
       ret += fprintf (logger->stream, "\n");
       ++ logger->ct[level];
     }
 
+  va_end(ap);
+  return ret;
+}
+
+int
+log_printf (logger_t * _logger, debug_level_t level,
+	    char const* fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  int ret = private_log_printf ((void*)_logger, level, NULL, fmt, ap);
+  va_end (ap);
+
+  return ret;
+}
+
+int
+log_printfc (logger_t * _logger, debug_level_t level, cursor_t * cursor,
+	     char const* fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  int ret = private_log_printf ((void*)_logger, level, cursor, fmt, ap);
   va_end (ap);
   return ret;
 }

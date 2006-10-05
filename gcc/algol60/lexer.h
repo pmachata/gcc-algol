@@ -51,13 +51,17 @@ void delete_lexer (lexer_t * lexer);
 lexer_t * lexer (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
+/// Query the name of parsed stream.
+char const * lexer_filename (lexer_t const * lexer)
+  ATTRIBUTE_NONNULL(1);
 
-/// Fetch new token with given lexer, and optionally store any
-/// token-related info into val.  Should a token return string values,
-/// val->slit will be initialized with new_estring.  You can pick this
-/// estring and use it further without cloning, a new one is created
-/// each time.
-int lexer_tok (lexer_t * lexer, YYSTYPE * val)
+
+/// Fetch new token with given lexer, assign a location of given token,
+/// and optionally store any token-related info into val.  Should a
+/// token return string values, val->slit will be initialized with
+/// new_estring.  You can pick this estring and use it further without
+/// cloning, a new one is created each time.
+int lexer_tok (lexer_t * lexer, YYSTYPE * val, YYLTYPE * loc)
   ATTRIBUTE_NONNULL(1);
 
 /// Answer the kind of last token

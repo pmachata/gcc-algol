@@ -28,16 +28,26 @@ typedef struct struct_parser_rep_t
 
 // call lexer
 static int
-yylex (YYSTYPE * arg, parser_rep_t * parser)
+yylex (YYSTYPE * arg, YYLTYPE * loc, parser_rep_t * parser)
 {
-  return lexer_tok (parser->lexer, arg);
+  return lexer_tok (parser->lexer, arg, loc);
 }
 
 // report error
 static void
-yyerror (parser_rep_t * parser, const char *str)
+yyerror (YYLTYPE * loc, parser_rep_t * parser, const char *str)
 {
-  log_printf (parser->log, ll_error, "yyerror: %s", str);
+  log_printf (parser->log, ll_error,
+	      "%s:%d: syntax error: %s",
+	      lexer_filename (parser->lexer), loc->first_line, str);
+}
+
+// create new cursor
+static cursor_t *
+cr_csr (parser_t * _parser, YYLTYPE * loc)
+{
+  parser_rep_t * parser = (void*)_parser;
+  return new_cursor (lexer_filename (parser->lexer), loc->first_line);
 }
 
 static void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
@@ -50,16 +60,6 @@ static void private_add_labels_to_symtab (parser_rep_t * parser, container * con
 
 static void private_open_block (parser_rep_t * parser, container * cont);
 static container * private_close_block (parser_rep_t * parser);
-
-/// $0 in statement parts is used for referring to containing block of
-/// given statement.  This auxiliary macro is used to do copying of
-/// containing block to $0 for rules that require it.  Typically, you
-/// would call it like this: COPY_BLOCK($<stmt>$, $<stmt>0);
-///
-/// Note: The assertion: If it's not a statement at all, odds are good
-/// it'll fail due to sigsegv, or due to internal assertion in stmt_kind.
-#define COPY_BLOCK(tgt,src) \
-  assert (ast_isa (src, stmt_block)); tgt = src
 %}
 
 %union {
@@ -83,7 +83,7 @@ static container * private_close_block (parser_rep_t * parser);
 %pure-parser
 %error-verbose
  //%token-table
- //%locations
+%locations
 %parse-param {parser_rep_t * parser}
 %lex-param {parser_rep_t * parser}
 
@@ -205,11 +205,11 @@ Program:
   {
     // dummy container, so that toplevel references to ->parent end up
     // somewhere sensible
-    container * dummy = ast_as (container, stmt_toplev_create ());
+    container * dummy = ast_as (container, stmt_toplev_create (NULL));
     private_open_block (parser, dummy);
 
     // actual toplevel container
-    container * c = ast_as (container, stmt_toplev_create ());
+    container * c = ast_as (container, stmt_toplev_create (NULL));
     c->parent = dummy;
     stmt_toplev_define_internals (ast_as (stmt_toplev, c));
     private_open_block (parser, c);
@@ -266,6 +266,7 @@ Identifier:
       log_printf (parser->log, ll_debug, "Identifier -> IDENTIFIER");
       label * lbl = label_id_create ($1);
       $$ = lbl;
+      @$ = @1;
     }
 
 /*
@@ -290,7 +291,7 @@ DeclaredIdentifier:
 
 Block:
   KWBEGIN
-  { private_open_block (parser, ast_as (container, stmt_block_create ()));}
+  { private_open_block (parser, ast_as (container, stmt_block_create (NULL)));}
   BlockDeclarationsList StatementList
   KWEND
     {
@@ -439,7 +440,7 @@ IntrinsicType:
   KWSTRING
     {
       log_printf (parser->log, ll_debug, "IntrinsicType -> KWSTRING");
-      // @@TODO; note, this is invalid for local variables
+      // @$TODO; note, this is invalid for local variables
       $$ = type_string ();
     }
 
@@ -508,6 +509,7 @@ Expression:
     {
       log_printf (parser->log, ll_debug, "Expression -> SimpleExpression");
       $$ = $1;
+      @$ = @1;
     }
   |
   KWIF Expression KWTHEN SimpleExpression KWELSE Expression
@@ -516,7 +518,7 @@ Expression:
 		  " KWTHEN SimpleArithmeticExpression ELSE SimpleArithmeticExpression");
 
 /*
-  @@@TODO: defer typechecking to later stage
+  @$@TODO: defer typechecking to later stage
 
       type * ct = expr_type ($2);
       if (!types_match (ct, type_bool ()))
@@ -526,170 +528,198 @@ Expression:
 		      estr_cstr (type_to_str (ct, parser->tmp)));
 	}
 */
-      $$ = expr_if_create ($2, $4, $6);
+      $$ = expr_if_create (cr_csr (parser, &@1), $2, $4, $6);
+      @$ = @1;
     }
 
 SimpleExpression:
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> LITINTEGER");
-      $$ = expr_int_create ($1);
+      $$ = expr_int_create (cr_csr (parser, &@1), $1);
+      @$ = @1;
     }
   |
   LITREAL
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> LITREAL");
-      $$ = expr_real_create ($1);
+      $$ = expr_real_create (cr_csr (parser, &@1), $1);
+      @$ = @1;
     }
   |
   LITSTRING
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> LITSTRING");
-      $$ = expr_string_create ($1);
+      $$ = expr_string_create (cr_csr (parser, &@1), $1);
+      @$ = @1;
     }
   |
   KWFALSE
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> KWFALSE");
-      $$ = expr_bool_create (0);
+      $$ = expr_bool_create (cr_csr (parser, &@1), 0);
+      @$ = @1;
     }
   |
   KWTRUE
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> KWTRUE");
-      $$ = expr_bool_create (1);
+      $$ = expr_bool_create (cr_csr (parser, &@1), 1);
+      @$ = @1;
     }
   |
   FunctionDesignator
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> FunctionDesignator");
       $$ = $1;
+      @$ = @1;
     }
   |
   SEPLPAREN Expression SEPRPAREN
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SEPLPAREN Expression SEPRPAREN");
       $$ = $2;
+      @$ = @2;
     }
   |
   AOPSUB SimpleExpression %prec PREC_UNARY_MINUS
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> AOPSUB SimpleExpression");
-      $$ = expr_uminus_create ($2); //@@@TODO: typecheck
+      $$ = expr_uminus_create (cr_csr (parser, &@2), $2); //@$@TODO: typecheck
+      @$ = @2;
     }
   |
   SimpleExpression AOPADD SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPADD SimpleExpression");
-      $$ = expr_aadd_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_aadd_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression AOPSUB SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPSUB SimpleExpression");
-      $$ = expr_asub_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_asub_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression AOPMUL SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPMUL SimpleExpression");
-      $$ = expr_amul_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_amul_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression AOPIDIV SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPIDIV SimpleExpression");
-      $$ = expr_aidiv_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_aidiv_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression AOPRDIV SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPRDIV SimpleExpression");
-      $$ = expr_ardiv_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_ardiv_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression AOPPOW SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPPOW SimpleExpression");
-      $$ = expr_apow_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_apow_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression ROPNEQ SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPNEQ SimpleExpression");
-      $$ = expr_rneq_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_rneq_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression ROPEQ SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPEQ SimpleExpression");
-      $$ = expr_req_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_req_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression ROPLTE SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPLTE SimpleExpression");
-      $$ = expr_rlte_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_rlte_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression ROPLT SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPLT SimpleExpression");
-      $$ = expr_rlt_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_rlt_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression ROPGTE SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPGTE SimpleExpression");
-      $$ = expr_rgte_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_rgte_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression ROPGT SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPGT SimpleExpression");
-      $$ = expr_rgt_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_rgt_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression LOPEQ SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPEQ SimpleExpression");
-      $$ = expr_leq_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_leq_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression LOPIMP SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPIMP SimpleExpression");
-      $$ = expr_limp_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_limp_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression LOPAND SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPAND SimpleExpression");
-      $$ = expr_land_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_land_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   SimpleExpression LOPOR SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPOR SimpleExpression");
-      $$ = expr_lor_create ($1, $3); //@@@TODO: typecheck
+      $$ = expr_lor_create (cr_csr (parser, &@1), $1, $3); //@$@TODO: typecheck
+      @$ = @1;
     }
   |
   LOPNOT SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> LOPNOT SimpleExpression");
-      $$ = expr_not_create ($2); //@@@TODO: typecheck
+      $$ = expr_not_create (cr_csr (parser, &@1), $2); //@$@TODO: typecheck
+      @$ = @1;
     }
 
 FunctionDesignator:
   Identifier SEPLPAREN ActualParamList SEPRPAREN
     {
-      $$ = expr_call_create ($1, $3);
+      $$ = expr_call_create (cr_csr (parser, &@1), $1, $3);
+      @$ = @1;
     }
   |
   Identifier SEPLBRACK SubscriptList SEPRBRACK
     {
       log_printf (parser->log, ll_debug, "Identifier SEPLBRACK Expression SEPRBRACK");
-      $$ = expr_subscript_create ($1, $3);
+      $$ = expr_subscript_create (cr_csr (parser, &@1), $1, $3);
+      @$ = @1;
     }
   |
   Identifier
@@ -697,7 +727,8 @@ FunctionDesignator:
       // note: identifier node may denote funcall without parameters.  The
       // translation from expr_idref to expr_call is done during semantic
       // analysis, where we can decide what type given id is.
-      $$ = expr_idref_create ($1);
+      $$ = expr_idref_create (cr_csr (parser, &@1), $1);
+      @$ = @1;
     }
 
 ActualParamList:
@@ -783,14 +814,14 @@ BasicStatement:
   /* eps */
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList");
-      $$ = stmt_dummy_create ();
+      $$ = stmt_dummy_create (NULL);
     }
   |
   LeftPartList Expression
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList LeftPartList Expression");
 
-      $$ = stmt_assign_create ();
+      $$ = stmt_assign_create (cr_csr (parser, &@1));
       slist_it_t * it = slist_iter ($1);
       for (; slist_it_has (it); slist_it_next (it))
 	stmt_assign_add_lhs (ast_as (stmt_assign, $$), slist_it_get (it));
@@ -800,7 +831,7 @@ BasicStatement:
   |
   FunctionDesignator
     {
-      $$ = stmt_call_create ($1);
+      $$ = stmt_call_create (cr_csr (parser, &@1), $1);
     }
 
 LeftPartList:

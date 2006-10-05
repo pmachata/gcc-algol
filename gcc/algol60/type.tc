@@ -133,22 +133,22 @@ is_metatype (t_any) { return 1; }
 
 %node t_int type = { }
 type_to_str_private (t_int) { estr_assign_cstr (buf, "'integer'"); }
-expr_primitive_for_type (t_int) { return expr_int_create (0); }
+expr_primitive_for_type (t_int) { return expr_int_create (new_cursor ("", 0), 0); }
 
 %node t_void type = { }
 type_to_str_private (t_void) { estr_assign_cstr (buf, "<void>"); }
 
 %node t_real type = { }
 type_to_str_private (t_real) { estr_assign_cstr (buf, "'real'"); }
-expr_primitive_for_type (t_real) { return expr_real_create (new_estring_from ("0.0")); }
+expr_primitive_for_type (t_real) { return expr_real_create (new_cursor ("", 0), new_estring_from ("0.0")); }
 
 %node t_string type = { }
 type_to_str_private (t_string) { estr_assign_cstr (buf, "'string'"); }
-expr_primitive_for_type (t_string) { return expr_string_create (new_estring_from ("")); }
+expr_primitive_for_type (t_string) { return expr_string_create (new_cursor ("", 0), new_estring_from ("")); }
 
 %node t_bool type = { }
 type_to_str_private (t_bool) { estr_assign_cstr (buf, "'Boolean'"); }
-expr_primitive_for_type (t_bool) { return expr_bool_create (1); }
+expr_primitive_for_type (t_bool) { return expr_bool_create (new_cursor ("", 0), 1); }
 
 %node t_label type = { }
 type_to_str_private (t_label) { estr_assign_cstr (buf, "<label>"); }

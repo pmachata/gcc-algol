@@ -4,6 +4,7 @@
 
 /// Root AST node for statements.
 %node statement %abstract %typedef = {
+  cursor_t * cursor;
   %nocreate container * parent = { NULL };
 }
 
