@@ -182,11 +182,7 @@ algol60_parse_file (int debug ATTRIBUTE_UNUSED)
     + log_count_messages (anal_log, ll_error);
 
   if (errors)
-    {
-      error ("%d errors encountered.\n", errors);
-      goto leave;
-    }
-
+    goto leave;
 
   // Build declaration of `main' functions
   tree param_types = tree_cons (NULL_TREE, void_type_node, NULL_TREE);

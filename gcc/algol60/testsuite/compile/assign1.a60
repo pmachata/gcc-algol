@@ -1,4 +1,0 @@
-'begin'
- 'integer' a;
- a := 5;
-'end';

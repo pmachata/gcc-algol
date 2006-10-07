@@ -33,9 +33,9 @@ typedef struct struct_lexer_rep_t
   token_kind_t prev_tok;
 } lexer_rep_t;
 
-static void private_lexer_invalid_character (lexer_rep_t * rep, char what);
+static void private_lexer_invalid_character (lexer_rep_t * rep, int lineno, char what);
 static token_kind_t private_lexer_got_token (void * flex_scanner, token_kind_t token_kind);
-static token_kind_t private_lexer_got_eof_token (void * flex_scanner, char const* error);
+static token_kind_t private_lexer_got_eof_token (void * flex_scanner, int lineno, char const* context);
 static token_kind_t private_lexer_got_real (void * flex_scanner, YYSTYPE * val, char const* expstr);
 
 #define YY_EXTRA_TYPE lexer_rep_t * 
@@ -303,20 +303,26 @@ DIGIT		[0-9]
  /* comments */
  /* There are two kinds of comments.  Most of comments are introduced
     by the keyword 'comment', which is legal after semicolon and
-    'begin' keyword.  This is <COMMENT> part.  There are also 'end'
-    comments--strings between keywords 'end', and either 'else', 'end'
-    or semicolon, whichever comes first.  Thes is <END_COMMENT>
-    part. */
+    'begin' keyword, and, as an extension, at the beginning of program
+    file.  This is <COMMENT> part.
+    There are also 'end' comments--strings between keywords 'end', and
+    either 'else', 'end' or semicolon, whichever comes first.  This is
+    <END_COMMENT> part. */
 
 "'comment'" {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
 
   switch (lexer->prev_tok) {
+  case -1:
   case KWBEGIN:
   case SEPSEMICOLON:
     break;
   default:
-    log_printf (lexer->log, ll_error, "Invalid comment context.");
+    {
+      cursor_t * csr = new_cursor (lexer->filename, yylineno);
+      log_printfc (lexer->log, ll_error, csr, "Invalid comment context.");
+      delete_cursor (csr);
+    }
   };
 
   BEGIN COMMENT;
@@ -340,9 +346,13 @@ DIGIT		[0-9]
 <END_COMMENT>"'"[^\' ]*"'" {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
   if (strcmp (yyget_text (yyscanner), "'comment'") != 0)
-    log_printf (lexer->log, ll_warning,
-		"implicit 'end'-comment possibly contains keyword %s",
-		yyget_text (yyscanner));
+    {
+      cursor_t * csr = new_cursor (lexer->filename, yylineno);
+      log_printfc (lexer->log, ll_warning, csr,
+		  "implicit 'end'-comment possibly contains keyword %s",
+		  yyget_text (yyscanner));
+      delete_cursor (csr);
+    }
 }
 <END_COMMENT>";" {
   BEGIN INITIAL;
@@ -365,7 +375,7 @@ DIGIT		[0-9]
   // explicitly forbid single dot, which would otherwise get
   // classified as floating point number
   lexer_rep_t * lexer = yyget_extra (yyscanner);
-  private_lexer_invalid_character (lexer, *yyget_text (yyscanner));
+  private_lexer_invalid_character (lexer, yylineno, *yyget_text (yyscanner));
 }
 
  /* Real numbers take up many different forms in ALGOL.  For the sake
@@ -403,10 +413,18 @@ DIGIT		[0-9]
   if ((value == LONG_MIN
        || value == LONG_MAX)
       && errno == ERANGE)
-    log_printf (lexer->log, ll_warning, "Too big an integer: `%s'", lit);
+    {
+      cursor_t * csr = new_cursor (lexer->filename, yylineno);
+      log_printfc (lexer->log, ll_warning, csr, "Integer too big: `%s'", lit);
+      delete_cursor (csr);
+    }
 
   if (*pos != 0)
-    log_printf (lexer->log, ll_error, "Invalid integer: `%s'", lit);
+    {
+      cursor_t * csr = new_cursor (lexer->filename, yylineno);
+      log_printfc (lexer->log, ll_error, csr, "Invalid integer: `%s'", lit);
+      delete_cursor (csr);
+    }
 
   yylval->ilit = value;
 
@@ -418,16 +436,16 @@ DIGIT		[0-9]
  /* Handle EOF token.  Check if we are not in the middle of something,
     and produce an error if we are. */
 <COMMENT><<EOF>> {
-  return private_lexer_got_eof_token (yyscanner, "comment");
+  return private_lexer_got_eof_token (yyscanner, yylineno, "comment");
 }
 <END_COMMENT><<EOF>> {
-  return private_lexer_got_eof_token (yyscanner, "end-comment");
+  return private_lexer_got_eof_token (yyscanner, yylineno, "end-comment");
 }
 <STRING><<EOF>> {
-  return private_lexer_got_eof_token (yyscanner, "string");
+  return private_lexer_got_eof_token (yyscanner, yylineno, "string");
 }
 <<EOF>> {
-  return private_lexer_got_eof_token (yyscanner, NULL);
+  return private_lexer_got_eof_token (yyscanner, yylineno, NULL);
 }
 
 
@@ -440,14 +458,16 @@ DIGIT		[0-9]
  /* Unmatched characters */
 "'"[^\']+"'" {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
-  log_printf (lexer->log, ll_error,
+  cursor_t * csr = new_cursor (lexer->filename, yylineno);
+  log_printfc (lexer->log, ll_error, csr,
 	      "probably misspelled keyword: %s",
 	      yyget_text (yyscanner));
+  delete_cursor (csr);
 }
 
 . {
   lexer_rep_t * lexer = yyget_extra (yyscanner);
-  private_lexer_invalid_character (lexer, *yytext);
+  private_lexer_invalid_character (lexer, yylineno, *yytext);
 }
 
 %%
@@ -536,9 +556,13 @@ lexer_filename (lexer_t const * _lexer)
 /// Procedure to write out that bad character has been hit.
 /// Bad characters are considered errors.
 static void
-private_lexer_invalid_character (lexer_rep_t * rep, char what)
+private_lexer_invalid_character (lexer_rep_t * lexer, int lineno, char what)
 {
-  log_printf (rep->log, ll_error, "Invalid character `%c' (code %d)\n", what, (int)what);
+  cursor_t * csr = new_cursor (lexer->filename, lineno);
+  log_printfc (lexer->log, ll_error, csr,
+	       "Invalid character `%c' (code %u)",
+	       what, (unsigned int)(unsigned char)what);
+  delete_cursor (csr);
 }
 
 /// Process new token.
@@ -558,12 +582,14 @@ private_lexer_got_token (void * flex_scanner, token_kind_t token_kind)
 /// Process EOF token, i.e. write an error message if EOF was inside
 /// of something, and then push EOF token via private_lexer_got_token.
 static token_kind_t
-private_lexer_got_eof_token (void * flex_scanner, char const* error)
+private_lexer_got_eof_token (void * flex_scanner, int lineno, char const* context)
 {
-  if (error != NULL)
+  if (context != NULL)
     {
       lexer_rep_t * lexer = yyget_extra (flex_scanner);
-      log_printf (lexer->log, ll_error, "EOF hit inside %s.", error);
+      cursor_t * csr = new_cursor (lexer->filename, lineno);
+      log_printfc (lexer->log, ll_error, csr, "EOF hit inside %s.", context);
+      delete_cursor (csr);
     }
   return private_lexer_got_token (flex_scanner, EOFTOK);
 }

@@ -588,6 +588,14 @@ builtin_decl_get_generic (symbol * sym)
 }
 
 void *
+type_own_build_generic (t_own * self, void * data)
+{
+  tree ret = type_build_generic (self->host, data);
+  TREE_STATIC (ret) = 1;
+  return ret;
+}
+
+void *
 type_int_build_generic (t_int * self ATTRIBUTE_UNUSED,
 			void * data ATTRIBUTE_UNUSED)
 {
@@ -639,6 +647,12 @@ private_decl_for_ordinary_symbol (symbol * sym, void * data)
   tree id = get_identifier (estr_cstr (lbl->id));
   tree tt = type_build_generic (sym->type, data);
   return build_decl (VAR_DECL, id, tt);
+}
+
+void *
+symbol_decl_for_own (symbol * sym, void * data)
+{
+  return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *

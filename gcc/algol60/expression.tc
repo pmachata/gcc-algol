@@ -166,7 +166,8 @@ expr_resolve_symbols (expr_idref)
   type * match_type = t_proc_create (type_any (), new_slist ());
   symbol * found = container_find_name_rec (block, self->lbl, match_type);
   if (found == NULL)
-    found = container_find_name_rec_add_undefined (block, self->lbl, type_any (), log);
+    found = container_find_name_rec_add_undefined (block, self->lbl, type_any (),
+						   log, self->cursor);
   self->sym = found;
 }
 
@@ -480,7 +481,8 @@ expr_resolve_symbols (expr_call)
   delete_slist_it (it);
 
   type * match_type = t_proc_create (type_any (), argtypes);
-  self->sym = container_find_name_rec_add_undefined (block, self->lbl, match_type, log);
+  self->sym = container_find_name_rec_add_undefined (block, self->lbl, match_type,
+						     log, self->cursor);
   delete_slist (argtypes);
 }
 
@@ -520,7 +522,8 @@ expr_resolve_symbols (expr_subscript)
   delete_slist_it (it);
 
   self->sym = container_find_name_rec_add_undefined (block, self->lbl,
-						     type_array_any (), log);
+						     type_array_any (),
+						     log, self->cursor);
 
   if (types_match (self->sym->type, type_array_any ()))
     // this may not be true if the symbol was added artificially by

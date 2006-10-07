@@ -64,4 +64,14 @@ char const* cursor_file (cursor_t * cursor)
 char const* cursor_to_str (cursor_t * cursor)
   ATTRIBUTE_NONNULL(1);
 
+#ifdef IN_GCC
+/// Convert cursor to location_t when in GCC.  `locptr' is pointer to
+/// location_t where the result should be stored.  It's void* instead
+/// of location_t* to keep away from GCC headers (mainly to get rid of
+/// GCC poisoning mechanism).
+void cursor_to_loc (cursor_t const * cursor, void * locptr)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+#endif
+
 #endif //_AL60L_CURSOR_H_

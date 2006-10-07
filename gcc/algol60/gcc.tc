@@ -36,6 +36,7 @@ void * expr_not_build_generic (expr_not * self, void * data);
 void * expr_call_build_generic (expr_call * self, void * data);
 void * expr_subscript_build_generic (expr_subscript * self, void * data);
 
+void * type_own_build_generic (t_own * self, void * data);
 void * type_int_build_generic (t_int * self, void * data);
 void * type_void_build_generic (t_void * self, void * data);
 void * type_real_build_generic (t_real * self, void * data);
@@ -47,6 +48,7 @@ void * type_proc_build_generic (t_proc * self, void * data);
 
 void * builtin_decl_get_generic (symbol * sym);
 
+void * symbol_decl_for_own (symbol * sym, void * data);
 void * symbol_decl_for_int (symbol * sym, void * data);
 void * symbol_decl_for_void (symbol * sym, void * data);
 void * symbol_decl_for_real (symbol * sym, void * data);
@@ -272,6 +274,12 @@ type_int_build_generic (t_int * self, void * data)
 }
 
 void *
+type_own_build_generic (t_own * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
+void *
 type_void_build_generic (t_void * self, void * data)
 {
   no_gcc_frontend ();
@@ -321,6 +329,12 @@ builtin_decl_get_generic (symbol * sym)
 }
 
 // more decls ----
+void *
+symbol_decl_for_own (symbol * self, void * data)
+{
+  no_gcc_frontend ();
+}
+
 void *
 symbol_decl_for_int (symbol * self, void * data)
 {
@@ -542,10 +556,14 @@ expr_build_generic (expr_subscript)
 
 
 type_build_generic (t_unknown),
-type_build_generic (t_any),
-type_build_generic (t_own)
+type_build_generic (t_any)
 {
   assert (!"You should never ask to emit GENERIC for metatypes.");
+}
+
+type_build_generic (t_own)
+{
+  return type_own_build_generic (self, data);
 }
 
 type_build_generic (t_int)
@@ -590,10 +608,14 @@ type_build_generic (t_proc)
 
 
 symbol_decl_for_type (t_unknown),
-symbol_decl_for_type (t_any),
-symbol_decl_for_type (t_own)
+symbol_decl_for_type (t_any)
 {
   assert (!"You should never ask to emit GENERIC for metatypes.");
+}
+
+symbol_decl_for_type (t_own)
+{
+  return symbol_decl_for_own (symbol, data);
 }
 
 symbol_decl_for_type (t_int)

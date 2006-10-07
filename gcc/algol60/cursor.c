@@ -148,6 +148,27 @@ cursor_to_str (cursor_t * _cursor)
   return buf;
 }
 
+#ifdef IN_GCC
+// We nedd to have this at the very bottom of the definitions,
+// otherwise our memory management would get poisoned.
+# include "system.h"
+# include "coretypes.h"
+# include "limits.h"
+# include "input.h"
+
+void
+cursor_to_loc (cursor_t const * _cursor, void * locptr)
+{
+  gcc_assert (_cursor != NULL);
+  gcc_assert (locptr != NULL);
+  cursor_rep_t const * cursor = (void const *) _cursor;
+  location_t * loc = locptr;
+  memset (loc, 0, sizeof (location_t));
+  loc->file = cursor->filename;
+  loc->line = cursor->line;
+}
+#endif
+
 #else /* SELF_TEST */
 
 #include "cursor.h"

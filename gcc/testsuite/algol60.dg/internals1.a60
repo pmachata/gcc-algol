@@ -1,4 +1,4 @@
-'begin'
+'begin' 'comment' { dg-do compile } ;
  'integer' a;
  'real' b;
  a := abs (4);

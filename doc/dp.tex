@@ -71,8 +71,10 @@ compiler, compiling via C (this sucks mostly because C compiler has to
 recover the higher level model from C, which of course isn't possible;
 and debugging--GCC will preserve symbol names where necessary, while
 in C, you'd have to mangle them without chance to give a clue to
-target C compiler), compiling via GCC (what if it's dynamic language,
-what if static).
+target C compiler (you want to emit #line directives to point the user
+to the place where the error originated, and in debugger you have no
+way to hide the fact that you are going through C)), compiling via GCC
+(what if it's dynamic language, what if static).
 
 Personal opinions aside, writing GCC frontend is probably best choice.
 GCC is ported to dozens of platforms, has tons of optimizations, has
@@ -80,14 +82,18 @@ necessary community, corporation and academia drive, and finally
 writing such frontend isn't nearly as difficult as rolling your own
 backend (fingers crossed it's true).
 
+Describe briefly that the author has written \Algol 60 parser to get
+himself familiar with the stuff he describes.  Maybe drop a few notes
+about how the parser (independent from GCC) and GCC frontend got
+joined.
+
 \chapter{GCC Architecture}
 
 How does GCC work.  What's driver, what's the frontend proper.  Bird's
 eye view of compilation passes, internal structure, references to
 other documents with more detailed description.  Main source will be
-Diego Novillo's OLS paper.  Mention garbage collector and poisoned
-malloc/calloc (probably leave the mentions here, but move the proper
-of argument to the section of its own, under ``Targeting GCC'').  Also
+Diego Novillo's OLS paper.  Mention garbage collector (only mention).
+Also
 mention hooks, but don't go into depth (go as far as Tom Tromey's
 Linux Journal article).
 
@@ -112,12 +118,18 @@ frontend, that even doesn't emit any code, just writes out some stuff
 the files and code in that template, and briefly describe hooks and
 interesting things.  Leave the full catalogues to subsequent chapters.
 
+About integration.  Mention slow round trip time: edit->compile->test
+loop tends to be quite lengthy with GCC; you really want fast machine.
+You can use IN\_GCC to special case your frontend to use GCC services
+where available.
+
+GCC uses garbage collector.  Describe GCC poisoning.  Probably go
+through some GC codes, if apropriate.
+
 \chapter{Targeting GCC}
 
-Describe briefly that the author has written \Algol 60 parser to get
-himself familiar with the stuff he describes.  Maybe drop a few notes
-about how the parser (independent from GCC) and GCC frontend got
-joined.
+This chapter should describe how to generate GCC intermediate language
+called GENERIC.
 
 Catalogue of constructions: how to translate symbol handing, nested
 blocks, loops, funcalls, automatic and global variables, variable
@@ -126,7 +138,9 @@ overloaded, internal, external, anonymous functions, visibility
 (static or public), pass by value, reference and name, varargs,
 modules, module ctors and dtors, jumps, cases, expressions,
 typechecking, structures, objects, namespaces, name mangling and
-C-compatible interfacing (extern "C"), (OpenMP?), and other to GENERIC
+C-compatible interfacing (extern "C"), (OpenMP?),
+floating point, integer and string literals,
+and others to GENERIC
 (with the help of proper hooks).  Show examples taken from \Algol 60
 code.
 
@@ -153,13 +167,19 @@ your language.
 Employing attributes.  How does frontend handle attributes, how does
 it define its own.
 
-\chapter{GCC Development Flow}
-
-How to debug gcc, asserts and functions, how to use valgrind with gcc.
-Maybe dismiss this chapter.
+Employing GCC diagnostic messages.  Btw, you really want to do that,
+otherwise your buggy programs will be passed and a binary generated,
+or GCC crashed, depending on how is your error handling done.
+Describe the `pedantic' variable.  Describe pedwarn, warning, error
+and friends.  report\_diagnostic, diagnostic\_info and friends.
+Report code excerpts with verbatim.  It seems that GCC uses it's own
+printing functions, with their own formatting.  See e.g. comment
+before pp\_base\_format.  Describe that.
 
 What's dejagnu testsuite, how to write tests, how to integrate them
-into GCC testsuite.
+into GCC testsuite.  You need acurate error reporting to use the
+dejagnu GCC framework.  In fortran, they are doing transformations of
+error messages to format expected by the framework, describe that.
 
 \chapter{Conclusions}
 

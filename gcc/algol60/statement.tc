@@ -94,7 +94,7 @@ stmt_resolve_symbols (stmt_assign)
 	  estring_t * s2 = expr_to_str (self->rhs, NULL);
 	  estring_t * s3 = type_to_str (t1, NULL);
 	  estring_t * s4 = type_to_str (tt, NULL);
-	  log_printf (log, ll_error,
+	  log_printfc (log, ll_error, self->cursor,
 		      "type mismatch in assignment %s := %s (%s doesn't match %s)",
 		      estr_cstr (s1), estr_cstr (s2), estr_cstr (s3), estr_cstr (s4));
 	  delete_estring (s1);
@@ -105,7 +105,7 @@ stmt_resolve_symbols (stmt_assign)
       if (!expr_is_lvalue (lhs))
 	{
 	  estring_t * s1 = expr_to_str (lhs, NULL);
-	  log_printf (log, ll_error,
+	  log_printfc (log, ll_error, self->cursor,
 		      "%s has to be an lvalue",
 		      estr_cstr (s1));
 	  delete_estring (s1);
@@ -205,7 +205,7 @@ stmt_resolve_symbols (container)
 
 	      if (!types_match (lot, type_int ()))
 		{
-		  log_printf (log, ll_error,
+		  log_printfc (log, ll_error, self->cursor,
 			      "invalid type `%s' in lower boundary",
 			      estr_cstr (tmp = type_to_str (lot, tmp)));
 		  bp->lobound = expr_primitive_for_type (type_int ());
@@ -213,7 +213,7 @@ stmt_resolve_symbols (container)
 
 	      if (!types_match (hit, type_int ()))
 		{
-		  log_printf (log, ll_error,
+		  log_printfc (log, ll_error, self->cursor,
 			      "invalid type `%s' in upper boundary",
 			      estr_cstr (tmp = type_to_str (hit, tmp)));
 		  bp->hibound = expr_primitive_for_type (type_int ());
@@ -231,20 +231,25 @@ stmt_resolve_symbols (container)
 /// defined somewhere in the scope.  If it's not, create new
 /// definition in most enclosing scope.  Answer either found, or newly
 /// created symbol.
-symbol * container_find_name_rec_add_undefined (container * self, label * lbl, type * atype, logger_t * log);
+symbol * container_find_name_rec_add_undefined (container * self, label * lbl,
+						type * atype, logger_t * log,
+						cursor_t * cursor);
 %}
 
 
 %{
 symbol *
-container_find_name_rec_add_undefined (container * self, label * lbl, type * atype, logger_t * log)
+container_find_name_rec_add_undefined (container * self, label * lbl,
+				       type * atype, logger_t * log,
+				       cursor_t * cursor)
 {
   estring_t * tmp = NULL;
   symbol * found = container_find_name_rec (self, lbl, atype);
   if (found == NULL)
     {
       if (types_same (atype, type_any ()))
-	log_printf (log, ll_error, "(1) unknown symbol named `%s'",
+	log_printfc (log, ll_error, cursor,
+		    "(1) unknown symbol named `%s'",
 		    estr_cstr (tmp = label_to_str (lbl, tmp)));
       else
 	{
@@ -252,7 +257,8 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
 	  found = container_find_name_rec (self, lbl, type_any ());
 	  if (found == NULL)
 	    {
-	      log_printf (log, ll_error, "(2) unknown symbol named `%s'",
+	      log_printfc (log, ll_error, cursor,
+			  "(2) unknown symbol named `%s'",
 			  estr_cstr (tmp = label_to_str (lbl, tmp)));
 	    }
 	  else
@@ -264,7 +270,7 @@ container_find_name_rec_add_undefined (container * self, label * lbl, type * aty
 		new_estring_fmt ("type mismatch for symbol `%s': "
 				 "requested type `%s', found type `%s'",
 				 estr_cstr (tmp), estr_cstr (t1s), estr_cstr (t2s));
-	      log_printf (log, ll_error, "%s", estr_cstr (fmt));
+	      log_printfc (log, ll_error, cursor, "%s", estr_cstr (fmt));
 	      delete_estring (fmt);
 	      delete_estring (t2s);
 	      delete_estring (t1s);

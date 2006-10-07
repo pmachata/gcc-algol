@@ -1,4 +1,4 @@
-'begin'
+'begin' 'comment' { dg-do compile } ;
  'begin'
   'begin'
    'begin'

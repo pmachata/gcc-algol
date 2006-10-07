@@ -204,7 +204,7 @@ proc algol60_exit { } {
 	unset gluefile
     }
 }
-
+    
 # If this is an older version of dejagnu (without runtest_file_p),
 # provide one and assume the old syntax: foo1.exp bar1.c foo2.exp bar2.c.
 # This can be deleted after next dejagnu release.
