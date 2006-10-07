@@ -62,7 +62,6 @@ expr_primitive_for_type (type)
   return NULL;
 }
 
-
 /// Check if given type is metatype (unknown, any, or maybe others in
 /// future), or basic type.  Note that array, own, etc. are not
 /// metatypes, but merely parametrized basic types.  Array of any is
@@ -74,6 +73,11 @@ is_metatype (type)
   // all types except for those marked are basic, non-metatype types
   return 0;
 }
+
+/// Resolve symbol references in type descriptions.  This is
+/// particularly useful for array bounds resolution, but might happen
+/// to have more uses.
+%operation void type_resolve_symbols (type * self, container * context, logger_t * log);
 
 
 %decls %end %{
@@ -121,10 +125,12 @@ type_get_root (type)
 %node t_unknown type = { }
 type_to_str_private (t_unknown) { estr_assign_cstr (buf, "<unknown>"); }
 is_metatype (t_unknown) { return 1; }
+type_resolve_symbols (t_unknown) { assert (!"Should never get there!"); }
 
 %node t_any type = { }
 type_to_str_private (t_any) { estr_assign_cstr (buf, "<any>"); }
 is_metatype (t_any) { return 1; }
+type_resolve_symbols (t_any) { assert (!"Should never get there!"); }
 
 
 // ------------------------------------
@@ -152,6 +158,18 @@ expr_primitive_for_type (t_bool) { return expr_bool_create (new_cursor ("", 0), 
 
 %node t_label type = { }
 type_to_str_private (t_label) { estr_assign_cstr (buf, "<label>"); }
+
+// It's usually not necessary to resolve symbols in types.
+type_resolve_symbols (t_int),
+type_resolve_symbols (t_void),
+type_resolve_symbols (t_real),
+type_resolve_symbols (t_string),
+type_resolve_symbols (t_bool),
+type_resolve_symbols (t_label)
+{
+  // nothing to do
+}
+
 
 %decls %end %{
 type* type_unknown (void);
@@ -256,6 +274,43 @@ is_metatype (t_array)
   return is_metatype (self->host);
 }
 
+type_resolve_symbols (t_array)
+{
+  estring_t * tmp = NULL;
+
+  // We need to resolve array bounds.
+  boundspair * bp = self->bounds;
+  expression * hi = bp->hibound;
+  expression * lo = bp->lobound;
+
+  // symbols in bounds are resolved with use of parental
+  // symtab.  The following is illegal:
+  //  'begin' 'integer' y; 'integer' 'array' z[1:y]; 'end';
+  expr_resolve_symbols (lo, context->parent, log);
+  expr_resolve_symbols (hi, context->parent, log);
+  type_resolve_symbols (self->host, self, log);
+
+  type * lot = expr_type (lo);
+  type * hit = expr_type (hi);
+  if (!types_match (lot, type_int ()))
+    {
+      log_printfc (log, ll_error, lo->cursor,
+		  "invalid type %s in lower boundary",
+		  estr_cstr (tmp = type_to_str (lot, tmp)));
+      bp->lobound = expr_primitive_for_type (type_int ());
+    }
+
+  if (!types_match (hit, type_int ()))
+    {
+      log_printfc (log, ll_error, hi->cursor,
+		  "invalid type %s in upper boundary",
+		  estr_cstr (tmp = type_to_str (hit, tmp)));
+      bp->hibound = expr_primitive_for_type (type_int ());
+    }
+
+  delete_estring (tmp);
+}
+
 
 
 // ------------------------------------
@@ -280,6 +335,11 @@ type_get_root (t_own)
 expr_primitive_for_type (t_own)
 {
   return expr_primitive_for_type (self->host);
+}
+
+type_resolve_symbols (t_own)
+{
+  type_resolve_symbols (self->host, context, log);
 }
 
 
@@ -349,6 +409,14 @@ type_to_str_private (t_proc)
   estr_append_cstr (buf, ">");
   delete_estring (tmp);
 }
+
+type_resolve_symbols (t_proc)
+{
+  // We don't need to resolve any symbols, as it's neither possible to
+  // denote array dimensions at procedure parameters, nor is it
+  // allowed to return arrays.
+}
+
 
 
 // ------------------------------------

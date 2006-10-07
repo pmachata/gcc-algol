@@ -1,4 +1,0 @@
-'begin'
- 'real' a;
- a := "ahoj";
-'end';

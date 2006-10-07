@@ -305,7 +305,7 @@ BlockDeclarations:
 	      && rt != type_real ()
 	      && rt != type_bool ())
 	    log_printfc (parser->log, ll_error, cr_csr (parser, &@1),
-			"Type %s is invalid in this context.",
+			"type %s is invalid in this context.",
 			estr_cstr (type_to_str ($1, parser->tmp)));
 
 	  // If it was array, see if identifier has dimensions and
@@ -327,7 +327,7 @@ BlockDeclarations:
 	    {
 	      if (lbl->arr_bd_list == NULL)
 		log_printfc (parser->log, ll_error, cr_csr (parser, &@2),
-			    "Identifier `%s' needs array bounds.",
+			    "identifier `%s' needs array bounds.",
 			    estr_cstr (label_to_str (lbl, parser->tmp)));
 		// @@@TODO: location @2 could be more accurate, if
 		// identifier nodes kept their location
@@ -356,7 +356,7 @@ BlockDeclarations:
 	  int conflict = container_add_symbol (parser->block, sym, sek_ordinary);
 	  if (conflict)
 	    log_printfc (parser->log, ll_error, cr_csr (parser, &@2),
-			"Duplicate identifier `%s'.",
+			"duplicate identifier `%s'.",
 			estr_cstr (label_to_str (sym->lbl, parser->tmp)));
 	    // @@@TODO: location @2 could be more accurate, if
 	    // identifier nodes kept their location
@@ -369,9 +369,15 @@ Type:
     {
       log_printf (parser->log, ll_debug, "Type -> OptOwn IntrinsicType");
       if ($1)
-	$$ = t_own_create ($2);
+	{
+	  $$ = t_own_create ($2);
+	  @$ = @1;
+	}
       else
-	$$ = $2;
+        {
+	  $$ = $2;
+	  @$ = @2;
+	}
     }
   |
   OptOwn OptIntrinsicType KWARRAY
@@ -380,14 +386,21 @@ Type:
       // if no type declarator is given the type 'real' is understood
       type * t = t_array_create (($2 != NULL) ? $2 : type_real ());
       if ($1)
-	t = t_own_create (t);
+        {
+	  t = t_own_create (t);
+	  @$ = @1;
+	}
+      else if ($2)
+        @$ = @2;
+      else
+        @$ = @3;
       $$ = t;
     }
 
 OptOwn:
   /*eps*/ { $$ = 0; }
   |
-  KWOWN   { $$ = 1; }
+  KWOWN   { $$ = 1; @$ = @1; }
 
 OptIntrinsicType:
   /* epsilon */
@@ -400,6 +413,7 @@ OptIntrinsicType:
     {
       log_printf (parser->log, ll_debug, "OptIntrinsicType -> IntrinsicType");
       $$ = $1;
+      @$ = @1;
     }
 
 IntrinsicType:
@@ -407,18 +421,21 @@ IntrinsicType:
     {
       log_printf (parser->log, ll_debug, "IntrinsicType -> KWBOOLEAN");
       $$ = type_bool ();
+      @$ = @1;
     }
   |
   KWINTEGER
     {
       log_printf (parser->log, ll_debug, "IntrinsicType -> KWINTEGER");
       $$ = type_int ();
+      @$ = @1;
     }
   |
   KWREAL
     {
       log_printf (parser->log, ll_debug, "IntrinsicType -> KWREAL");
       $$ = type_real ();
+      @$ = @1;
     }
   |
   KWSTRING
@@ -426,6 +443,7 @@ IntrinsicType:
       log_printf (parser->log, ll_debug, "IntrinsicType -> KWSTRING");
       // @@@TODO; note, this is invalid for local variables
       $$ = type_string ();
+      @$ = @1;
     }
 
 IdentifierList:
@@ -435,6 +453,7 @@ IdentifierList:
       $$ = new_slist ();
       $1->arr_bd_list = $2;
       slist_pushfront ($$, $1);
+      @$ = @1;
     }
   |
   IdentifierList SEPCOMMA Identifier OptBoundsPairList
@@ -444,6 +463,7 @@ IdentifierList:
       $3->arr_bd_list = $4;
       slist_pushfront ($1, $3);
       $$ = $1;
+      @$ = @1;
     }
 
 OptBoundsPairList:
@@ -457,6 +477,7 @@ OptBoundsPairList:
     {
       log_printf (parser->log, ll_debug, "OptBoundsPairList -> SEPRBRACK BoundsPairList SEPRBRACK");
       $$ = $2;
+      @$ = @1;
     }
 
 BoundsPairList:
@@ -465,6 +486,7 @@ BoundsPairList:
       log_printf (parser->log, ll_debug, "BoundsPairList -> BoundsPair");
       $$ = new_slist ();
       slist_pushback ($$, $1);
+      @$ = @1;
     }
   |
   BoundsPairList SEPCOMMA BoundsPair
@@ -472,6 +494,7 @@ BoundsPairList:
       log_printf (parser->log, ll_debug, "BoundsPairList -> BoundsPairList SEPCOMMA BoundsPair");
       slist_pushback ($1, $3);
       $$ = $1;
+      @$ = @1;
     }
 
 BoundsPair:
@@ -486,6 +509,7 @@ BoundsPair:
 	 it, and check that the boundaries make sense: A:B, A<B.  Also
 	 it will be necessary to generate runtime tests for that. */
       $$ = boundspair_create (lb, hb);
+      @$ = @1;
     }
 
 Expression:

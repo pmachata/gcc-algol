@@ -1,4 +1,0 @@
-'begin'
- 'integer' a;
- 'integer' 'array' b[1:a];
-'end';

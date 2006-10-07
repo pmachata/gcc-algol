@@ -30,8 +30,10 @@ dg-init
 
 # Main loop.
 algol60-dg-runtest [lsort \
-       [glob -nocomplain $srcdir/$subdir/*.\[aA\]60 ] ] $DEFAULT_FFLAGS
+       [glob -nocomplain $srcdir/$subdir/compile/*.\[aA\]60 ] ] $DEFAULT_FFLAGS
 
+algol60-dg-runtest [lsort \
+       [glob -nocomplain $srcdir/$subdir/fail/*.\[aA\]60 ] ] $DEFAULT_FFLAGS
 
 # All done.
 dg-finish

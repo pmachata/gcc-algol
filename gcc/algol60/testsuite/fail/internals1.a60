@@ -1,4 +1,0 @@
-'begin'
- 'boolean' c;
- c := abs ('true');
-'end';

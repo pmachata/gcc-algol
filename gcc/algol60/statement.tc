@@ -186,41 +186,7 @@ stmt_resolve_symbols (container)
   for (; slist_it_has (it); slist_it_next (it))
     {
       symbol * sym = slist_it_get (it);
-      if (sym->lbl->arr_bd_list != NULL
-	  && !slist_empty (sym->lbl->arr_bd_list))
-	{
-	  slist_it_t * jt = slist_iter (sym->lbl->arr_bd_list);
-	  for (; slist_it_has (jt); slist_it_next (jt))
-	    {
-	      boundspair * bp = slist_it_get (jt);
-	      expression * hi = bp->hibound;
-	      expression * lo = bp->lobound;
-	      // symbols in bounds are resolved with use of parental
-	      // symtab; this is illegal:
-	      //  'begin' 'integer' y; 'integer' 'array' z[1:y]; 'end';
-	      expr_resolve_symbols (lo, self->parent, log);
-	      expr_resolve_symbols (hi, self->parent, log);
-	      type * lot = expr_type (lo);
-	      type * hit = expr_type (hi);
-
-	      if (!types_match (lot, type_int ()))
-		{
-		  log_printfc (log, ll_error, self->cursor,
-			      "invalid type `%s' in lower boundary",
-			      estr_cstr (tmp = type_to_str (lot, tmp)));
-		  bp->lobound = expr_primitive_for_type (type_int ());
-		}
-
-	      if (!types_match (hit, type_int ()))
-		{
-		  log_printfc (log, ll_error, self->cursor,
-			      "invalid type `%s' in upper boundary",
-			      estr_cstr (tmp = type_to_str (hit, tmp)));
-		  bp->hibound = expr_primitive_for_type (type_int ());
-		}
-	    }
-	  delete_slist_it (jt);
-	}
+      type_resolve_symbols (sym->type, self, log);
     }
   delete_slist_it (it);
   delete_estring (tmp);
