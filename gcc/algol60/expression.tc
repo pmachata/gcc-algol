@@ -293,7 +293,7 @@ expr_resolve_symbols (expr_bin)
   type* tt = expr_type (ast_as (expression, self));
   if (is_unknown (tt))
     {
-      // @TODO: there should me some error recovery; this way our node
+      // @TODO: there should be some error recovery; this way our node
       // ends up being type_unknown, and avalanche of errors is
       // blurted on the user
 

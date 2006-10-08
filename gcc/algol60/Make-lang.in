@@ -103,12 +103,12 @@ algol60/logger.o: algol60/logger.c algol60/logger.h algol60/pd.h algol60/gcc-stu
 algol60/estring.o: algol60/estring.c algol60/estring.h algol60/pd.h algol60/gcc-stuff
 
 algol60/ast-tab.c: algol60/ast.tc algol60/statement.tc algol60/symbol.tc \
-		algol60/expression.tc algol60/type.tc algol60/gcc.tc \
+		algol60/expression.tc algol60/type.tc algol60/expr_types.tc algol60/gcc.tc \
 		algol60/gcc-stuff
 	$(TREECC) -o algol60/ast-tab.c -h algol60/ast-tab.h $(srcdir)/algol60/ast.tc
 
 algol60/ast-tab.h: algol60/ast.tc algol60/statement.tc algol60/symbol.tc \
-		algol60/expression.tc algol60/type.tc algol60/gcc.tc \
+		algol60/expression.tc algol60/type.tc algol60/expr_types.tc algol60/gcc.tc \
 		algol60/ast-tab.c algol60/gcc-stuff
 	[ -f algol60/ast-tab.h ]
 

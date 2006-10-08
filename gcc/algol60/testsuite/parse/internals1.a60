@@ -1,5 +1,0 @@
-'begin'
- 'integer' a;
- a := 1;
- exit(a);
-'end';

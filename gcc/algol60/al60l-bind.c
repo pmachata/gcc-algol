@@ -359,8 +359,23 @@ expr_aidiv_build_generic (expr_aidiv * self, void * data)
 void *
 expr_ardiv_build_generic (expr_ardiv * self, void * data)
 {
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, RDIV_EXPR);
+  tree exp =  private_expr_build_binary_generic (ast_as (expression, self),
+						 data, RDIV_EXPR);
+  // int / int also yields real.  We must cast the operands explicitly
+  // to allow for this.
+  if (types_same (expr_type (self->left), type_int ()))
+    {
+      tree tmp = TREE_OPERAND (exp, 0);
+      TREE_OPERAND (exp, 0) = build1 (FLOAT_EXPR, TREE_TYPE (exp), tmp);
+    }
+
+  if (types_same (expr_type (self->right), type_int ()))
+    {
+      tree tmp = TREE_OPERAND (exp, 1);
+      TREE_OPERAND (exp, 1) = build1 (FLOAT_EXPR, TREE_TYPE (exp), tmp);
+    }
+
+  return exp;
 }
 
 void *

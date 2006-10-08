@@ -1,4 +1,0 @@
-'begin'
- 'integer' 'array' a[1:5];
- 'own' 'integer' 'array' b[2:6,3:9,4:10];
-'end';

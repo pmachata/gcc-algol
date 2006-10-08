@@ -1,4 +1,5 @@
 'begin' 'comment' { dg-do compile } ;
  'integer' a;
- a := 5;
+ 'integer' b;
+ a := b := 5;
 'end';

@@ -1,3 +1,4 @@
+'comment' { dg-do compile } ;
 'begin'
  'integer' a;
  'Boolean' b;
