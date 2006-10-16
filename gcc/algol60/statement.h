@@ -20,11 +20,8 @@
 #include "symbol.i"
 #include "label.i"
 #include "type.i"
+#include "estring.i"
 #include "pd.h"
-
-// @TODO: for FILE. Ugly. Remove as soon as dumping isn't into stream,
-// but into string.
-#include <stdio.h>
 
 /// Create new dummy statement.
 statement_t * new_stmt_dummy (cursor_t * cursor)
@@ -70,11 +67,12 @@ statement_t * as_statement (container_t * container)
 container_t * as_container (statement_t * statement)
   ATTRIBUTE_NONNULL(1);
 
-/// Dump (i.e. rewrite from AST back to code) the tree to given file
-/// `ofile' with basic indentation of `level' spaces.
-void stmt_dump (statement_t const * self, FILE * ofile, int level)
-  ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(2);
+/// Rewrite the tree into string in its original shape (as close as
+/// possible).  `buf' is a string into which the dump should be done.
+/// If NULL, new string will be allocated.  Either passed-in, or newly
+/// allocated buffer is returned.
+estring_t * stmt_to_str (statement_t const * self, estring_t * buf)
+  ATTRIBUTE_NONNULL(1);
 
 /// Resolve symbols in and typecheck this statement.  By the time this
 /// gets called, symtabs should be already filled.

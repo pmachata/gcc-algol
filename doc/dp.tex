@@ -23,12 +23,35 @@
 \date{2006-09-08}
 \maketitle
 
-\def\program#1{{\tt\begin{tabbing}#1\end{tabbing}}}
 \def\mychapter#1{{\Huge \bf \vspace{1em}#1}\vspace{1.0em}}
 \def\mysection#1{{\Large \bf \vspace{1em}#1}\vspace{1.0em}}
 \def\mysubsection#1{{\large \bf \vspace{1em}#1}\vspace{1.0em}}
 
 \def\Algol{{\sc Algol}\space}
+\def\GCC{{\sc GCC}\space}
+\def\C{{\sc C}\space}
+
+% for various computer-related terms
+\def\literal#1{{\sffamily{}#1}}
+% functions names
+\def\function#1{{\sffamily{}#1}}
+% file names
+\def\file#1{{\sffamily{}#1}}
+% commandline options
+\def\option#1{{\sffamily{}#1}}
+% variables, types, and similar
+\def\variable#1{{\sffamily{}#1}}
+
+% program listings
+\def\program#1{{\sffamily\begin{tabbing}#1\end{tabbing}}}
+% keywords in program listings
+\def\keyw#1{{\sffamily\bfseries {#1}}}
+% indentation
+\def\ind{\hspace{0.5cm}}
+
+\def\note#1{{{\it Note.\space}#1}}
+\def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
+\def\program#1{{\tt\begin{tabbing}#1\end{tabbing}}}
 
 % ====================================================================
 
@@ -71,7 +94,7 @@ compiler, compiling via C (this sucks mostly because C compiler has to
 recover the higher level model from C, which of course isn't possible;
 and debugging--GCC will preserve symbol names where necessary, while
 in C, you'd have to mangle them without chance to give a clue to
-target C compiler (you want to emit #line directives to point the user
+target C compiler (you want to emit \#line directives to point the user
 to the place where the error originated, and in debugger you have no
 way to hide the fact that you are going through C)), compiling via GCC
 (what if it's dynamic language, what if static).
@@ -111,6 +134,56 @@ What's Make-lang.in, config-lang.in, lang-specs.h, algol60.texi.
 Compilation process: why language subdirectory, what happens with
 Make-lang.in and config-lang.in, what's bootstrapping.  Defining
 hooks, defining options.
+Note: recompilation after the change of lang.opt takes forever.
+Note 2: correction: it takes *aeons*.
+
+
+\section{Commandline options}
+
+Each \GCC frontend has the capability of processing commandline
+options.  Moreover it inherits all the options from \GCC proper, so
+e.g. \option{-O3}, \option{-o file} and others are available for all
+frontends with no work.  The only work is necessary for definition of
+options peculiar to given frontend, and even there is the tedium of
+commandline parsing left off programmer's sight.
+
+\GCC will support both positive and negative variant of \option{-f},
+\option{-W} and \option{-m} options.  E.g. when your frontend supports
+\option{-fdump-ast}, \GCC will understand also \option{-fno-dump-ast}.
+Furthermore, each option can be parametrized.  Thus you can support
+e.g. \option{-{}-output-pch=} option for output of precompiled headers,
+and the part after ``='' is delivered to option handler as an
+argument.
+
+Of course, programmer has to write the handler for frontend-specific
+options herself.  All work takes place in
+\function{LANG\_HOOKS\_HANDLE\_OPTION} hook, \GCC calls this function
+each time it hits an option that the frontend understands.  The
+communication isn't done through option strings, instead, \GCC
+associates each option to a symbolic identifier with unique integer
+value.  When option is handled, simple \literal{switch} statement can
+be used to decide what should be done.  Option strings are transformed
+to identifiers in a straightforward manner: each non-alphanumeric
+character in a string is replaced with underscore, and \literal{OPT}
+is prepended before the resulting string.  Thus
+e.g. \option{-{}-output-pch=} is referred-to by identifier
+\variable{OPT\_\_output\_pch\_}.
+
+Other arguments in option-handling hook are \variable{argument} and
+\variable{value}.  Variable \variable{argument} is either
+\variable{NULL}, or it holds a string with the extra option argument
+(as was described few paragraphs up).  The variable \variable{value}
+is 1 if an option is used in its positive variant, and 0 for
+\option{no-} variant.
+
+All frontend-specific options are defined in \file{lang.opt}.  This
+file gives, though build magic, rise to \file{options.h}.  Format and
+features of \file{lang.opt} are to be found in gcc internals
+documentation
+\footnote{\url{http://gcc.gnu.org/onlinedocs/gccint/Options.html}}.
+
+
+\section{Other section}
 
 This work includes frontend template.  That's the smallest possible
 frontend, that even doesn't emit any code, just writes out some stuff
@@ -140,6 +213,7 @@ modules, module ctors and dtors, jumps, cases, expressions,
 typechecking, structures, objects, namespaces, name mangling and
 C-compatible interfacing (extern "C"), (OpenMP?),
 floating point, integer and string literals,
+dynamic typing (look at OBJ\_TYPE\_REF),
 and others to GENERIC
 (with the help of proper hooks).  Show examples taken from \Algol 60
 code.

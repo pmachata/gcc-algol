@@ -416,42 +416,32 @@ private_expr_build_limp (expression_t * self, void * data)
 void *
 expr_binary_build_generic (expression_t * self, void * data)
 {
+  static int treecode[] = {
+    [ebk_aadd] = PLUS_EXPR,  [ebk_asub] = MINUS_EXPR,
+    [ebk_amul] = MULT_EXPR,  [ebk_aidiv] = TRUNC_DIV_EXPR, // @TODO: is this the right operator?
+    [ebk_req] = EQ_EXPR,     [ebk_rneq] = NE_EXPR,
+    [ebk_rlt] = LT_EXPR,     [ebk_rlte] = LE_EXPR,
+    [ebk_rgt] = GT_EXPR,     [ebk_rgte] = GE_EXPR,
+    [ebk_leq] = EQ_EXPR,     [ebk_lor] = TRUTH_OR_EXPR,
+    [ebk_land] = TRUTH_AND_EXPR
+  };
+
   expr_binop_t op = expr_binary_op (self);
   switch (op)
     {
-    case ebk_aadd:
-      return private_expr_build_binary_generic (self, data, PLUS_EXPR);
-    case ebk_asub:
-      return private_expr_build_binary_generic (self, data, MINUS_EXPR);
-    case ebk_amul:
-      return private_expr_build_binary_generic (self, data, MULT_EXPR);
-    case ebk_aidiv:
-      // @TODO: check algol 60 reference if this is the right operator
-      return private_expr_build_binary_generic (self, data, TRUNC_DIV_EXPR);
+    case ebk_aadd:    case ebk_asub:    case ebk_amul:
+    case ebk_aidiv:   case ebk_req:     case ebk_rneq:
+    case ebk_rlt:     case ebk_rlte:    case ebk_rgt:
+    case ebk_rgte:    case ebk_leq:     case ebk_lor:
+    case ebk_land:
+      return private_expr_build_binary_generic (self, data, treecode[op]);
+
     case ebk_ardiv:
       return private_expr_build_ardiv (self, data);
     case ebk_apow:
       return private_expr_build_apow (self, data);
-    case ebk_req:
-      return private_expr_build_binary_generic (self, data, EQ_EXPR);
-    case ebk_rneq:
-      return private_expr_build_binary_generic (self, data, NE_EXPR);
-    case ebk_rlt:
-      return private_expr_build_binary_generic (self, data, LT_EXPR);
-    case ebk_rlte:
-      return private_expr_build_binary_generic (self, data, LE_EXPR);
-    case ebk_rgt:
-      return private_expr_build_binary_generic (self, data, GT_EXPR);
-    case ebk_rgte:
-      return private_expr_build_binary_generic (self, data, GE_EXPR);
     case ebk_limp:
       return private_expr_build_limp (self, data);
-    case ebk_leq:
-      return private_expr_build_binary_generic (self, data, EQ_EXPR);
-    case ebk_lor:
-      return private_expr_build_binary_generic (self, data, TRUTH_OR_EXPR);
-    case ebk_land:
-      return private_expr_build_binary_generic (self, data, TRUTH_AND_EXPR);
     };
   gcc_unreachable ();
 }

@@ -1,3 +1,7 @@
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "statement.h"
 #include "cursor.h"
 #include "slist.h"
@@ -6,16 +10,10 @@
 #include "symbol.h"
 #include "label.h"
 #include "type.h"
-#include "meta.h"
 #include "estring.h"
 #include "boundspair.h"
 #include "gcc.h"
-
-#include <assert.h>
-#include <stdlib.h>
-// @TODO: probably won't be necessary once dumping is rewritten to
-// dump to string instead of stream.
-#include <stdio.h>
+#include "meta.h"
 
 char const * private_statement_signature = "statement";
 
@@ -188,10 +186,13 @@ padding (int level)
   return padding + 300 - level;
 }
 
+
+static void private_stmt_dump (statement_t const * _self, estring_t * buf, int level);
+
 static void
-private_dump_container (statement_rep_t const * self, FILE * ofile, int level)
+private_dump_container (statement_rep_t const * self, estring_t * buf, int level)
 {
-  estring_t * buf = new_estring ();
+  estring_t * buf0 = new_estring ();
 
   // dump all variables but labels and hidden symbols
   slist_it_t * it = slist_iter (self->block.symtab);
@@ -203,14 +204,16 @@ private_dump_container (statement_rep_t const * self, FILE * ofile, int level)
 	  || symbol_hidden (sym))
 	continue;
 
-      type_to_str_canon (symtype, buf);
-      fprintf (ofile, "%s%s", padding (level), estr_cstr (buf));
-      fprintf (ofile, " %s", estr_cstr (label_id (symbol_label (sym))));
+      type_to_str_canon (symtype, buf0);
+      estr_append_cstr (buf, padding (level));
+      estr_append (buf, buf0);
+      estr_push (buf, ' ');
+      estr_append (buf, label_id (symbol_label (sym)));
       if (type_is_own (symtype))
 	symtype = type_host (symtype);
       if (type_is_array (symtype))
 	{
-	  fprintf (ofile, "[");
+	  estr_push (buf, '[');
 	  int first = 1;
 	  for (; type_is_array (symtype); symtype = type_host (symtype))
 	    {
@@ -218,15 +221,16 @@ private_dump_container (statement_rep_t const * self, FILE * ofile, int level)
 	      if (first)
 		first = 0;
 	      else
-		fprintf (ofile, ",");
-	      expr_to_str (boundspair_lo (bp), buf);
-	      fprintf (ofile, "%s:", estr_cstr (buf));
-	      expr_to_str (boundspair_hi (bp), buf);
-	      fprintf (ofile, "%s", estr_cstr (buf));
+		estr_push (buf, ',');
+	      expr_to_str (boundspair_lo (bp), buf0);
+	      estr_append (buf, buf0);
+	      estr_push (buf, ':');
+	      expr_to_str (boundspair_hi (bp), buf0);
+	      estr_append (buf, buf0);
 	    }
-	  fprintf (ofile, "]");
+	  estr_push (buf, ']');
 	}
-      fprintf (ofile, ";\n");
+      estr_append_cstr (buf, ";\n");
     }
   delete_slist_it (it);
 
@@ -244,8 +248,9 @@ private_dump_container (statement_rep_t const * self, FILE * ofile, int level)
 	  if (types_same (symbol_type (sym), type_label ())
 	      && symbol_stmt (sym) == stmt)
 	    {
-	      fprintf (ofile, "%s%s:\n",
-		       padding (level), estr_cstr (label_id (symbol_label (sym))));
+	      estr_append_cstr (buf, padding (level));
+	      estr_append (buf, label_id (symbol_label (sym)));
+	      estr_append_cstr (buf, ":\n");
 	    }
 	}
       delete_slist_it (lt);
@@ -257,34 +262,35 @@ private_dump_container (statement_rep_t const * self, FILE * ofile, int level)
       // and `stmt' is dummy statement.
       if (slist_it_has (it)
 	  || ((statement_rep_t *)stmt)->kind != sk_dummy)
-	stmt_dump (stmt, ofile, level);
+	private_stmt_dump (stmt, buf, level);
       else
 	break;
     }
   delete_slist_it (it);
 
-  delete_estring (buf);
+  delete_estring (buf0);
 }
 
-
 static void
-private_dump_assign (statement_rep_t const * self, FILE * ofile, int level)
+private_dump_assign (statement_rep_t const * self, estring_t * buf, int level)
 {
   slist_it_t * it = slist_iter (self->assign.lhss);
-  estring_t * buf = new_estring ();
-  fprintf (ofile, "%s", padding (level));
+  estring_t * buf0 = new_estring ();
+  estr_append_cstr (buf, padding (level));
   for (; slist_it_has (it); slist_it_next (it))
     {
       expression_t * expr = slist_it_get (it);
-      fprintf (ofile, "%s := ", estr_cstr (expr_to_str (expr, buf)));
+      estr_append (buf, expr_to_str (expr, buf0));
+      estr_append_cstr (buf, " := ");
     }
-  fprintf (ofile, "%s;\n", estr_cstr (expr_to_str (self->assign.rhs, buf)));
-  delete_estring (buf);
+  estr_append (buf, expr_to_str (self->assign.rhs, buf0));
+  estr_append_cstr (buf, ";\n");
+  delete_estring (buf0);
   delete_slist_it (it);
 }
 
-void
-stmt_dump (statement_t const * _self, FILE * ofile, int level)
+static void
+private_stmt_dump (statement_t const * _self, estring_t * buf, int level)
 {
   A60_USER_TO_REP (statement, self, const *);
 
@@ -294,29 +300,45 @@ stmt_dump (statement_t const * _self, FILE * ofile, int level)
       return;
 
     case sk_assign:
-      private_dump_assign (self, ofile, level);
+      private_dump_assign (self, buf, level);
       return;
 
     case sk_call:
       {
-	estring_t * buf = expr_to_str (self->call.call, NULL);
-	fprintf (ofile, "%s%s;\n", padding (level), estr_cstr (buf));
-	delete_estring (buf);
+	estring_t * buf0 = expr_to_str (self->call.call, NULL);
+	estr_append_cstr (buf, padding (level));
+	estr_append (buf, buf0);
+	estr_append_cstr (buf, ";\n");
+	delete_estring (buf0);
 	return;
       }
 
     case sk_block:
-      fprintf (ofile, "%s'begin'\n", padding (level));
-      private_dump_container (self, ofile, level+1);
-      fprintf (ofile, "%s'end';\n", padding (level));
+      estr_append_cstr (buf, padding (level));
+      estr_append_cstr (buf, "'begin'\n");
+      private_dump_container (self, buf, level+1);
+      estr_append_cstr (buf, padding (level));
+      estr_append_cstr (buf, "'end';\n");
       return;
 
     case sk_toplev:
-      private_dump_container (self, ofile, level);
+      private_dump_container (self, buf, level);
       return;
     };
 
   assert (!"Should never get there!");
+}
+
+estring_t *
+stmt_to_str (statement_t const * self, estring_t * buf)
+{
+  if (buf == NULL)
+    buf = new_estring ();
+  else
+    estr_clear (buf);
+
+  private_stmt_dump (self, buf, 0);
+  return buf;
 }
 
 static void

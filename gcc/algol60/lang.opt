@@ -13,4 +13,8 @@ fparser-trace
 Algol60
 Trace the parsing process
 
+fast-dump
+Algol60
+Dump AST immediately after the parse
+
 ; This comment is to ensure we retain the blank line above.

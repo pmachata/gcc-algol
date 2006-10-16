@@ -10,7 +10,7 @@
 		       trichotomy. */
 
 #include "options.h"/* generated from lang.opt; here included for
-		       CL_Algol60 define */
+		       CL_Algol60 define and option values*/
 
 #include "coretypes.h"
 #include "tree.h"
@@ -82,9 +82,17 @@
 /* Each front end provides its own.  */
 const struct lang_hooks lang_hooks = LANG_HOOKS_INITIALIZER;
 
-/* Global input file.  */
-char const* g_ifname;
-FILE * g_ifile;
+typedef struct struct_a60_options_t
+{
+  char const* ifname;
+  FILE * ifile;
+  int dump_ast;
+  int parser_trace;
+  int lexer_trace;
+}
+a60_options_t;
+
+a60_options_t * a60_options;
 
 bool
 algol60_init (void)
@@ -106,28 +114,42 @@ algol60_init (void)
 void
 algol60_finish (void)
 {
+  free (a60_options);
 }
 
 unsigned int
 algol60_init_options (unsigned int argc ATTRIBUTE_UNUSED,
 		      const char ** argv ATTRIBUTE_UNUSED)
 {
-  /*
-  unsigned int i;
-  fprintf (stderr, "algol60_init_options\n");
-  for (i = 0; i < argc; ++i)
-    fprintf (stderr, " + `%s'\n", argv[i]);
-  */
+  a60_options = xmalloc (sizeof (a60_options_t));
+  a60_options->ifname = NULL;
+  a60_options->ifile = NULL;
+  a60_options->dump_ast = 0;
+  a60_options->parser_trace = 0;
+  a60_options->lexer_trace = 0;
   return CL_Algol60;
 }
 
 /* process algol60-specific compiler command-line options */
 int
-algol60_handle_option (size_t scode ATTRIBUTE_UNUSED,
+algol60_handle_option (size_t scode,
 		       const char *arg ATTRIBUTE_UNUSED,
-		       int value ATTRIBUTE_UNUSED)
+		       int value)
 {
-  return 1;
+  switch (scode)
+    {
+    case OPT_fast_dump:
+      a60_options->dump_ast = value;
+      return 1;
+    case OPT_fparser_trace:
+      a60_options->parser_trace = value;
+      return 1;
+    case OPT_flexer_trace:
+      a60_options->lexer_trace = value;
+      return 1;
+    };
+  fprintf (stderr, "scode %ul option %s value %d\n", scode, arg, value);
+  return 0;
 }
 
 /* called after option processing */
@@ -148,8 +170,8 @@ algol60_post_options (char const* * pfilename)
 	internal_error ("can't open file %s\n", filename);
     }
 
-  g_ifname = filename;
-  g_ifile = finput;
+  a60_options->ifname = filename;
+  a60_options->ifile = finput;
 
   /* Initialize the compiler back end.  */
   return false;
@@ -159,20 +181,35 @@ algol60_post_options (char const* * pfilename)
 void
 algol60_parse_file (int debug ATTRIBUTE_UNUSED)
 {
-  lexer_t * a_lexer = new_lexer (g_ifile, g_ifname, true);
+
+  lexer_t * a_lexer = new_lexer (a60_options->ifile, a60_options->ifname, true);
   gcc_assert (a_lexer != NULL);
-  lexer_set_logging (a_lexer, ll_warning, false);
+  if (a60_options->lexer_trace)
+    lexer_set_logging (a_lexer, ll_debug, false);
+  else
+    lexer_set_logging (a_lexer, ll_warning, false);
+
   parser_t * a_parser = new_parser (a_lexer, true);
   gcc_assert (a_parser != NULL);
-  parser_set_logging (a_parser, ll_warning);
+  if (a60_options->parser_trace)
+    parser_set_logging (a_parser, ll_debug);
+  else
+    parser_set_logging (a_parser, ll_warning);
 
   statement_t * ast = parser_parse (a_parser);
+
   logger_t * anal_log = new_logger ("analys");
   log_set_filter (anal_log, ll_warning);
 
   if (ast)
     {
-      //stmt_dump (ast, stderr, 0);
+      if (a60_options->dump_ast)
+	{
+	  estring_t * dump = stmt_to_str (ast, NULL);
+	  fprintf (stdout, "%s", estr_cstr (dump));
+	  delete_estring (dump);
+	}
+
       log_printf (anal_log, ll_info, "entering analysis...");
       stmt_resolve_symbols (ast, anal_log);
     }
