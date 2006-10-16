@@ -7,9 +7,7 @@
 #define _AL60L_SLIST_H_
 
 #include "pd.h"
-
-typedef struct struct_slist_t { } slist_t;
-typedef struct struct_slist_it_t { } slist_it_t;
+#include "slist.i"
 
 /// Create fresh linked list.
 slist_t * new_slist (void)

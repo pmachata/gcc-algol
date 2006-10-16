@@ -10,7 +10,6 @@
 #include "pd.h"
 
 ///
-///
 /// \file estring.h
 ///
 /// `endless' strings library.  Estrings are basically the same
@@ -20,9 +19,7 @@
 /// characters to them.
 ///
 
-
-typedef struct struct_estring_t { } estring_t;
-
+#include "estring.i"
 
 /// Create empty new string. Please note, that such a string has to be
 /// released with estr_delete(). Returns NULL if error is something ill

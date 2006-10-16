@@ -8,7 +8,8 @@
 
 #include "pd.h"
 #include "lexer.h"
-#include "ast-tab.h"
+#include "statement.i"
+#include "logger.i"
 #include <stdio.h>
 
 typedef struct struct_parser_t { } parser_t;
@@ -29,7 +30,7 @@ parser_t * parser (void * ptr)
 
 /// Fire a parser.  Answer the AST tree of parsed file, or NULL when
 /// there were errors.
-statement * parser_parse (parser_t * parser)
+statement_t * parser_parse (parser_t * parser)
   ATTRIBUTE_NONNULL(1);
 
 /// Controls what logging messages get printed.

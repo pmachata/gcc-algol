@@ -5,13 +5,16 @@
 
 #ifndef SELF_TEST
 
-#include "logger.h"
-#include "util.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "meta.h"
+
+#include "logger.h"
+#include "cursor.h"
+#include "util.h"
 
 static char const* private_logger_signature = "logger";
 
@@ -64,10 +67,7 @@ delete_logger (logger_t * _logger)
 logger_t *
 logger (void * ptr)
 {
-  if (((logger_rep_t*)ptr)->signature == private_logger_signature)
-    return ptr;
-  else
-    return NULL;
+  A60_CHECKED_CONVERSION(logger, ptr);
 }
 
 /// Depending on filtering rules in effect, either filter out or print

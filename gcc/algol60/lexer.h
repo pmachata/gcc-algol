@@ -7,8 +7,14 @@
 #define _AL60L_LEXER_H_
 
 //for references in parser-tab.h
-#include "ast-tab.h"
-#include "slist.h"
+#include "slist.i"
+#include "statement.i"
+#include "label.i"
+#include "symbol.i"
+#include "type.i"
+#include "boundspair.i"
+#include "expression.i"
+#include "estring.i"
 
 // direct includes
 #include "parser-tab.h"
@@ -27,7 +33,7 @@ typedef enum yytokentype token_kind_t;
 /// \arg file The stream which the lexer should use to fetch tokens.
 ///
 /// \arg filename The name of file underlying the stream.  May be
-/// arbitrary descriptor, if the stream doesn originate in file.  May
+/// arbitrary descriptor, if the stream doesn originate in file.  Must
 /// not be NULL.
 ///
 /// \arg manage Whether the stream should be fclosed when the lexer is

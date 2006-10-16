@@ -6,9 +6,8 @@
 #ifndef _AL60L_CURSOR_H_
 #define _AL60L_CURSOR_H_
 
+#include "cursor.i"
 #include "pd.h"
-
-typedef struct struct_cursor_t { } cursor_t;
 
 /// Create new cursor.  The cursor points to the beginning of file
 /// with given name.

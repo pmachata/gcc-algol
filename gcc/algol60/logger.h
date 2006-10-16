@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include "pd.h"
-#include "cursor.h"
 
 /// The description of the severity of log message.  Used for
 /// filtering.
@@ -24,7 +23,8 @@ typedef enum enum_debug_level_t
   debug_level_t_count = ll_filter_all
 } debug_level_t;
 
-typedef struct struct_logger_t { } logger_t;
+#include "cursor.i"
+#include "logger.i"
 
 /// Allocate new debug log context.  The default output stream is
 /// stderr, the default threshold level is ll_warning.

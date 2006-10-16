@@ -34,7 +34,7 @@ typedef struct struct_slist_it_rep_t
   slist_node_rep_t * pointee;
 } slist_it_rep_t;
 
-slist_rep_t *
+static slist_rep_t *
 private_alloc_slist (void)
 {
   slist_rep_t * ret = malloc (sizeof (slist_rep_t));
@@ -138,7 +138,7 @@ slist (void * ptr)
 }
 
 #ifndef NDEBUG
-void
+static void
 private_test_element (slist_rep_t * list, void * object)
 {
   if (list->test != NULL)

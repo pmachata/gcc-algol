@@ -4,7 +4,8 @@
 /// \file
 /// Al60l binder contains the glue between Al60l parsing library and
 /// GCC.  The code that does AST-to-GENERIC translation is here.
-/// al60l-bind.c implements the API declared in \file gcc.tc.
+/// al60l-bind.c implements the callback methods dispatched by
+/// stmt_build_generic and friends.
 
 /// \note
 /// The GCC framework necessary to setup types isn't included here.

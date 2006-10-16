@@ -25,8 +25,17 @@
 #include "algol-tree.h"
 #include "al60l-bind.h"
 
-#include "ast-tab.h"
+#include "util.h"
+#include "meta.h"
+
 #include "slist.h"
+#include "estring.h"
+#include "boundspair.h"
+#include "label.h"
+#include "symbol.h"
+#include "type.h"
+#include "statement.h"
+#include "expression.h"
 
 typedef struct struct_al60l_bind_state_rep_t
 {
@@ -136,36 +145,31 @@ bind_state_pop_function (al60l_bind_state_t * _state)
 // ------------------------------------
 
 void *
-stmt_dummy_build_generic (stmt_dummy * self ATTRIBUTE_UNUSED,
+stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED,
 			  void * state ATTRIBUTE_UNUSED)
 {
   return build_empty_stmt ();
 }
 
 void *
-stmt_assign_build_generic (stmt_assign * self, void * data)
+stmt_assign_build_generic (statement_t * self, void * data)
 {
-  // @FIXME: limit ourselves to simple case `x := something`.  General
-  // case is pretty simple right now that we don't support array
-  // access.  But compilation of `b := a[b] := b + 1;` will be rather
-  // tricky in that we will have to extract the array indices into
-  // temporaries as part of array access expression compilation.
-  gcc_assert (slist_front (self->lhss) == slist_back (self->lhss));
-  tree op1 = expr_build_generic (slist_front (self->lhss), data);
-  tree op2 = expr_build_generic (self->rhs, data);
+  // @FIXME: limit ourselves to simple case `x := something`.
+  slist_t * lhss = stmt_assign_lhss (self);
+  tree op1 = expr_build_generic (slist_front (lhss), data);
+  tree op2 = expr_build_generic (stmt_assign_rhs (self), data);
   tree ret = build2 (MODIFY_EXPR, void_type_node, op1, op2);
   return ret;
 }
 
 void *
-stmt_call_build_generic (stmt_call * self, void * state)
+stmt_call_build_generic (statement_t * self, void * state)
 {
-  expression * expr = self->call;
-  return expr_build_generic (expr, state);
+  return expr_build_generic (stmt_call_call (self), state);
 }
 
 void *
-stmt_container_build_generic (container * self, void * _state)
+stmt_container_build_generic (container_t * self, void * _state)
 {
   al60l_bind_state_rep_t * state = _state;
   slist_it_t * it;
@@ -175,14 +179,14 @@ stmt_container_build_generic (container * self, void * _state)
   slist_pushfront (state->subblocks, NULL_TREE);
 
   tree vars = NULL_TREE;
-  it = slist_iter (self->symtab);
+  it = slist_iter (container_symtab (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
-      symbol * sym = slist_it_get (it);
-      gcc_assert (sym->extra == NULL);
+      symbol_t * sym = slist_it_get (it);
+      gcc_assert (symbol_extra (sym) == NULL);
 
-      tree decl = symbol_decl_for_type (sym->type, sym, _state);
-      sym->extra = decl;
+      tree decl = symbol_decl_for_type (symbol_type (sym), sym, _state);
+      symbol_set_extra (sym, decl);
 
       // Add variable to the chain.  This really has to be chain of
       // variables, not a list of conses.
@@ -192,10 +196,10 @@ stmt_container_build_generic (container * self, void * _state)
   delete_slist_it (it);
 
   tree stmts = alloc_stmt_list ();
-  it = slist_iter (self->statements);
+  it = slist_iter (container_stmts (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
-      statement * st = slist_it_get (it);
+      statement_t * st = slist_it_get (it);
       tree stmt = stmt_build_generic (st, state);
       append_to_statement_list (stmt, &stmts);
     }
@@ -240,20 +244,20 @@ stmt_container_build_generic (container * self, void * _state)
 // ------------------------------------
 
 void *
-expr_int_build_generic (expr_int * self, void * data ATTRIBUTE_UNUSED)
+expr_int_build_generic (expression_t * self, void * data ATTRIBUTE_UNUSED)
 {
-  tree ret = build_int_cst (integer_type_node, self->value);
+  tree ret = build_int_cst (integer_type_node, expr_int_value (self));
   return ret;
 }
 
 void *
-expr_real_build_generic (expr_real * self, void * data)
+expr_real_build_generic (expression_t * self, void * data)
 {
   REAL_VALUE_TYPE real;
-  type * t = expr_type (ast_as (expression, self));
+  type_t * t = expr_type (self);
   tree ttt = type_build_generic (t, data);
 
-  real_from_string3 (&real, estr_cstr (self->value), TYPE_MODE (ttt));
+  real_from_string3 (&real, estr_cstr (expr_real_value (self)), TYPE_MODE (ttt));
 
   if (REAL_VALUE_ISINF (real))
     pedwarn ("floating constant exceeds range of %qT", ttt);
@@ -263,113 +267,80 @@ expr_real_build_generic (expr_real * self, void * data)
 }
 
 void *
-expr_string_build_generic (expr_string * self, void * data ATTRIBUTE_UNUSED)
+expr_string_build_generic (expression_t * self, void * data ATTRIBUTE_UNUSED)
 {
-  int len = estr_length (self->value) + 1; // +1 for trailing zero
-  tree ret = build_string_literal (len, estr_cstr (self->value));
+  estring_t const * s = expr_string_value (self);
+  int len = estr_length (s) + 1; // +1 for trailing zero
+  tree ret = build_string_literal (len, estr_cstr (s));
   return ret;
 }
 
 void *
-expr_bool_build_generic (expr_bool * self, void * data ATTRIBUTE_UNUSED)
+expr_bool_build_generic (expression_t * self, void * data ATTRIBUTE_UNUSED)
 {
-  tree ret = build_int_cst (boolean_type_node, self->value);
+  tree ret = build_int_cst (boolean_type_node, expr_bool_value (self));
   return ret;
 }
 
 void *
-expr_idref_build_generic (expr_idref * self, void * data ATTRIBUTE_UNUSED)
+expr_idref_build_generic (expression_t * self, void * data ATTRIBUTE_UNUSED)
 {
   // see if the idref was resolved
-  symbol * sym = self->sym;
+  symbol_t * sym = expr_symbol (self);
   gcc_assert (sym != NULL);
 
   // see if it has declaration, and answer it, if it has
-  tree * decl = sym->extra;
+  tree decl = symbol_extra (sym);
   gcc_assert (decl);
   return decl;
 }
 
 void *
-expr_if_build_generic (expr_if * self, void * data)
+expr_if_build_generic (expression_t * self, void * data)
 {
-  type * t  = expr_type (ast_as (expression, self));
+  type_t * t = expr_type (self);
   tree ttt  = type_build_generic (t, data);
-  tree cond = expr_build_generic (self->cond, data);
-  tree expt = expr_build_generic (self->exp_t, data);
-  tree expf = expr_build_generic (self->exp_f, data);
+  tree cond = expr_build_generic (expr_if_cond (self), data);
+  tree expt = expr_build_generic (expr_if_trueb (self), data);
+  tree expf = expr_build_generic (expr_if_falseb (self), data);
   tree ret  = build3 (COND_EXPR, ttt, cond, expt, expf);
   return ret;
 }
 
 static tree
-private_expr_build_binary_generic (expression * self, void * data, int op)
+private_expr_build_binary_generic (expression_t * self, void * data, int op)
 {
-  gcc_assert (ast_isa (self, expr_bin));
-  type * t = expr_type (self);
-  expr_bin * e = ast_as (expr_bin, self);
+  type_t * t = expr_type (self);
   tree ttt = type_build_generic (t, data);
-  tree op1 = expr_build_generic (e->left, data);
-  tree op2 = expr_build_generic (e->right, data);
+  tree op1 = expr_build_generic (expr_binary_left (self), data);
+  tree op2 = expr_build_generic (expr_binary_right (self), data);
   tree ret = build2 (op, ttt, op1, op2);
   return ret;
 }
 
 static tree
-private_expr_build_unary_generic (expression * self, void * data, int op)
+private_expr_build_unary_generic (expression_t * self, void * data, int op)
 {
-  gcc_assert (ast_isa (self, expr_un));
-  type * t = expr_type (self);
-  expr_un * e = ast_as (expr_un, self);
+  type_t * t = expr_type (self);
   tree ttt = type_build_generic (t, data);
-  tree op1 = expr_build_generic (e->operand, data);
+  tree op1 = expr_build_generic (expr_unary_operand (self), data);
   tree ret = build1 (op, ttt, op1);
   return ret;
 }
 
-void *
-expr_aadd_build_generic (expr_aadd * self, void * data)
+static void *
+private_expr_build_ardiv (expression_t * self, void * data)
 {
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, PLUS_EXPR);
-}
-
-void *
-expr_asub_build_generic (expr_asub * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, MINUS_EXPR);
-}
-
-void *
-expr_amul_build_generic (expr_amul * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, MULT_EXPR);
-}
-
-void *
-expr_aidiv_build_generic (expr_aidiv * self, void * data)
-{
-  // @TODO: check algol 60 reference if this is the right operator
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, TRUNC_DIV_EXPR);
-}
-
-void *
-expr_ardiv_build_generic (expr_ardiv * self, void * data)
-{
-  tree exp =  private_expr_build_binary_generic (ast_as (expression, self),
-						 data, RDIV_EXPR);
+  tree exp =  private_expr_build_binary_generic (self, data, RDIV_EXPR);
   // int / int also yields real.  We must cast the operands explicitly
   // to allow for this.
-  if (types_same (expr_type (self->left), type_int ()))
+  if (types_same (expr_type (expr_binary_left (self)), type_int ()))
     {
       tree tmp = TREE_OPERAND (exp, 0);
       TREE_OPERAND (exp, 0) = build1 (FLOAT_EXPR, TREE_TYPE (exp), tmp);
     }
 
-  if (types_same (expr_type (self->right), type_int ()))
+  if (types_same (expr_type (expr_binary_right (self)), type_int ()))
     {
       tree tmp = TREE_OPERAND (exp, 1);
       TREE_OPERAND (exp, 1) = build1 (FLOAT_EXPR, TREE_TYPE (exp), tmp);
@@ -378,8 +349,8 @@ expr_ardiv_build_generic (expr_ardiv * self, void * data)
   return exp;
 }
 
-void *
-expr_apow_build_generic (expr_apow * self, void * data)
+static void *
+private_expr_build_apow (expression_t * self, void * data)
 {
   // Arithmetic power expressions are translated to function call into
   // runtime library.  The resulting symbol is named _a60_pow_<a>_<b>,
@@ -389,10 +360,10 @@ expr_apow_build_generic (expr_apow * self, void * data)
   // @TODO: as of now, there is no runtime library in place yet.  The
   // resulting binary has to be linked with apow.c and -lm explicitly.
 
-  type * tl = expr_type (self->left);
-  type * tr = expr_type (self->right);
+  type_t * tl = expr_type (expr_binary_left (self));
+  type_t * tr = expr_type (expr_binary_right (self));
 
-  static type * types[4] = {}; // NULLs by default
+  static type_t * types[4] = {}; // NULLs by default
   static int initialized = 0;
   static char const sigs[] = {'i', 'r'};
 
@@ -413,123 +384,106 @@ expr_apow_build_generic (expr_apow * self, void * data)
 	    : (gcc_assert (types_same (tr, type_real ())), 1));
   int typeidx = 2*sl + sr; // index into types array
 
-  label * l = label_id_create (new_estring_fmt ("_a60_pow_%c_%c", sigs[sl], sigs[sr]));
-  slist_t * args = new_slist_from (2, self->left, self->right);
-  expr_call * e = ast_as (expr_call, expr_call_create (self->cursor, l, args));
+  label_t * l = new_label (new_estring_fmt ("_a60_pow_%c_%c", sigs[sl], sigs[sr]));
+  slist_t * args = new_slist_from (2,
+				   expr_binary_left (self),
+				   expr_binary_right (self));
+  cursor_t * c = expr_cursor (self);
 
   // Don't forget to do what resolve would do for us.  We can omit
   // typechecking, and subexpression resolving has already been done
   // by this point.
-  symbol * sym = symbol_create (l);
-  sym->type = types[typeidx]; // function type
-  sym->hidden = 1;
-  sym->extra = builtin_decl_get_generic (sym);
-  e->sym = sym;
+  symbol_t * sym = new_symbol (l);
+  symbol_set_type (sym, types[typeidx]); // function type
+  symbol_set_hidden (sym, 1);
+  symbol_set_extra (sym, builtin_decl_get_generic (sym));
+  expression_t * e = new_expr_call_sym (c, l, args, sym);
 
-  return expr_build_generic (ast_as (expression, e), data);
+  return expr_build_generic (e, data);
 }
 
-void *
-expr_req_build_generic (expr_req * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, EQ_EXPR);
-}
-
-void *
-expr_rneq_build_generic (expr_rneq * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, NE_EXPR);
-}
-
-void *
-expr_rlt_build_generic (expr_rlt * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, LT_EXPR);
-}
-
-void *
-expr_rlte_build_generic (expr_rlte * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, LE_EXPR);
-}
-
-void *
-expr_rgt_build_generic (expr_rgt * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, GT_EXPR);
-}
-
-void *
-expr_rgte_build_generic (expr_rgte * self, void * data)
-{
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, GE_EXPR);
-}
-
-void *
-expr_limp_build_generic (expr_limp * self, void * data)
+static void *
+private_expr_build_limp (expression_t * self, void * data)
 {
   // `a => b` translates as `or (not (a), b)`
   // @@@TODO: btw, this is candidate to custom tree node!
-  expression * e1 = expr_not_create (self->cursor, self->left);
-  expression * e2 = expr_lor_create (self->cursor, e1, self->right);
+  cursor_t * c = expr_cursor (self);
+  expression_t * e1 = new_expr_unary (c, euk_not, expr_binary_left (self));
+  expression_t * e2 = new_expr_binary (c, ebk_lor, e1, expr_binary_right (self));
   return expr_build_generic (e2, data);
 }
 
 void *
-expr_leq_build_generic (expr_leq * self, void * data)
+expr_binary_build_generic (expression_t * self, void * data)
 {
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, EQ_EXPR);
+  expr_binop_t op = expr_binary_op (self);
+  switch (op)
+    {
+    case ebk_aadd:
+      return private_expr_build_binary_generic (self, data, PLUS_EXPR);
+    case ebk_asub:
+      return private_expr_build_binary_generic (self, data, MINUS_EXPR);
+    case ebk_amul:
+      return private_expr_build_binary_generic (self, data, MULT_EXPR);
+    case ebk_aidiv:
+      // @TODO: check algol 60 reference if this is the right operator
+      return private_expr_build_binary_generic (self, data, TRUNC_DIV_EXPR);
+    case ebk_ardiv:
+      return private_expr_build_ardiv (self, data);
+    case ebk_apow:
+      return private_expr_build_apow (self, data);
+    case ebk_req:
+      return private_expr_build_binary_generic (self, data, EQ_EXPR);
+    case ebk_rneq:
+      return private_expr_build_binary_generic (self, data, NE_EXPR);
+    case ebk_rlt:
+      return private_expr_build_binary_generic (self, data, LT_EXPR);
+    case ebk_rlte:
+      return private_expr_build_binary_generic (self, data, LE_EXPR);
+    case ebk_rgt:
+      return private_expr_build_binary_generic (self, data, GT_EXPR);
+    case ebk_rgte:
+      return private_expr_build_binary_generic (self, data, GE_EXPR);
+    case ebk_limp:
+      return private_expr_build_limp (self, data);
+    case ebk_leq:
+      return private_expr_build_binary_generic (self, data, EQ_EXPR);
+    case ebk_lor:
+      return private_expr_build_binary_generic (self, data, TRUTH_OR_EXPR);
+    case ebk_land:
+      return private_expr_build_binary_generic (self, data, TRUTH_AND_EXPR);
+    };
+  gcc_unreachable ();
 }
 
 void *
-expr_lor_build_generic (expr_lor * self, void * data)
+expr_unary_build_generic (expression_t * self, void * data)
 {
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, TRUTH_OR_EXPR);
+  expr_unop_t op = expr_unary_op (self);
+  switch (op)
+    {
+    case euk_uminus:
+  return private_expr_build_unary_generic (self, data, NEGATE_EXPR);
+    case euk_not:
+  return private_expr_build_unary_generic (self, data, TRUTH_NOT_EXPR);
+    };
+  gcc_unreachable ();
 }
 
 void *
-expr_land_build_generic (expr_land * self, void * data)
+expr_call_build_generic (expression_t * self, void * state)
 {
-  return private_expr_build_binary_generic (ast_as (expression, self),
-					    data, TRUTH_AND_EXPR);
-}
-
-void *
-expr_uminus_build_generic (expr_uminus * self, void * data)
-{
-  return private_expr_build_unary_generic (ast_as (expression, self),
-					   data, NEGATE_EXPR);
-}
-
-void *
-expr_not_build_generic (expr_not * self, void * data)
-{
-  return private_expr_build_unary_generic (ast_as (expression, self),
-					   data, TRUTH_NOT_EXPR);
-}
-
-void *
-expr_call_build_generic (expr_call * self, void * state)
-{
-  symbol * sym = self->sym;
+  symbol_t * sym = expr_symbol (self);
   gcc_assert (sym != NULL); // i.e. resolve_symbols was called already
 
-  tree proc_decl = sym->extra;
+  tree proc_decl = symbol_extra (sym);
   gcc_assert (proc_decl != NULL);
 
   tree arg_list = NULL_TREE;
-  slist_it_t * it = slist_iter (self->arguments);
+  slist_it_t * it = slist_iter (expr_call_args (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
-      expression * expr = slist_it_get (it);
+      expression_t * expr = slist_it_get (it);
       tree arg_expr = expr_build_generic (expr, state);
       arg_list = tree_cons (NULL_TREE, arg_expr, arg_list);
     }
@@ -544,19 +498,19 @@ expr_call_build_generic (expr_call * self, void * state)
 }
 
 void *
-expr_subscript_build_generic (expr_subscript * self, void * data)
+expr_subscript_build_generic (expression_t * self, void * data)
 {
-  tree array = self->sym->extra;
-  type * t = self->sym->type;
+  tree array = symbol_extra (expr_symbol (self));
+  type_t * t = symbol_type (expr_symbol (self));
   gcc_assert (array != NULL);
   gcc_assert (t != NULL);
 
-  slist_it_t * it = slist_iter (self->indices);
+  slist_it_t * it = slist_iter (expr_subscript_indices (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
-      expression * idx_expr = slist_it_get (it);
+      expression_t * idx_expr = slist_it_get (it);
       tree idx_tree = expr_build_generic (idx_expr, data);
-      t = ast_as (t_array, t)->host;
+      t = type_host (t);
       tree type = type_build_generic (t, data);
       array = build4 (ARRAY_REF, type, array, idx_tree, NULL_TREE, NULL_TREE);
     }
@@ -565,17 +519,15 @@ expr_subscript_build_generic (expr_subscript * self, void * data)
 
 
 void *
-builtin_decl_get_generic (symbol * sym)
+builtin_decl_get_generic (symbol_t * sym)
 {
-  label * lbl = sym->lbl;
-  type * t = sym->type;
-  gcc_assert (ast_isa (lbl, label_id));
+  type_t * t = symbol_type (sym);
 
   int own = 0;
-  if (ast_isa (t, t_own))
+  if (type_is_own (t))
     {
       own = 1;
-      t = ast_as (t_own, t)->host;
+      t = type_host (t);
     }
   tree decl = symbol_decl_for_type (t, sym, NULL);
 
@@ -592,7 +544,7 @@ builtin_decl_get_generic (symbol * sym)
 
   // In a VAR_DECL, nonzero means allocate static storage.
   // In a FUNCTION_DECL, nonzero if function has been defined.
-  if (ast_isa (t, t_proc))
+  if (type_is_proc (t))
     TREE_STATIC (decl) = 0; // builtin functions are undefined
   else
     TREE_STATIC (decl) = own;
@@ -603,43 +555,59 @@ builtin_decl_get_generic (symbol * sym)
 }
 
 void *
-type_own_build_generic (t_own * self, void * data)
+type_unknown_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			    void * data ATTRIBUTE_UNUSED)
 {
-  tree ret = type_build_generic (self->host, data);
+  gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
+  gcc_unreachable ();
+}
+
+void *
+type_any_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			void * data ATTRIBUTE_UNUSED)
+{
+  gcc_assert (!"You shouldn't ask for GENERIC of `any'.");
+  gcc_unreachable ();
+}
+
+void *
+type_own_build_generic (type_t * self, void * data)
+{
+  tree ret = type_build_generic (type_host (self), data);
   TREE_STATIC (ret) = 1;
   return ret;
 }
 
 void *
-type_int_build_generic (t_int * self ATTRIBUTE_UNUSED,
+type_int_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			void * data ATTRIBUTE_UNUSED)
 {
   return integer_type_node;
 }
 
 void *
-type_void_build_generic (t_void * self ATTRIBUTE_UNUSED,
+type_void_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
   return void_type_node;
 }
 
 void *
-type_real_build_generic (t_real * self ATTRIBUTE_UNUSED,
+type_real_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
   return double_type_node;
 }
 
 void *
-type_string_build_generic (t_string * self ATTRIBUTE_UNUSED,
+type_string_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			   void * data ATTRIBUTE_UNUSED)
 {
   return string_type_node;
 }
 
 void *
-type_bool_build_generic (t_bool * self ATTRIBUTE_UNUSED,
+type_bool_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
   return boolean_type_node;
@@ -654,74 +622,86 @@ type_bool_build_generic (t_bool * self ATTRIBUTE_UNUSED,
 /// called by many symbol_decl_for_<type> methods. Some of them may
 /// wish to handle the decl building themselves though.
 static tree
-private_decl_for_ordinary_symbol (symbol * sym, void * data)
+private_decl_for_ordinary_symbol (symbol_t * sym, void * data)
 {
   // Handle only regular symbols
-  label_id * lbl = ast_as (label_id, sym->lbl);
-  gcc_assert (lbl != NULL);
-  tree id = get_identifier (estr_cstr (lbl->id));
-  tree tt = type_build_generic (sym->type, data);
+  label_t const * lbl = symbol_label (sym);
+  tree id = get_identifier (estr_cstr (label_id (lbl)));
+  tree tt = type_build_generic (symbol_type (sym), data);
   return build_decl (VAR_DECL, id, tt);
 }
 
 void *
-symbol_decl_for_own (symbol * sym, void * data)
+symbol_decl_for_unknown (symbol_t * sym ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
+{
+  gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
+  gcc_unreachable ();
+}
+
+void *
+symbol_decl_for_any (symbol_t * sym ATTRIBUTE_UNUSED,
+		     void * data ATTRIBUTE_UNUSED)
+{
+  gcc_assert (!"You shouldn't ask for GENERIC of `any'.");
+  gcc_unreachable ();
+}
+
+void *
+symbol_decl_for_own (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_int (symbol * sym, void * data)
+symbol_decl_for_int (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_void (symbol * sym, void * data)
+symbol_decl_for_void (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_real (symbol * sym, void * data)
+symbol_decl_for_real (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_string (symbol * sym, void * data)
+symbol_decl_for_string (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_bool (symbol * sym, void * data)
+symbol_decl_for_bool (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_label (symbol * sym ATTRIBUTE_UNUSED,
+symbol_decl_for_label (symbol_t * sym ATTRIBUTE_UNUSED,
 		       void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 void *
-symbol_decl_for_array (symbol * sym, void * data)
+symbol_decl_for_array (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_proc (symbol * sym, void * data)
+symbol_decl_for_proc (symbol_t * sym, void * data)
 {
-  gcc_assert (ast_isa (sym->type, t_proc));
-  tree fn_type = type_proc_build_generic ((t_proc*)sym->type, data);
-
-  // build declaration; assume procedures have string names
-  gcc_assert (ast_isa (sym->lbl, label_id));
-  char const* name = estr_cstr (ast_as (label_id, sym->lbl)->id);
+  type_t * t = symbol_type (sym);
+  tree fn_type = type_proc_build_generic (t, data);
+  char const* name = estr_cstr (label_id (symbol_label (sym)));
   tree fn_decl = build_fn_decl (name, fn_type);
 
   /*
@@ -756,19 +736,22 @@ symbol_decl_for_proc (symbol * sym, void * data)
 // ------------------------------------
 
 void *
-type_label_build_generic (t_label * self ATTRIBUTE_UNUSED,
+type_label_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			  void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
 }
 
 void *
-type_array_build_generic (t_array * self, void * data)
+type_array_build_generic (type_t * self, void * data)
 {
-  tree emtt = type_build_generic (self->host, data);
-  gcc_assert (self->bounds != NULL);
-  tree lowb = expr_build_generic (self->bounds->lobound, data);
-  tree highb = expr_build_generic (self->bounds->hibound, data);
+  tree emtt = type_build_generic (type_host (self), data);
+  boundspair_t * bp = t_array_bounds (self);
+  gcc_assert (bp != NULL);
+  expression_t * h = boundspair_hi (bp);
+  expression_t * l = boundspair_lo (bp);
+  tree lowb = expr_build_generic (l, data);
+  tree highb = expr_build_generic (h, data);
   tree arridxt = type_build_generic (type_int (), data);
   tree arrbdst = build_range_type (arridxt, lowb, highb);
   tree ret = build_array_type (emtt, arrbdst);
@@ -776,11 +759,11 @@ type_array_build_generic (t_array * self, void * data)
 }
 
 void *
-type_proc_build_generic (t_proc * self, void * data)
+type_proc_build_generic (type_t * self, void * data)
 {
-  tree fn_ret_type = type_build_generic (self->ret_type, data);
+  tree fn_ret_type = type_build_generic (t_proc_return_type (self), data);
   tree param_types = NULL_TREE;
-  slist_it_t * it = slist_iter (self->arg_types);
+  slist_it_t * it = slist_iter (t_proc_arg_types (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
       tree t1 = type_build_generic (slist_it_get (it), data);

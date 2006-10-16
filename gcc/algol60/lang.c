@@ -41,7 +41,8 @@
 
 #include "lexer.h"
 #include "parser.h"
-#include "ast-tab.h"
+#include "statement.h"
+#include "slist.h"
 
 
 /* The front end language hooks (addresses of code for this front
@@ -165,13 +166,13 @@ algol60_parse_file (int debug ATTRIBUTE_UNUSED)
   gcc_assert (a_parser != NULL);
   parser_set_logging (a_parser, ll_warning);
 
-  statement * ast = parser_parse (a_parser);
+  statement_t * ast = parser_parse (a_parser);
   logger_t * anal_log = new_logger ("analys");
   log_set_filter (anal_log, ll_warning);
 
   if (ast)
     {
-      gcc_assert (ast_isa (ast, statement));
+      //stmt_dump (ast, stderr, 0);
       log_printf (anal_log, ll_info, "entering analysis...");
       stmt_resolve_symbols (ast, anal_log);
     }
@@ -211,7 +212,7 @@ algol60_parse_file (int debug ATTRIBUTE_UNUSED)
   DECL_RESULT (decl) = resultdecl;
 
   // toplev 'begin'-'end' block is the body of `main'
-  statement * stmt0 = slist_front (ast_as (container, ast)->statements);
+  statement_t * stmt0 = slist_front (container_stmts (as_container (ast)));
 
   al60l_bind_state_t * state = new_bind_state ();
   bind_state_push_function (state, resultdecl, decl);

@@ -7,6 +7,7 @@
 #include "util.h"
 #include "lexer.h"
 #include "estring.h"
+#include "cursor.h"
 
 #include "parser-tab.h"
 
