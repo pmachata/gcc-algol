@@ -138,7 +138,7 @@ algol60_handle_option (size_t scode,
 {
   switch (scode)
     {
-    case OPT_fast_dump:
+    case OPT_fdump_ast:
       a60_options->dump_ast = value;
       return 1;
     case OPT_fparser_trace:

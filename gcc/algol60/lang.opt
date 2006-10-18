@@ -13,7 +13,7 @@ fparser-trace
 Algol60
 Trace the parsing process
 
-fast-dump
+fdump-ast
 Algol60
 Dump AST immediately after the parse
 
