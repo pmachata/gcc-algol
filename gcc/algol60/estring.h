@@ -152,11 +152,12 @@ size_t estr_length (estring_t const* src)
 
 /// Give back char at 'position'-th position of string 'src'.  Return
 /// EOF for characters off the boundaries.
-char estr_at (estring_t const* src, int position)
+int estr_at (estring_t const* src, size_t position)
   ATTRIBUTE_NONNULL(1);
 
-/// Write a char to given location.
-void estr_write (estring_t * src, char c, int position)
+/// Write a char to given location.  Return 0 if character was off the
+/// boundaries, otherwise return 1.
+int estr_write (estring_t * src, char c, size_t position)
   ATTRIBUTE_NONNULL(1);
 
 #endif//_AL60L_ESTRING_H_
