@@ -101,15 +101,7 @@ new_stmt_assign (cursor_t * cursor, slist_t const * lhss, expression_t * rhs)
   assert (rhs != NULL);
 
   statement_t * ret = private_new_statement (sk_assign, cursor, NULL);
-
-  // Build copy one by one to impose typechecking on elements.
-  slist_t * lefts = new_slist_typed (private_check_expr_lvalue, NULL);
-  slist_it_t * it = slist_iter ((slist_t *)lhss);
-  for (; slist_it_has (it); slist_it_next (it))
-    slist_pushback (lefts, slist_it_get (it));
-  delete_slist_it (it);
-
-  ret->assign.lhss = lefts;
+  ret->assign.lhss = clone_slist_typed (private_check_expr_lvalue, NULL, lhss);
   ret->assign.rhs = rhs;
 
   return ret;

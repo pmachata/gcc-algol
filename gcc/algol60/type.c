@@ -171,15 +171,7 @@ new_t_proc (type_t * rettype, slist_t const * argtypes)
 {
   type_t * ret = private_new_type (tk_proc);
   ret->t_proc.ret_type = rettype;
-
-  // Build copy one by one to impose typechecking on elements.
-  slist_t * argt = new_slist_typed (adapt_test, type);
-  slist_it_t * it = slist_iter ((slist_t *)argtypes);
-  for (; slist_it_has (it); slist_it_next (it))
-    slist_pushback (argt, slist_it_get (it));
-  delete_slist_it (it);
-  ret->t_proc.arg_types = argt;
-
+  ret->t_proc.arg_types = clone_slist_typed (adapt_test, type, argtypes);
   return ret;
 }
 

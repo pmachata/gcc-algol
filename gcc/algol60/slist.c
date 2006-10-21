@@ -127,7 +127,7 @@ new_slist_typed_from (void* (*test)(void * obj, void * user),
 }
 
 static void
-private_copy_nodes (slist_t * dest, slist_t * slist,
+private_copy_nodes (slist_t * dest, slist_t const * slist,
 		    void (*slist_push) (slist_t *, void *))
 {
   slist_node_t * node = slist->head;
@@ -136,7 +136,7 @@ private_copy_nodes (slist_t * dest, slist_t * slist,
 }
 
 slist_t *
-clone_slist (slist_t * slist)
+clone_slist (slist_t const * slist)
 {
   assert (slist != NULL);
   slist_t * ret = new_slist ();
@@ -146,7 +146,7 @@ clone_slist (slist_t * slist)
 
 slist_t *
 clone_slist_typed (void* (*test)(void * obj, void * user),
-		   void * userdata, slist_t * slist)
+		   void * userdata, slist_t const * slist)
 {
   assert (slist != NULL);
   slist_t * ret = new_slist_typed (test, userdata);

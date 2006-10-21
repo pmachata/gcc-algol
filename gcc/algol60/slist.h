@@ -34,12 +34,12 @@ slist_t * new_slist_typed_from (void* (*test)(void * obj, void * user), void * u
   ATTRIBUTE_NONNULL(1);
 
 /// Clone existing slist.
-slist_t * clone_slist (slist_t * slist)
+slist_t * clone_slist (slist_t const * slist)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1);
 
 /// Clone existing slist into new typed slist.
-slist_t * clone_slist_typed (void* (*test)(void * obj, void * user), void * userdata, slist_t * slist)
+slist_t * clone_slist_typed (void* (*test)(void * obj, void * user), void * userdata, slist_t const * slist)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(3);
