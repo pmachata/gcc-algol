@@ -74,13 +74,18 @@ expression_t * new_expr_unary (cursor_t * location, expr_unop_t unop, expression
   ATTRIBUTE_MALLOC;
 
 /// Create a function call expression.
-/// @TODO: arguments should be copied for internal use, in typed slist.
+/// The list of function arguments `arguments' has to contain only
+/// expressions. It will be cloned for purposes of storage inside
+/// expr_call privates.
 expression_t * new_expr_call (cursor_t * location, label_t * label, slist_t * arguments)
   ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_NONNULL(3)
   ATTRIBUTE_MALLOC;
 
 /// Create a function call expression with explicitly set symbol.
+/// The list of function arguments `arguments' has to contain only
+/// expressions. It will be cloned for purposes of storage inside
+/// expr_call privates.
 expression_t * new_expr_call_sym (cursor_t * location, label_t * label, slist_t * arguments, symbol_t * symbol)
   ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_NONNULL(3)
@@ -88,7 +93,9 @@ expression_t * new_expr_call_sym (cursor_t * location, label_t * label, slist_t 
   ATTRIBUTE_MALLOC;
 
 /// Create an array access expression.
-/// @TODO: indices should be copied for internal use, in typed slist.
+/// The list of array indices `indices' has to contain only
+/// expressions. It will be cloned for purposes of storage inside
+/// expr_subscript privates.
 expression_t * new_expr_subscript (cursor_t * location, label_t * label, slist_t * indices)
   ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_NONNULL(3)

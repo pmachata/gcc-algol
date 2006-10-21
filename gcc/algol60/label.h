@@ -22,6 +22,7 @@
 #include "estring.i"
 #include "boundspair.i"
 #include "slist.i"
+#include "cursor.i"
 
 /// Create new label.
 label_t * new_label (estring_t const * id)
@@ -73,6 +74,15 @@ void label_remove_boundspairs (label_t * self)
 /// manipulation.  You can add or remove bounds pairs as you wish,
 /// label itself doesn't use the list.
 slist_t * label_boundspairs (label_t const * self)
+  ATTRIBUTE_NONNULL (1);
+
+/// Assign a cursor to the label.  It must not already be present,
+/// which is guarded by an assertion.
+void label_set_cursor (label_t * self, cursor_t * cursor)
+  ATTRIBUTE_NONNULL (1);
+
+/// Get a cursor associated with the label.
+cursor_t * label_cursor (label_t const * self)
   ATTRIBUTE_NONNULL (1);
 
 #endif//_AL60L_LABEL_H_

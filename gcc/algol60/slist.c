@@ -71,6 +71,8 @@ slist_t *
 new_slist_typed (void* (*test)(void * obj, void * user), void * userdata)
 {
 #ifndef NDEBUG
+  assert (test != NULL);
+
   slist_t * ret = private_alloc_slist ();
   if (ret == NULL)
     return NULL;
@@ -112,6 +114,7 @@ slist_t *
 new_slist_typed_from (void* (*test)(void * obj, void * user),
 		      void * userdata, unsigned num, ...)
 {
+  assert (test != NULL);
   slist_t * ret = new_slist_typed (test, userdata);
   if (num > 0)
     {
@@ -123,15 +126,31 @@ new_slist_typed_from (void* (*test)(void * obj, void * user),
   return ret;
 }
 
+static void
+private_copy_nodes (slist_t * dest, slist_t * slist,
+		    void (*slist_push) (slist_t *, void *))
+{
+  slist_node_t * node = slist->head;
+  for (; node != NULL; node = node->link)
+    (*slist_push) (dest, node->object);
+}
+
 slist_t *
 clone_slist (slist_t * slist)
 {
   assert (slist != NULL);
   slist_t * ret = new_slist ();
-  slist_node_t * node = slist->head;
-  for (; node != NULL; node = node->link)
-    slist_pushback (ret, node->object);
+  private_copy_nodes (ret, slist, slist_pushback);
+  return ret;
+}
 
+slist_t *
+clone_slist_typed (void* (*test)(void * obj, void * user),
+		   void * userdata, slist_t * slist)
+{
+  assert (slist != NULL);
+  slist_t * ret = new_slist_typed (test, userdata);
+  private_copy_nodes (ret, slist, slist_pushback);
   return ret;
 }
 

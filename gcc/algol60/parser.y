@@ -256,12 +256,14 @@ LabelIdentifier:
       log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
       estring_t * lit = $1;
       $$ = new_label (lit);
+      label_set_cursor ($$, cr_csr (parser, &@1));
     }
   |
   LITINTEGER
     {
       log_printf (parser->log, ll_debug, "LabelIdentifier -> LITINTEGER");
       $$ = new_label (new_estring_fmt ("%ld", $1));
+      label_set_cursor ($$, cr_csr (parser, &@1));
     }
 
 Identifier:
@@ -269,6 +271,7 @@ Identifier:
     {
       log_printf (parser->log, ll_debug, "Identifier -> IDENTIFIER");
       $$ = new_label ($1);
+      label_set_cursor ($$, cr_csr (parser, &@1));
       @$ = @1;
     }
 
@@ -297,20 +300,20 @@ BlockDeclarationsList:
 BlockDeclarations:
   Type IdentifierList
     {
+      // Classic algol only allows in this context:
+      // ['own'] {'integer'|'real'|'Boolean'} ['array']
+      type_t * rt = type_get_root ($1);
+      if (rt != type_int ()
+	  && rt != type_real ()
+	  && rt != type_bool ())
+	log_printfc (parser->log, ll_error, cr_csr (parser, &@1),
+		    "type %s is invalid in this context.",
+		    estr_cstr (type_to_str ($1, parser->tmp)));
+
       slist_it_t * it;
       for (it = slist_iter ($2); slist_it_has (it); slist_it_next (it))
 	{
 	  label_t * lbl = label (slist_it_get (it));
-
-	  // Classic algol only allows in this context:
-	  // ['own'] {'integer'|'real'|'Boolean'} ['array']
-	  type_t * rt = type_get_root ($1);
-	  if (rt != type_int ()
-	      && rt != type_real ()
-	      && rt != type_bool ())
-	    log_printfc (parser->log, ll_error, cr_csr (parser, &@1),
-			"type %s is invalid in this context.",
-			estr_cstr (type_to_str ($1, parser->tmp)));
 
 	  // If it was array, see if identifier has dimensions and
 	  // mangle `rt' to reflect number of dimensions.
@@ -330,11 +333,9 @@ BlockDeclarations:
 	  if (types_match ($1, type_array_any ())) // 'own' doesn't influence matching
 	    {
 	      if (label_boundspairs (lbl) == NULL)
-		log_printfc (parser->log, ll_error, cr_csr (parser, &@2),
+		log_printfc (parser->log, ll_error, label_cursor (lbl),
 			    "identifier `%s' needs array bounds.",
 			    estr_cstr (label_to_str (lbl, parser->tmp)));
-		// @@@TODO: location @2 could be more accurate, if
-		// identifier nodes kept their location
 	      else
 		{
 		  assert (!slist_empty (label_boundspairs (lbl)));
@@ -361,10 +362,8 @@ BlockDeclarations:
 	  if (conflict)
 	    {
 	      parser->tmp = label_to_str (symbol_label (sym), parser->tmp);
-	      log_printfc (parser->log, ll_error, cr_csr (parser, &@2),
+	      log_printfc (parser->log, ll_error, label_cursor (lbl),
 			  "duplicate identifier `%s'.", estr_cstr (parser->tmp));
-	      // @@@TODO: location @2 could be more accurate, if
-	      // identifier nodes kept their location
 	    }
 	}
       delete_slist_it (it);
@@ -447,7 +446,6 @@ IntrinsicType:
   KWSTRING
     {
       log_printf (parser->log, ll_debug, "IntrinsicType -> KWSTRING");
-      // @@@TODO; note, this is invalid for local variables
       $$ = type_string ();
       @$ = @1;
     }
@@ -599,126 +597,126 @@ SimpleExpression:
   AOPSUB SimpleExpression %prec PREC_UNARY_MINUS
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> AOPSUB SimpleExpression");
-      $$ = new_expr_unary (cr_csr (parser, &@2), euk_uminus, $2); //@@@TODO: typecheck
+      $$ = new_expr_unary (cr_csr (parser, &@2), euk_uminus, $2);
       @$ = @2;
     }
   |
   SimpleExpression AOPADD SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPADD SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_aadd, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_aadd, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression AOPSUB SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPSUB SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_asub, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_asub, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression AOPMUL SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPMUL SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_amul, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_amul, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression AOPIDIV SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPIDIV SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_aidiv, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_aidiv, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression AOPRDIV SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPRDIV SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_ardiv, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_ardiv, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression AOPPOW SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression AOPPOW SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_apow, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_apow, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression ROPNEQ SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPNEQ SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rneq, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rneq, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression ROPEQ SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPEQ SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_req, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_req, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression ROPLTE SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPLTE SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rlte, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rlte, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression ROPLT SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPLT SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rlt, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rlt, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression ROPGTE SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPGTE SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rgte, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rgte, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression ROPGT SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression ROPGT SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rgt, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_rgt, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression LOPEQ SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPEQ SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_leq, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_leq, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression LOPIMP SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPIMP SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_limp, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_limp, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression LOPAND SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPAND SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_land, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_land, $1, $3);
       @$ = @1;
     }
   |
   SimpleExpression LOPOR SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> SimpleExpression LOPOR SimpleExpression");
-      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_lor, $1, $3); //@@@TODO: typecheck
+      $$ = new_expr_binary (cr_csr (parser, &@1), ebk_lor, $1, $3);
       @$ = @1;
     }
   |
   LOPNOT SimpleExpression
     {
       log_printf (parser->log, ll_debug, "SimpleExpression -> LOPNOT SimpleExpression");
-      $$ = new_expr_unary (cr_csr (parser, &@1), euk_not, $2); //@@@TODO: typecheck
+      $$ = new_expr_unary (cr_csr (parser, &@1), euk_not, $2);
       @$ = @1;
     }
 
@@ -726,6 +724,7 @@ FunctionDesignator:
   Identifier SEPLPAREN ActualParamList SEPRPAREN
     {
       $$ = new_expr_call (cr_csr (parser, &@1), $1, $3);
+      delete_slist ($3);
       @$ = @1;
     }
   |
@@ -733,6 +732,7 @@ FunctionDesignator:
     {
       log_printf (parser->log, ll_debug, "Identifier SEPLBRACK Expression SEPRBRACK");
       $$ = new_expr_subscript (cr_csr (parser, &@1), $1, $3);
+      delete_slist ($3);
       @$ = @1;
     }
   |

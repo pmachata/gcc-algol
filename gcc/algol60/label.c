@@ -14,6 +14,7 @@ struct struct_label_t
   char const * signature;
   estring_t const * id;
   slist_t * arr_bd_list;
+  cursor_t * cursor;
 };
 
 label_t *
@@ -25,7 +26,8 @@ new_label (estring_t const * id)
   ret->signature = private_label_signature;
   ret->id = id;
   ret->arr_bd_list = NULL;
-  return (void*)ret;
+  ret->cursor = NULL;
+  return ret;
 }
 
 void
@@ -105,4 +107,19 @@ label_boundspairs (label_t const * self)
 {
   assert (self != NULL);
   return self->arr_bd_list;
+}
+
+void
+label_set_cursor (label_t * self, cursor_t * cursor)
+{
+  assert (self != NULL);
+  assert (self->cursor == NULL);
+  self->cursor = cursor;
+}
+
+cursor_t *
+label_cursor (label_t const * self)
+{
+  assert (self != NULL);
+  return self->cursor;
 }

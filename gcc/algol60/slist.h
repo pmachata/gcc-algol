@@ -30,12 +30,19 @@ slist_t * new_slist_from (unsigned num, ...)
 
 /// Create new typed slist with `num' elements defined as extra arguments.
 slist_t * new_slist_typed_from (void* (*test)(void * obj, void * user), void * userdata, unsigned num, ...)
-  ATTRIBUTE_MALLOC;
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
 
 /// Clone existing slist.
 slist_t * clone_slist (slist_t * slist)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1);
+
+/// Clone existing slist into new typed slist.
+slist_t * clone_slist_typed (void* (*test)(void * obj, void * user), void * userdata, slist_t * slist)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(3);
 
 /// For purposes of testing type, this adaptor is provided.  The
 /// `test' has to be something*(*test)(whatever*), but is declared as

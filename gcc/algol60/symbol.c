@@ -7,7 +7,6 @@
 #include "type.h"
 #include "statement.h"
 #include "estring.h"
-#include "cursor.h"
 
 static char const * private_symbol_signature = "symbol";
 
@@ -22,11 +21,11 @@ struct struct_symbol_t
 };
 
 symbol_t *
-new_symbol (label_t const * name)
+new_symbol (label_t const * label)
 {
   symbol_t * ret = malloc (sizeof (symbol_t));
   ret->signature = private_symbol_signature;
-  ret->label = name;
+  ret->label = label;
   ret->stmt = NULL;
   ret->type = NULL;
   ret->hidden = 0;

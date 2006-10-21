@@ -72,6 +72,8 @@ expr_un_rep_t;
 typedef struct struct_expr_call_rep_t
 {
   label_t * lbl;
+
+  /// Typed slist with expressions used as arguments in call.
   slist_t * arguments;
   symbol_t * sym;
 }
@@ -232,8 +234,7 @@ new_expr_call (cursor_t * location, label_t * label, slist_t * arguments)
 
   expression_t * ret = private_new_expr (location, ek_call);
   ret->call.lbl = label;
-  // @TODO: copy into internally allocated typed slist
-  ret->call.arguments = arguments;
+  ret->call.arguments = clone_slist_typed (adapt_test, expression, arguments);
   return ret;
 }
 
@@ -258,8 +259,7 @@ new_expr_subscript (cursor_t * location, label_t * label, slist_t * indices)
 
   expression_t * ret = private_new_expr (location, ek_subscript);
   ret->subscript.lbl = label;
-  // @TODO: copy into internally allocated typed slist
-  ret->subscript.indices = indices;
+  ret->subscript.indices = clone_slist_typed (adapt_test, expression, indices);
   return ret;
 }
 

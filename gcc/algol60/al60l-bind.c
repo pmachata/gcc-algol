@@ -418,7 +418,7 @@ expr_binary_build_generic (expression_t * self, void * data)
 {
   static int treecode[] = {
     [ebk_aadd] = PLUS_EXPR,  [ebk_asub] = MINUS_EXPR,
-    [ebk_amul] = MULT_EXPR,  [ebk_aidiv] = TRUNC_DIV_EXPR, // @TODO: is this the right operator?
+    [ebk_amul] = MULT_EXPR,  [ebk_aidiv] = TRUNC_DIV_EXPR,
     [ebk_req] = EQ_EXPR,     [ebk_rneq] = NE_EXPR,
     [ebk_rlt] = LT_EXPR,     [ebk_rlte] = LE_EXPR,
     [ebk_rgt] = GT_EXPR,     [ebk_rgte] = GE_EXPR,
