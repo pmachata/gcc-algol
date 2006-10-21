@@ -224,7 +224,8 @@ void * type_proc_build_generic (type_t * self, void * data);
 /// Calls specific building function depending on the kind of
 /// type in hand.  `data` is passed verbatim into callbacks.
 void * symbol_decl_for_type (type_t * self, symbol_t * symbol, void * data)
-  ATTRIBUTE_NONNULL (1);
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2);
 
 // Callbacks for symbol_decl_for_type follow... when IN_GCC is NOT
 // defined, those have dummy definitions in type.c.  Otherwise

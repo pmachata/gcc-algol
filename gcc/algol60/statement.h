@@ -157,11 +157,16 @@ symbol_t * container_find_name_rec (container_t * self, label_t const * lbl, typ
 /// defined somewhere in the scope.  If it's not, create new
 /// definition in most enclosing scope.  Answer either found, or newly
 /// created symbol.
-symbol_t * container_find_name_rec_add_undefined (container_t * self, label_t const * lbl, type_t * atype, logger_t * log, cursor_t * cursor);
+symbol_t * container_find_name_rec_add_undefined (container_t * self, label_t const * lbl, type_t * atype, logger_t * log, cursor_t * cursor)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2)
+  ATTRIBUTE_NONNULL(3)
+  ATTRIBUTE_NONNULL(4);
 
 /// Populate given container with algol internal functions.  The
 /// container must be `stmt_toplev`.
-void stmt_toplev_define_internals (container_t * self);
+void stmt_toplev_define_internals (container_t * self)
+  ATTRIBUTE_NONNULL(1);
 
 /// Return GENERIC for given statement and all its substatements.
 /// Calls specific building function depending on the type of

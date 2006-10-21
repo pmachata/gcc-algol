@@ -126,7 +126,9 @@ algol60/label.o: algol60/label.c algol60/label.h algol60/label.i\
 
 algol60/symbol.o: algol60/symbol.c algol60/symbol.h algol60/symbol.i\
 		algol60/label.i algol60/type.i algol60/statement.i algol60/estring.i\
+		algol60/cursor.i\
 		algol60/label.h algol60/type.h algol60/statement.h algol60/estring.h\
+		algol60/cursor.h\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/type.o: algol60/type.c algol60/type.h algol60/type.i\

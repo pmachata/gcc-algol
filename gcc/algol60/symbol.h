@@ -15,10 +15,11 @@
 #include "type.i"
 #include "statement.i"
 #include "estring.i"
+#include "cursor.i"
 #include "pd.h"
 
 /// Create new symbol given its name.
-symbol_t * new_symbol (label_t const * name)
+symbol_t * new_symbol (/*cursor_t * location,*/ label_t const * name)
   ATTRIBUTE_MALLOC;
 
 /// Destroy the symbol.  `self' can be NULL.

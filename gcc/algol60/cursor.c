@@ -14,7 +14,7 @@
 
 static char const* private_cursor_signature = "cursor";
 
-typedef struct struct_cursor_rep_t
+struct struct_cursor_t
 {
   char const* signature;
 
@@ -23,12 +23,12 @@ typedef struct struct_cursor_rep_t
   int column;
   char * filename;
   int fnlen;
-} cursor_rep_t;
+};
 
 cursor_t *
 new_cursor (char const* filename, int line)
 {
-  cursor_rep_t * ret = malloc (sizeof (cursor_rep_t));
+  cursor_t * ret = malloc (sizeof (cursor_t));
 
   ret->signature = private_cursor_signature;
   ret->offset = ret->column = 0;
@@ -37,27 +37,25 @@ new_cursor (char const* filename, int line)
   ret->fnlen = strlen (filename);
   ret->filename = a_strdup (filename);
 
-  return (void*)ret;
+  return ret;
 }
 
 cursor_t *
-clone_cursor (cursor_t * _cursor)
+clone_cursor (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
-  cursor_rep_t * ret = (void*) new_cursor (cursor->filename, cursor->line);
+  cursor_t * ret = new_cursor (cursor->filename, cursor->line);
 
   ret->offset = cursor->offset;
   ret->column = cursor->column;
 
-  return (void*)ret;
+  return ret;
 }
 
 void
-delete_cursor (cursor_t * _cursor)
+delete_cursor (cursor_t * cursor)
 {
-  if (_cursor != NULL)
+  if (cursor != NULL)
     {
-      cursor_rep_t * cursor = (void*)_cursor;
       free (cursor->filename);
       free (cursor);
     }
@@ -66,69 +64,61 @@ delete_cursor (cursor_t * _cursor)
 cursor_t *
 cursor (void * ptr)
 {
-  if (((cursor_rep_t*)ptr)->signature == private_cursor_signature)
+  if (((cursor_t*)ptr)->signature == private_cursor_signature)
     return ptr;
   else
     return NULL;
 }
 
 void
-cursor_move (cursor_t * _cursor, int offset)
+cursor_move (cursor_t * cursor, int offset)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   cursor->offset += offset;
   cursor->column += offset;
 }
 
 void
-cursor_tab (cursor_t * _cursor, int tabsize)
+cursor_tab (cursor_t * cursor, int tabsize)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   cursor->offset++;
   cursor->column = ((cursor->column + 1) / tabsize + 1) * tabsize;
 }
 
 void
-cursor_nl (cursor_t * _cursor)
+cursor_nl (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   cursor->offset++;
   cursor->line++;
   cursor->column = 0;
 }
 
 int
-cursor_offset (cursor_t * _cursor)
+cursor_offset (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   return cursor->offset;
 }
 
 int
-cursor_line (cursor_t * _cursor)
+cursor_line (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   return cursor->line;
 }
 
 int
-cursor_column (cursor_t * _cursor)
+cursor_column (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   return cursor->column;
 }
 
 char const*
-cursor_file (cursor_t * _cursor)
+cursor_file (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   return cursor->filename;
 }
 
 char const*
-cursor_to_str (cursor_t * _cursor)
+cursor_to_str (cursor_t * cursor)
 {
-  cursor_rep_t * cursor = (void*)_cursor;
   static char * buf = NULL;
   static int bufsize = 0;
 
@@ -157,11 +147,10 @@ cursor_to_str (cursor_t * _cursor)
 # include "input.h"
 
 void
-cursor_to_loc (cursor_t const * _cursor, void * locptr)
+cursor_to_loc (cursor_t const * cursor, void * locptr)
 {
-  gcc_assert (_cursor != NULL);
+  gcc_assert (cursor != NULL);
   gcc_assert (locptr != NULL);
-  cursor_rep_t const * cursor = (void const *) _cursor;
   location_t * loc = locptr;
   memset (loc, 0, sizeof (location_t));
   loc->file = cursor->filename;

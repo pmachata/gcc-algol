@@ -60,7 +60,8 @@ logger_t * logger (void * ptr)
 int log_printf (logger_t * logger, debug_level_t level,
 		char const* format_string, ...)
   ATTRIBUTE_PRINTF(3,4)
-  ATTRIBUTE_NONNULL(1);
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(3);
 
 /// Like log_printf, but also include formatted information about the
 /// cursor.  Cursor may be NULL, in which case the information isn't
@@ -68,7 +69,8 @@ int log_printf (logger_t * logger, debug_level_t level,
 int log_printfc (logger_t * logger, debug_level_t level, cursor_t * cursor,
 		 char const* format_string, ...)
   ATTRIBUTE_PRINTF(4,5)
-  ATTRIBUTE_NONNULL(1);
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(4);
 
 
 /// Use this function to set up message filtering based on their

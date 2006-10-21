@@ -26,7 +26,7 @@ char const* debug_level_str[debug_level_t_count] = {
   "fatal"
 };
 
-typedef struct struct_logger_rep_t
+struct struct_logger_t
 {
   char const* signature;
 
@@ -34,12 +34,14 @@ typedef struct struct_logger_rep_t
   FILE * stream;
   int ct[debug_level_t_count];
   debug_level_t threshold;
-} logger_rep_t;
+};
 
 logger_t *
 new_logger (char const* name)
 {
-  logger_rep_t * ret = malloc (sizeof (logger_rep_t));
+  assert (name != NULL);
+
+  logger_t * ret = malloc (sizeof (logger_t));
   if (ret == NULL)
     return NULL;
 
@@ -50,15 +52,14 @@ new_logger (char const* name)
   memset (ret->ct, 0, sizeof (ret->ct));
   ret->threshold = ll_warning;
 
-  return (void*)ret;
+  return ret;
 }
 
 void
-delete_logger (logger_t * _logger)
+delete_logger (logger_t * logger)
 {
-  if (_logger != NULL)
+  if (logger != NULL)
     {
-      logger_rep_t * logger = (void*)_logger;
       free (logger->name);
       free (logger);
     }
@@ -72,40 +73,46 @@ logger (void * ptr)
 
 /// Depending on filtering rules in effect, either filter out or print
 /// the message.
-static int private_maybe_log_message (logger_rep_t * logger, debug_level_t level,
+static int private_maybe_log_message (logger_t * logger, debug_level_t level,
 				      cursor_t * cursor, char const * fmt,
 				      va_list * ap);
 
 /// General error reporting function, #ifdefed to either use GCC or
 /// our own error reporting.
-static int private_log_printfc (logger_rep_t * logger, debug_level_t level,
+static int private_log_printfc (logger_t * logger, debug_level_t level,
 				cursor_t * cursor, char const * fmt,
 				va_list * ap0);
 
 /// Non-GCC error reporting.
-static int private_log_printfc_nogcc (logger_rep_t * logger, debug_level_t level,
+static int private_log_printfc_nogcc (logger_t * logger, debug_level_t level,
 				      cursor_t * cursor, char const * fmt,
 				      va_list * ap);
 
 int
-log_printf (logger_t * _logger, debug_level_t level,
+log_printf (logger_t * logger, debug_level_t level,
 	    char const* fmt, ...)
 {
+  assert (logger != NULL);
+  assert (fmt != NULL);
+
   va_list ap;
   va_start (ap, fmt);
-  int ret = private_maybe_log_message ((void*)_logger, level, NULL, fmt, &ap);
+  int ret = private_maybe_log_message (logger, level, NULL, fmt, &ap);
   va_end (ap);
 
   return ret;
 }
 
 int
-log_printfc (logger_t * _logger, debug_level_t level, cursor_t * cursor,
+log_printfc (logger_t * logger, debug_level_t level, cursor_t * cursor,
 	     char const* fmt, ...)
 {
+  assert (logger != NULL);
+  assert (fmt != NULL);
+
   va_list ap;
   va_start (ap, fmt);
-  int ret = private_maybe_log_message ((void*)_logger, level, cursor, fmt, &ap);
+  int ret = private_maybe_log_message (logger, level, cursor, fmt, &ap);
   va_end (ap);
   return ret;
 }
@@ -113,30 +120,31 @@ log_printfc (logger_t * _logger, debug_level_t level, cursor_t * cursor,
 void
 log_set_filter (logger_t * logger, debug_level_t level)
 {
-  ((logger_rep_t *)(void *)logger)->threshold = level;
+  assert (logger != NULL);
+  logger->threshold = level;
 }
 
 void
 log_set_stream (logger_t * logger, FILE * stream)
 {
-  ((logger_rep_t *)(void *)logger)->stream = stream;
+  assert (logger != NULL);
+  logger->stream = stream;
 }
 
 int
-log_count_messages (logger_t const* _logger, debug_level_t level)
+log_count_messages (logger_t const * logger, debug_level_t level)
 {
+  assert (logger != NULL);
   int ret = 0;
-  logger_rep_t const* logger = (void*)_logger;
-  debug_level_t l = level;
 
-  for (; l < debug_level_t_count; ++l)
-    ret += logger->ct[l];
+  for (; level < debug_level_t_count; ++level)
+    ret += logger->ct[level];
 
   return ret;
 }
 
 static int
-private_maybe_log_message (logger_rep_t * logger, debug_level_t level,
+private_maybe_log_message (logger_t * logger, debug_level_t level,
 			   cursor_t * cursor, char const * fmt,
 			   va_list * ap)
 {
@@ -151,7 +159,7 @@ private_maybe_log_message (logger_rep_t * logger, debug_level_t level,
 }
 
 static int
-private_log_printfc_nogcc (logger_rep_t * logger, debug_level_t level,
+private_log_printfc_nogcc (logger_t * logger, debug_level_t level,
 			   cursor_t * cursor, char const * fmt, va_list * ap)
 {
   int ret = 0;
@@ -176,7 +184,7 @@ private_log_printfc_nogcc (logger_rep_t * logger, debug_level_t level,
 # include "diagnostic.h"
 
 static int
-private_log_printfc (logger_rep_t * logger ATTRIBUTE_UNUSED, debug_level_t level,
+private_log_printfc (logger_t * logger ATTRIBUTE_UNUSED, debug_level_t level,
 		     cursor_t * cursor, char const * fmt, va_list * ap)
 {
   // GCC diagnostics are not intended for debug messages and notes.
@@ -205,7 +213,7 @@ private_log_printfc (logger_rep_t * logger ATTRIBUTE_UNUSED, debug_level_t level
 #else
 // Outside the GCC, always fall back to our own error reporting.
 static int
-private_log_printfc (logger_rep_t * logger, debug_level_t level,
+private_log_printfc (logger_t * logger, debug_level_t level,
 		     cursor_t * cursor, char const * fmt, va_list * ap)
 {
   return private_log_printfc_nogcc (logger, level, cursor, fmt, ap);

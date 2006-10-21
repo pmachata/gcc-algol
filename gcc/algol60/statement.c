@@ -53,7 +53,7 @@ typedef enum enum_stmt_kind_t
 }
 stmt_kind_t;
 
-typedef struct struct_statement_rep_t
+struct struct_statement_t
 {
   char const * signature;
   stmt_kind_t kind;
@@ -66,13 +66,12 @@ typedef struct struct_statement_rep_t
     stmt_call_rep_t call;
     container_rep_t block; ///< Used by both block and toplev.
   };
-}
-statement_rep_t;
+};
 
-static statement_rep_t *
+static statement_t *
 private_new_statement (stmt_kind_t kind, cursor_t * cursor, container_t * parent)
 {
-  statement_rep_t * ret = malloc (sizeof (statement_rep_t));
+  statement_t * ret = malloc (sizeof (statement_t));
   ret->signature = private_statement_signature;
   ret->kind = kind;
   ret->cursor = cursor;
@@ -83,7 +82,7 @@ private_new_statement (stmt_kind_t kind, cursor_t * cursor, container_t * parent
 statement_t *
 new_stmt_dummy (cursor_t * cursor)
 {
-  return (void*)private_new_statement (sk_dummy, cursor, NULL);
+  return private_new_statement (sk_dummy, cursor, NULL);
 }
 
 static void *
@@ -98,7 +97,10 @@ private_check_expr_lvalue (void * ptr, void * data ATTRIBUTE_UNUSED)
 statement_t *
 new_stmt_assign (cursor_t * cursor, slist_t const * lhss, expression_t * rhs)
 {
-  statement_rep_t * ret = private_new_statement (sk_assign, cursor, NULL);
+  assert (lhss != NULL);
+  assert (rhs != NULL);
+
+  statement_t * ret = private_new_statement (sk_assign, cursor, NULL);
 
   // Build copy one by one to impose typechecking on elements.
   slist_t * lefts = new_slist_typed (private_check_expr_lvalue, NULL);
@@ -110,24 +112,26 @@ new_stmt_assign (cursor_t * cursor, slist_t const * lhss, expression_t * rhs)
   ret->assign.lhss = lefts;
   ret->assign.rhs = rhs;
 
-  return (void*)ret;
+  return ret;
 }
 
 statement_t *
 new_stmt_call (cursor_t * cursor, expression_t * call)
 {
-  statement_rep_t * ret = private_new_statement (sk_call, cursor, NULL);
+  assert (call != NULL);
+
+  statement_t * ret = private_new_statement (sk_call, cursor, NULL);
   ret->call.call = call;
-  return (void*)ret;
+  return ret;
 }
 
 static container_t *
 private_new_container (stmt_kind_t kind, cursor_t * cursor)
 {
-  statement_rep_t * ret = private_new_statement (kind, cursor, NULL);
+  statement_t * ret = private_new_statement (kind, cursor, NULL);
   ret->block.statements = new_slist_typed (adapt_test, statement);
   ret->block.symtab = new_slist_typed (adapt_test, symbol);
-  return (void*)ret;
+  return (container_t *)ret;
 }
 
 container_t *
@@ -151,8 +155,8 @@ statement (void * ptr)
 container_t *
 container (void * ptr)
 {
-  statement_rep_t * st;
-  if ((st = (void*)statement (ptr))
+  statement_t * st;
+  if ((st = statement (ptr))
       && (st->kind == sk_block
 	  || st->kind == sk_toplev))
     return (void*)st;
@@ -187,10 +191,10 @@ padding (int level)
 }
 
 
-static void private_stmt_dump (statement_t const * _self, estring_t * buf, int level);
+static void private_stmt_dump (statement_t const * self, estring_t * buf, int level);
 
 static void
-private_dump_container (statement_rep_t const * self, estring_t * buf, int level)
+private_dump_container (statement_t const * self, estring_t * buf, int level)
 {
   estring_t * buf0 = new_estring ();
 
@@ -261,7 +265,7 @@ private_dump_container (statement_rep_t const * self, estring_t * buf, int level
       // more statements in container (i.e. `stmt' is last statement)
       // and `stmt' is dummy statement.
       if (slist_it_has (it)
-	  || ((statement_rep_t *)stmt)->kind != sk_dummy)
+	  || ((statement_t *)stmt)->kind != sk_dummy)
 	private_stmt_dump (stmt, buf, level);
       else
 	break;
@@ -272,7 +276,7 @@ private_dump_container (statement_rep_t const * self, estring_t * buf, int level
 }
 
 static void
-private_dump_assign (statement_rep_t const * self, estring_t * buf, int level)
+private_dump_assign (statement_t const * self, estring_t * buf, int level)
 {
   slist_it_t * it = slist_iter (self->assign.lhss);
   estring_t * buf0 = new_estring ();
@@ -290,10 +294,8 @@ private_dump_assign (statement_rep_t const * self, estring_t * buf, int level)
 }
 
 static void
-private_stmt_dump (statement_t const * _self, estring_t * buf, int level)
+private_stmt_dump (statement_t const * self, estring_t * buf, int level)
 {
-  A60_USER_TO_REP (statement, self, const *);
-
   switch (self->kind)
     {
     case sk_dummy:
@@ -332,6 +334,8 @@ private_stmt_dump (statement_t const * _self, estring_t * buf, int level)
 estring_t *
 stmt_to_str (statement_t const * self, estring_t * buf)
 {
+  assert (self != NULL);
+
   if (buf == NULL)
     buf = new_estring ();
   else
@@ -342,7 +346,7 @@ stmt_to_str (statement_t const * self, estring_t * buf)
 }
 
 static void
-private_resolve_symbols_assign (statement_rep_t * self, logger_t * log)
+private_resolve_symbols_assign (statement_t * self, logger_t * log)
 {
   expr_resolve_symbols (self->assign.rhs, self->parent, log);
   slist_it_t * it = slist_iter (self->assign.lhss);
@@ -387,7 +391,7 @@ private_resolve_symbols_assign (statement_rep_t * self, logger_t * log)
 }
 
 static void
-private_resolve_symbols_block (statement_rep_t * self, logger_t * log)
+private_resolve_symbols_block (statement_t * self, logger_t * log)
 {
   assert (container (self));
 
@@ -408,9 +412,10 @@ private_resolve_symbols_block (statement_rep_t * self, logger_t * log)
 }
 
 void
-stmt_resolve_symbols (statement_t * _self, logger_t * log)
+stmt_resolve_symbols (statement_t * self, logger_t * log)
 {
-  A60_USER_TO_REP (statement, self, *);
+  assert (self != NULL);
+  assert (log != NULL);
 
   switch (self->kind)
     {
@@ -434,40 +439,44 @@ stmt_resolve_symbols (statement_t * _self, logger_t * log)
 }
 
 container_t *
-stmt_parent (statement_t const * _self)
+stmt_parent (statement_t const * self)
 {
-  A60_USER_TO_REP (statement, self, const *);
+  assert (self != NULL);
   return self->parent;
 }
 
 container_t *
 container_parent (container_t const * _self)
 {
+  assert (_self != NULL);
   A60_USER_TO_REP (statement, self, const *);
   assert (self->kind == sk_block || self->kind == sk_toplev);
   return self->parent;
 }
 
 void
-stmt_set_parent (statement_t * _self, container_t * parent)
+stmt_set_parent (statement_t * self, container_t * parent)
 {
-  A60_USER_TO_REP (statement, self, *);
+  assert (self != NULL);
   self->parent = parent;
 }
 
 void
 container_set_parent (container_t * _self, container_t * parent)
 {
+  assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (self->kind == sk_block || self->kind == sk_toplev);
+
   self->parent = parent;
 }
 
 void
-container_add_stmt (container_t * _self, statement_t * _stmt)
+container_add_stmt (container_t * _self, statement_t * stmt)
 {
+  assert (_self != NULL);
+  assert (stmt != NULL);
   A60_USER_TO_REP (statement, self, *);
-  A60_USER_TO_REP (statement, stmt, *);
   assert (self->kind == sk_block || self->kind == sk_toplev);
 
   slist_pushback (self->block.statements, stmt);
@@ -475,25 +484,25 @@ container_add_stmt (container_t * _self, statement_t * _stmt)
 }
 
 slist_t *
-stmt_assign_lhss (statement_t const * _self)
+stmt_assign_lhss (statement_t const * self)
 {
-  A60_USER_TO_REP (statement, self, const *);
+  assert (self != NULL);
   assert (self->kind == sk_assign);
   return self->assign.lhss;
 }
 
 expression_t *
-stmt_assign_rhs (statement_t const * _self)
+stmt_assign_rhs (statement_t const * self)
 {
-  A60_USER_TO_REP (statement, self, const *);
+  assert (self != NULL);
   assert (self->kind == sk_assign);
   return self->assign.rhs;
 }
 
 expression_t *
-stmt_call_call (statement_t const * _self)
+stmt_call_call (statement_t const * self)
 {
-  A60_USER_TO_REP (statement, self, const *);
+  assert (self != NULL);
   assert (self->kind == sk_call);
   return self->call.call;
 }
@@ -501,6 +510,7 @@ stmt_call_call (statement_t const * _self)
 slist_t *
 container_symtab (container_t const * _self)
 {
+  assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (self->kind == sk_block || self->kind == sk_toplev);
   return self->block.symtab;
@@ -509,6 +519,7 @@ container_symtab (container_t const * _self)
 slist_t *
 container_stmts (container_t const * _self)
 {
+  assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (self->kind == sk_block || self->kind == sk_toplev);
   return self->block.statements;
@@ -518,6 +529,8 @@ int
 container_add_symbol (container_t * _self, symbol_t * sym,
 		      symtab_entry_kind_t internal)
 {
+  assert (_self != NULL);
+  assert (sym != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (container (self));
 
@@ -532,6 +545,8 @@ container_add_symbol (container_t * _self, symbol_t * sym,
 symbol_t *
 container_find_name (container_t * _self, label_t const * lbl, type_t const * atype)
 {
+  assert (_self != NULL);
+  assert (lbl != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (container (self));
 
@@ -550,6 +565,8 @@ container_find_name (container_t * _self, label_t const * lbl, type_t const * at
 symbol_t *
 container_find_name_rec (container_t * _self, label_t const * lbl, type_t const * atype)
 {
+  assert (_self != NULL);
+  assert (lbl != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (container (self));
 
@@ -565,6 +582,10 @@ container_find_name_rec_add_undefined (container_t * self, label_t const * lbl,
 				       type_t * atype, logger_t * log,
 				       cursor_t * cursor)
 {
+  assert (self != NULL);
+  assert (lbl != NULL);
+  assert (atype != NULL);
+  assert (log != NULL);
   assert (container (self));
 
   symbol_t * found = container_find_name_rec (self, lbl, atype);
@@ -614,6 +635,7 @@ container_find_name_rec_add_undefined (container_t * self, label_t const * lbl,
 void
 stmt_toplev_define_internals (container_t * _self)
 {
+  assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
   assert (container (self));
   assert (self->kind == sk_toplev);
@@ -674,24 +696,23 @@ void * ATTRIBUTE_NORETURN builtin_decl_get_generic (symbol_t * sym ATTRIBUTE_UNU
 #endif
 
 void *
-stmt_build_generic (statement_t * _self, void * data)
+stmt_build_generic (statement_t * self, void * data)
 {
-  A60_USER_TO_REP (statement, self, *);
-
+  assert (self != NULL);
   switch (self->kind)
     {
     case sk_dummy:
-      return stmt_dummy_build_generic (_self, data);
+      return stmt_dummy_build_generic (self, data);
 
     case sk_assign:
-      return stmt_assign_build_generic (_self, data);
+      return stmt_assign_build_generic (self, data);
 
     case sk_call:
-      return stmt_call_build_generic (_self, data);
+      return stmt_call_build_generic (self, data);
 
     case sk_block:
     case sk_toplev:
-      return stmt_container_build_generic (as_container (_self), data);
+      return stmt_container_build_generic (as_container (self), data);
     };
 
   assert (!"Should never get there!");

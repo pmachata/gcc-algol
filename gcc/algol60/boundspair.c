@@ -6,23 +6,22 @@
 
 static char const * private_boundspair_signature = "boundspair";
 
-typedef struct struct_boundspair_rep_t
+struct struct_boundspair_t
 {
   char const * signature;
   expression_t * lobound;
   expression_t * hibound;
-}
-boundspair_rep_t;
+};
 
 
 boundspair_t *
 new_boundspair (expression_t * lo, expression_t * hi)
 {
-  boundspair_rep_t * ret = malloc (sizeof (boundspair_rep_t));
+  boundspair_t * ret = malloc (sizeof (boundspair_t));
   ret->signature = private_boundspair_signature;
   ret->hibound = hi;
   ret->lobound = lo;
-  return (void*)ret;
+  return ret;
 }
 
 void
@@ -38,29 +37,29 @@ boundspair (void * ptr)
 }
 
 expression_t *
-boundspair_hi (boundspair_t const * _self)
+boundspair_hi (boundspair_t const * self)
 {
-  A60_USER_TO_REP(boundspair, self, const *);
+  assert (self != NULL);
   return self->hibound;
 }
 
 expression_t *
-boundspair_lo (boundspair_t const * _self)
+boundspair_lo (boundspair_t const * self)
 {
-  A60_USER_TO_REP(boundspair, self, const *);
+  assert (self != NULL);
   return self->lobound;
 }
 
 void
-boundspair_set_hi (boundspair_t * _self, expression_t * bound)
+boundspair_set_hi (boundspair_t * self, expression_t * bound)
 {
-  A60_USER_TO_REP(boundspair, self, *);
+  assert (self != NULL);
   self->hibound = bound;
 }
 
 void
-boundspair_set_lo (boundspair_t * _self, expression_t * bound)
+boundspair_set_lo (boundspair_t * self, expression_t * bound)
 {
-  A60_USER_TO_REP(boundspair, self, *);
+  assert (self != NULL);
   self->lobound = bound;
 }

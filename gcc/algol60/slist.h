@@ -25,7 +25,11 @@ slist_t * new_slist_typed (void* (*test)(void * obj, void * user), void * userda
   ATTRIBUTE_NONNULL(1);
 
 /// Create new slist with `num' elements defined as extra arguments.
-slist_t * new_slist_from (int num, ...)
+slist_t * new_slist_from (unsigned num, ...)
+  ATTRIBUTE_MALLOC;
+
+/// Create new typed slist with `num' elements defined as extra arguments.
+slist_t * new_slist_typed_from (void* (*test)(void * obj, void * user), void * userdata, unsigned num, ...)
   ATTRIBUTE_MALLOC;
 
 /// Clone existing slist.

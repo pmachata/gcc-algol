@@ -27,6 +27,7 @@ expression_t * new_expr_real (cursor_t * location, estring_t const* value)
 
 /// Create an expression representing string literal.
 expression_t * new_expr_string (cursor_t * location, estring_t const* value)
+  ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_MALLOC;
 
 /// Create an expression representing boolean literal.
@@ -35,6 +36,7 @@ expression_t * new_expr_bool (cursor_t * location, int value)
 
 /// Create an expression representing variable reference.
 expression_t * new_expr_idref (cursor_t * location, label_t * lbl)
+  ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_MALLOC;
 
 /// Create an `if-then-else` expression.

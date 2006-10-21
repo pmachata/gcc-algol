@@ -9,18 +9,19 @@
 
 static char const * private_label_signature = "label";
 
-typedef struct struct_label_rep_t
+struct struct_label_t
 {
   char const * signature;
   estring_t const * id;
   slist_t * arr_bd_list;
-}
-label_rep_t;
+};
 
 label_t *
 new_label (estring_t const * id)
 {
-  label_rep_t * ret = malloc (sizeof (label_rep_t));
+  assert (id != NULL);
+
+  label_t * ret = malloc (sizeof (label_t));
   ret->signature = private_label_signature;
   ret->id = id;
   ret->arr_bd_list = NULL;
@@ -28,11 +29,10 @@ new_label (estring_t const * id)
 }
 
 void
-delete_label (label_t * _self)
+delete_label (label_t * self)
 {
-  if (_self != NULL)
+  if (self != NULL)
     {
-      label_rep_t * self = (void *)_self;
       delete_slist (self->arr_bd_list);
       free (self);
     }
@@ -45,16 +45,16 @@ label (void * ptr)
 }
 
 estring_t const *
-label_id (label_t const * _self)
+label_id (label_t const * self)
 {
-  A60_USER_TO_REP(label, self, const *);
+  assert (self != NULL);
   return self->id;
 }
 
 estring_t *
-label_to_str (label_t const * _self, estring_t * buf)
+label_to_str (label_t const * self, estring_t * buf)
 {
-  A60_USER_TO_REP(label, self, const *);
+  assert (self != NULL);
   if (buf == NULL)
     buf = new_estring ();
   estr_assign (buf, self->id);
@@ -62,19 +62,17 @@ label_to_str (label_t const * _self, estring_t * buf)
 }
 
 int
-label_eq (label_t const * _lhs, label_t const * _rhs)
+label_eq (label_t const * lhs, label_t const * rhs)
 {
-  A60_USER_TO_REP(label, lhs, const *);
-  A60_USER_TO_REP(label, rhs, const *);
-
+  assert (lhs != NULL);
+  assert (rhs != NULL);
   return !estr_compare (lhs->id, rhs->id);
 }
 
 slist_t *
-label_add_boundspairs (label_t * _self)
+label_add_boundspairs (label_t * self)
 {
-  A60_USER_TO_REP(label, self, *);
-
+  assert (self != NULL);
   assert (self->arr_bd_list == NULL);
   self->arr_bd_list = new_slist_typed (adapt_test, boundspair);
   return self->arr_bd_list;
@@ -83,6 +81,8 @@ label_add_boundspairs (label_t * _self)
 slist_t *
 label_add_boundspairs_with (label_t * self, slist_t * bps)
 {
+  assert (self != NULL);
+  assert (bps != NULL);
   slist_t * list = label_add_boundspairs (self);
   slist_it_t * it = slist_iter (bps);
   for (; slist_it_has (it); slist_it_next (it))
@@ -92,18 +92,17 @@ label_add_boundspairs_with (label_t * self, slist_t * bps)
 }
 
 void
-label_remove_boundspairs (label_t * _self)
+label_remove_boundspairs (label_t * self)
 {
-  A60_USER_TO_REP(label, self, *);
-
+  assert (self != NULL);
   assert (self->arr_bd_list != NULL);
   delete_slist (self->arr_bd_list);
   self->arr_bd_list = NULL;
 }
 
 slist_t *
-label_boundspairs (label_t const * _self)
+label_boundspairs (label_t const * self)
 {
-  A60_USER_TO_REP(label, self, const *);
+  assert (self != NULL);
   return self->arr_bd_list;
 }

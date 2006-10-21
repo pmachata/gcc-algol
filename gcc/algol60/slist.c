@@ -5,39 +5,43 @@
 
 #ifndef SELF_TEST
 
-#include "slist.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "slist.h"
+#include "meta.h"
+
 static char const* private_slist_signature = "slist";
 
-typedef struct struct_slist_node_rep_t
-{
-  struct struct_slist_node_rep_t * link;
-  void * object;
-} slist_node_rep_t;
+typedef struct struct_slist_node_t slist_node_t;
 
-typedef struct struct_slist_rep_t
+struct struct_slist_node_t
+{
+  slist_node_t * link;
+  void * object;
+};
+
+struct struct_slist_t
 {
   char const* signature;
-  slist_node_rep_t * head;
-  slist_node_rep_t * tail;
+  slist_node_t * head;
+  slist_node_t * tail;
 #ifndef NDEBUG
   void * (*test)(void * obj, void * user);
   void * test_userdata;
 #endif
-} slist_rep_t;
+};
 
-typedef struct struct_slist_it_rep_t
+struct struct_slist_it_t
 {
-  slist_node_rep_t * pointee;
-} slist_it_rep_t;
+  slist_node_t * pointee;
+};
 
-static slist_rep_t *
+static slist_t *
 private_alloc_slist (void)
 {
-  slist_rep_t * ret = malloc (sizeof (slist_rep_t));
+  slist_t * ret = malloc (sizeof (slist_t));
   if (ret == NULL)
     return NULL;
 
@@ -60,49 +64,71 @@ adapt_test (void * obj, void * test)
 slist_t *
 new_slist (void)
 {
-  return (void*)private_alloc_slist ();
+  return private_alloc_slist ();
 }
 
 slist_t *
 new_slist_typed (void* (*test)(void * obj, void * user), void * userdata)
 {
 #ifndef NDEBUG
-  slist_rep_t * ret = private_alloc_slist ();
+  slist_t * ret = private_alloc_slist ();
   if (ret == NULL)
     return NULL;
 
   ret->test = test;
   ret->test_userdata = userdata;
 
-  return (void*)ret;
+  return ret;
 #else
   return new_slist ();
 #endif
 }
 
-slist_t *
-new_slist_from (int num, ...)
+static void
+private_push_elements (slist_t * self, unsigned num, va_list * ap,
+		       void (*slist_push) (slist_t *, void *))
 {
-  assert (num >= 0);
+  assert (num > 0);
+  do
+    (*slist_push) (self, va_arg(*ap, void *));
+  while (--num);
+}
+
+slist_t *
+new_slist_from (unsigned num, ...)
+{
   slist_t * ret = new_slist ();
-  va_list ap;
-  va_start(ap, num);
-  while (num--)
+  if (num > 0)
     {
-      void * arg = va_arg(ap, void *);
-      slist_pushback (ret, arg);
+      va_list ap;
+      va_start(ap, num);
+      private_push_elements (ret, num, &ap, slist_pushback);
+      va_end(ap);
     }
-  va_end(ap);
   return ret;
 }
 
 slist_t *
-clone_slist (slist_t * _slist)
+new_slist_typed_from (void* (*test)(void * obj, void * user),
+		      void * userdata, unsigned num, ...)
 {
-  assert (_slist != NULL);
+  slist_t * ret = new_slist_typed (test, userdata);
+  if (num > 0)
+    {
+      va_list ap;
+      va_start(ap, num);
+      private_push_elements (ret, num, &ap, slist_pushback);
+      va_end(ap);
+    }
+  return ret;
+}
+
+slist_t *
+clone_slist (slist_t * slist)
+{
+  assert (slist != NULL);
   slist_t * ret = new_slist ();
-  slist_rep_t * slist = (void*)_slist;
-  slist_node_rep_t * node = slist->head;
+  slist_node_t * node = slist->head;
   for (; node != NULL; node = node->link)
     slist_pushback (ret, node->object);
 
@@ -110,16 +136,15 @@ clone_slist (slist_t * _slist)
 }
 
 void
-delete_slist (slist_t * _list)
+delete_slist (slist_t * list)
 {
-  if (_list != NULL)
+  if (list != NULL)
     {
-      slist_rep_t * list = (void*)_list;
-      slist_node_rep_t * node = list->head;
+      slist_node_t * node = list->head;
 
       for (; node != NULL; )
 	{
-	  slist_node_rep_t * next = node->link;
+	  slist_node_t * next = node->link;
 	  free (node);
 	  node = next;
 	}
@@ -131,15 +156,12 @@ delete_slist (slist_t * _list)
 slist_t *
 slist (void * ptr)
 {
-  if (((slist_rep_t*)ptr)->signature == private_slist_signature)
-    return ptr;
-  else
-    return NULL;
+  A60_CHECKED_CONVERSION(slist, ptr);
 }
 
 #ifndef NDEBUG
 static void
-private_test_element (slist_rep_t * list, void * object)
+private_test_element (slist_t * list, void * object)
 {
   if (list->test != NULL)
     assert (list->test (object, list->test_userdata));
@@ -149,13 +171,12 @@ private_test_element (slist_rep_t * list, void * object)
 #endif
 
 void
-slist_pushback (slist_t * _list, void * object)
+slist_pushback (slist_t * list, void * object)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
   private_test_element (list, object);
 
-  slist_node_rep_t * node = malloc (sizeof (slist_node_rep_t));
+  slist_node_t * node = malloc (sizeof (slist_node_t));
   node->object = object;
   node->link = NULL;
 
@@ -173,13 +194,12 @@ slist_pushback (slist_t * _list, void * object)
 }
 
 void
-slist_pushfront (slist_t * _list, void * object)
+slist_pushfront (slist_t * list, void * object)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
   private_test_element (list, object);
 
-  slist_node_rep_t * node = malloc (sizeof (slist_node_rep_t));
+  slist_node_t * node = malloc (sizeof (slist_node_t));
   node->object = object;
 
   if (list->tail == NULL)
@@ -197,12 +217,11 @@ slist_pushfront (slist_t * _list, void * object)
 }
 
 void *
-slist_popfront (slist_t * _list)
+slist_popfront (slist_t * list)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
 
-  slist_node_rep_t * node = list->head;
+  slist_node_t * node = list->head;
   void * object = node->object;
 
   list->head = node->link;
@@ -214,38 +233,33 @@ slist_popfront (slist_t * _list)
 }
 
 void *
-slist_front (slist_t * _list)
+slist_front (slist_t * list)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
   return list->head->object;
 }
 
 void *
-slist_back (slist_t * _list)
+slist_back (slist_t * list)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
   return list->tail->object;
 }
 
 int
-slist_empty (slist_t * _list)
+slist_empty (slist_t * list)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
-
+  assert (list != NULL);
   assert ((list->head == NULL) == (list->tail == NULL));
   return (list->head == NULL);
 }
 
 int
-slist_length (slist_t * _list)
+slist_length (slist_t * list)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
 
-  slist_node_rep_t * node = list->head;
+  slist_node_t * node = list->head;
   int length = 0;
   for (; node != NULL; node = node->link)
     length++;
@@ -254,38 +268,36 @@ slist_length (slist_t * _list)
 }
 
 void slist_each (
-  slist_t * _list,
+  slist_t * list,
   void (*fn)(slist_t *, void *, void *),
   void * userdata)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
   assert (fn != NULL);
 
-  slist_node_rep_t * node = list->head;
+  slist_node_t * node = list->head;
   for (; node != NULL; node = node->link)
     {
       void * obj = node->object;
-      fn (_list, obj, userdata);
+      (*fn) (list, obj, userdata);
     }
 }
 
 
 slist_t *
 slist_filter (
-   slist_t * _list,
+   slist_t * list,
    int (*pred)(slist_t * /*list*/, void * /*label*/, void * /*userdata*/),
    void * userdata)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
   assert (pred != NULL);
 
   slist_t * ret = new_slist ();
-  slist_node_rep_t * node = list->head;
+  slist_node_t * node = list->head;
   for (; node != NULL; node = node->link)
     {
-      if (pred (_list, node->object, userdata))
+      if ((*pred) (list, node->object, userdata))
 	slist_pushback (ret, node->object);
     }
 
@@ -294,57 +306,51 @@ slist_filter (
 
 
 slist_it_t *
-slist_iter (slist_t * _list)
+slist_iter (slist_t * list)
 {
-  assert (_list != NULL);
-  slist_rep_t * list = (void*)_list;
+  assert (list != NULL);
 
-  slist_it_rep_t * ret = malloc (sizeof (slist_it_rep_t));
+  slist_it_t * ret = malloc (sizeof (slist_it_t));
   if (ret == NULL)
     return NULL;
 
   ret->pointee = list->head;
 
-  return (void*)ret;
+  return ret;
 }
 
 int
-slist_it_has (slist_it_t * _it)
+slist_it_has (slist_it_t * it)
 {
-  assert (_it != NULL);
-  slist_it_rep_t * it = (void*)_it;
+  assert (it != NULL);
   return it->pointee != NULL;
 }
 
 void *
-slist_it_get (slist_it_t * _it)
+slist_it_get (slist_it_t * it)
 {
-  assert (_it != NULL);
-  slist_it_rep_t * it = (void*)_it;
+  assert (it != NULL);
   return it->pointee->object;
 }
 
 void
-slist_it_put (slist_it_t * _it, void * object)
+slist_it_put (slist_it_t * it, void * object)
 {
-  assert (_it != NULL);
-  slist_it_rep_t * it = (void*)_it;
+  assert (it != NULL);
   it->pointee->object = object;
 }
 
 void
-slist_it_next (slist_it_t * _it)
+slist_it_next (slist_it_t * it)
 {
-  assert (_it != NULL);
-  slist_it_rep_t * it = (void*)_it;
+  assert (it != NULL);
   it->pointee = it->pointee->link;
 }
 
 void
 delete_slist_it (slist_it_t * it)
 {
-  if (it != NULL)
-    free (it);
+  free (it);
 }
 
 #else /* SELF_TEST */

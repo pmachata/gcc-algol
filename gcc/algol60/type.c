@@ -50,7 +50,7 @@ typedef enum enum_type_kind_t
 }
 type_kind_t;
 
-typedef struct struct_type_rep_t
+struct struct_type_t
 {
   char const * signature;
   type_kind_t kind;
@@ -59,20 +59,19 @@ typedef struct struct_type_rep_t
     t_own_t t_own;
     t_proc_t t_proc;
   };
-}
-type_rep_t;
+};
 
 char const * const private_type_signature = "type";
 
-static type_rep_t * private_new_type (type_kind_t kind);
-static void private_type_to_str (type_rep_t * self, estring_t * buf, int canon);
+static type_t * private_new_type (type_kind_t kind);
+static void private_type_to_str (type_t const * self, estring_t * buf, int canon);
 static int private_proc_types_check (t_proc_t const * self, t_proc_t const * other, int (*pred)(type_t const *, type_t const *));
-static void private_array_resolve_symbols (type_rep_t * tself, container_t * context, logger_t * log);
+static void private_array_resolve_symbols (type_t * tself, container_t * context, logger_t * log);
 
-static type_rep_t *
+static type_t *
 private_new_type (type_kind_t kind)
 {
-  type_rep_t * ret = calloc (1, sizeof (type_rep_t));
+  type_t * ret = calloc (1, sizeof (type_t));
   ret->signature = private_type_signature;
   ret->kind = kind;
   return ret;
@@ -84,7 +83,7 @@ new_t_unknown (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_unknown);
+    cache = private_new_type (tk_unknown);
   return cache;
 }
 
@@ -93,7 +92,7 @@ new_t_any (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_any);
+    cache = private_new_type (tk_any);
   return cache;
 }
 
@@ -102,7 +101,7 @@ new_t_int (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_int);
+    cache = private_new_type (tk_int);
   return cache;
 }
 
@@ -111,7 +110,7 @@ new_t_void (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_void);
+    cache = private_new_type (tk_void);
   return cache;
 }
 
@@ -120,7 +119,7 @@ new_t_real (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_real);
+    cache = private_new_type (tk_real);
   return cache;
 }
 
@@ -129,7 +128,7 @@ new_t_string (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_string);
+    cache = private_new_type (tk_string);
   return cache;
 }
 
@@ -138,7 +137,7 @@ new_t_bool (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_bool);
+    cache = private_new_type (tk_bool);
   return cache;
 }
 
@@ -147,30 +146,30 @@ new_t_label (void)
 {
   static type_t * cache = NULL;
   if (cache == NULL)
-    cache = (void*)private_new_type (tk_label);
+    cache = private_new_type (tk_label);
   return cache;
 }
 
 type_t *
 new_t_array (type_t * host)
 {
-  type_rep_t * ret = private_new_type (tk_array);
+  type_t * ret = private_new_type (tk_array);
   ret->t_array.host = host;
-  return (void*)ret;
+  return ret;
 }
 
 type_t *
 new_t_own (type_t * host)
 {
-  type_rep_t * ret = private_new_type (tk_own);
+  type_t * ret = private_new_type (tk_own);
   ret->t_own.host = host;
-  return (void*)ret;
+  return ret;
 }
 
 type_t *
 new_t_proc (type_t * rettype, slist_t const * argtypes)
 {
-  type_rep_t * ret = private_new_type (tk_proc);
+  type_t * ret = private_new_type (tk_proc);
   ret->t_proc.ret_type = rettype;
 
   // Build copy one by one to impose typechecking on elements.
@@ -181,7 +180,7 @@ new_t_proc (type_t * rettype, slist_t const * argtypes)
   delete_slist_it (it);
   ret->t_proc.arg_types = argt;
 
-  return (void*)ret;
+  return ret;
 }
 
 type_t *
@@ -191,39 +190,34 @@ type (void * ptr)
 }
 
 type_t *
-t_array_set_bounds (type_t * _self, boundspair_t * boundspair)
+t_array_set_bounds (type_t * self, boundspair_t * boundspair)
 {
-  assert (_self != NULL);
-  assert (type ((void*)_self));
-  type_rep_t * self = (void*)_self;
+  assert (self != NULL);
   assert (self->kind == tk_array);
   self->t_array.bounds = boundspair;
-  return _self;
+  return self;
 }
 
 boundspair_t *
-t_array_bounds (type_t const * _self)
+t_array_bounds (type_t const * self)
 {
-  assert (_self != NULL);
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   assert (self->kind == tk_array);
   return self->t_array.bounds;
 }
 
 type_t *
-t_proc_return_type (type_t const * _self)
+t_proc_return_type (type_t const * self)
 {
-  assert (_self != NULL);
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   assert (self->kind == tk_proc);
   return self->t_proc.ret_type;
 }
 
 slist_t *
-t_proc_arg_types (type_t const * _self)
+t_proc_arg_types (type_t const * self)
 {
-  assert (_self != NULL);
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   assert (self->kind == tk_proc);
   return self->t_proc.arg_types;
 }
@@ -260,10 +254,10 @@ private_proc_types_check (t_proc_t const * self, t_proc_t const * other,
 }
 
 int
-types_same (type_t const * _lhs, type_t const * _rhs)
+types_same (type_t const * lhs, type_t const * rhs)
 {
-  A60_USER_TO_REP (type, lhs, const *);
-  A60_USER_TO_REP (type, rhs, const *);
+  assert (lhs != NULL);
+  assert (rhs != NULL);
 
   while (1)
     {
@@ -285,13 +279,13 @@ types_same (type_t const * _lhs, type_t const * _rhs)
 	  return 1;
 
 	case tk_array:
-	  lhs = (void*)lhs->t_array.host;
-	  rhs = (void*)rhs->t_array.host;
+	  lhs = lhs->t_array.host;
+	  rhs = rhs->t_array.host;
 	  break;
 
 	case tk_own:
-	  lhs = (void*)lhs->t_own.host;
-	  rhs = (void*)rhs->t_own.host;
+	  lhs = lhs->t_own.host;
+	  rhs = rhs->t_own.host;
 	  break;
 
 	case tk_proc:
@@ -301,10 +295,10 @@ types_same (type_t const * _lhs, type_t const * _rhs)
 }
 
 int
-types_match (type_t const * _lhs, type_t const * _rhs)
+types_match (type_t const * lhs, type_t const * rhs)
 {
-  A60_USER_TO_REP (type, lhs, const *);
-  A60_USER_TO_REP (type, rhs, const *);
+  assert (lhs != NULL);
+  assert (rhs != NULL);
 
   while (1)
     {
@@ -321,22 +315,22 @@ types_match (type_t const * _lhs, type_t const * _rhs)
       else if (lhs->kind == tk_own)
 	{
 	  // intentionally swapped
-	  void const * tmp = rhs;
-	  rhs = (void const *)lhs->t_own.host;
+	  type_t const * tmp = rhs;
+	  rhs = lhs->t_own.host;
 	  lhs = tmp;
 	}
       else if (rhs->kind == tk_own)
 	{
 	  // intentionally swapped
-	  void const * tmp = lhs;
-	  lhs = (void const *)rhs->t_own.host;
+	  type_t const * tmp = lhs;
+	  lhs = rhs->t_own.host;
 	  rhs = tmp;
 	}
       else if (lhs->kind == tk_array
 	       && rhs->kind == tk_array)
 	{
-	  lhs = (void*)lhs->t_array.host;
-	  rhs = (void*)rhs->t_array.host;
+	  lhs = lhs->t_array.host;
+	  rhs = rhs->t_array.host;
 	}
       else if (lhs->kind == tk_proc
 	       && rhs->kind == tk_proc)
@@ -351,12 +345,12 @@ types_match (type_t const * _lhs, type_t const * _rhs)
 }
 
 expression_t *
-expr_primitive_for_type (type_t const * _self)
+expr_primitive_for_type (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
 
   if (self->kind == tk_own)
-    self = (void*)self->t_own.host;
+    self = self->t_own.host;
   assert (self->kind != tk_own);
 
   switch (self->kind)
@@ -384,18 +378,19 @@ expr_primitive_for_type (type_t const * _self)
 }
 
 int
-is_metatype (type_t const * _self)
+is_metatype (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
+
   while (1)
     {
       if (self->kind == tk_unknown
 	  || self->kind == tk_any)
 	return 1;
       else if (self->kind == tk_array)
-	self = (void const*)self->t_array.host;
+	self = self->t_array.host;
       else if (self->kind == tk_own)
-	self = (void const*)self->t_own.host;
+	self = self->t_own.host;
       else if (self->kind == tk_proc)
 	{
 	  if (is_metatype (self->t_proc.ret_type))
@@ -418,23 +413,23 @@ is_metatype (type_t const * _self)
 }
 
 int
-type_is_own (type_t const * _self)
+type_is_own (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   return self->kind == tk_own;
 }
 
 int
-type_is_array (type_t const * _self)
+type_is_array (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   return self->kind == tk_array;
 }
 
 type_t *
-type_host (type_t const * _self)
+type_host (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   if (self->kind == tk_own)
     return self->t_own.host;
   else if (self->kind == tk_array)
@@ -444,7 +439,7 @@ type_host (type_t const * _self)
 }
 
 static void
-private_array_resolve_symbols (type_rep_t * tself, container_t * context, logger_t * log)
+private_array_resolve_symbols (type_t * tself, container_t * context, logger_t * log)
 {
   estring_t * tmp = NULL;
   t_array_t * self = &(tself->t_array);
@@ -483,9 +478,10 @@ private_array_resolve_symbols (type_rep_t * tself, container_t * context, logger
 }
 
 void
-type_resolve_symbols (type_t * _self, container_t * context, logger_t * log)
+type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
 {
-  A60_USER_TO_REP (type, self, *);
+  assert (self != NULL);
+
   switch (self->kind)
     {
     case tk_unknown:
@@ -519,21 +515,21 @@ type_resolve_symbols (type_t * _self, container_t * context, logger_t * log)
 }
 
 int
-type_is_unknown (type_t const * _self)
+type_is_unknown (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   return self->kind == tk_unknown;
 }
 
 int
-type_is_proc (type_t const * _self)
+type_is_proc (type_t const * self)
 {
-  A60_USER_TO_REP (type, self, const *);
+  assert (self != NULL);
   return self->kind == tk_proc;
 }
 
 static void
-private_type_to_str (type_rep_t * self, estring_t * buf, int canon)
+private_type_to_str (type_t const * self, estring_t * buf, int canon)
 {
   static char const* typestrs [] = {
     [tk_unknown] = "<unknown>",
@@ -562,7 +558,7 @@ private_type_to_str (type_rep_t * self, estring_t * buf, int canon)
 
     case tk_array:
       {
-	type_rep_t * host = (type_rep_t *)self->t_array.host;
+	type_t * host = self->t_array.host;
 	private_type_to_str (host, buf, canon);
 	if (!canon || host->kind != tk_array)
 	  estr_append_cstr (buf, " 'array'");
@@ -571,7 +567,7 @@ private_type_to_str (type_rep_t * self, estring_t * buf, int canon)
 
     case tk_own:
       {
-	private_type_to_str ((type_rep_t *)self->t_own.host, buf, canon);
+	private_type_to_str (self->t_own.host, buf, canon);
 	estr_prepend_cstr (buf, "'own' ");
 	return;
       }
@@ -584,7 +580,7 @@ private_type_to_str (type_rep_t * self, estring_t * buf, int canon)
 	slist_it_t * it = slist_iter (self->t_proc.arg_types);
 	while (1)
 	  {
-	    type_rep_t * t = slist_it_get (it);
+	    type_t * t = slist_it_get (it);
 	    private_type_to_str (t, tmp, canon);
 	    estr_append (buf, tmp);
 	    slist_it_next (it);
@@ -595,7 +591,7 @@ private_type_to_str (type_rep_t * self, estring_t * buf, int canon)
 	  }
 	delete_slist_it (it);
 
-	private_type_to_str ((type_rep_t *)self->t_proc.ret_type, tmp, canon);
+	private_type_to_str (self->t_proc.ret_type, tmp, canon);
 	estr_append_cstr (buf, " -> ");
 	estr_append (buf, tmp);
 	estr_append_cstr (buf, ">");
@@ -607,41 +603,41 @@ private_type_to_str (type_rep_t * self, estring_t * buf, int canon)
 }
 
 estring_t *
-type_to_str (type_t const * _self, estring_t * buf)
+type_to_str (type_t const * self, estring_t * buf)
 {
-  A60_USER_TO_REP (type, self, *);
+  assert (self != NULL);
   buf = tmpbuild (buf, (void*(*)(void))new_estring);
   private_type_to_str (self, buf, 0);
   return buf;
 }
 
 estring_t *
-type_to_str_canon (type_t const * _self, estring_t * buf)
+type_to_str_canon (type_t const * self, estring_t * buf)
 {
-  A60_USER_TO_REP (type, self, *);
+  assert (self != NULL);
   buf = tmpbuild (buf, (void*(*)(void))new_estring);
   private_type_to_str (self, buf, 1);
   return buf;
 }
 
 type_t *
-type_get_root (type_t * _self)
+type_get_root (type_t * self)
 {
-  A60_USER_TO_REP (type, self, *);
+  assert (self != NULL);
 
   while (1)
     {
       if (self->kind == tk_array)
-	self = (type_rep_t *)self->t_array.host;
+	self = self->t_array.host;
       else if (self->kind == tk_own)
-	self = (type_rep_t *)self->t_own.host;
+	self = self->t_own.host;
       else if (self->kind == tk_any || self->kind == tk_unknown)
 	assert (!"Should never get there!");
       else
 	break;
     }
 
-  return (void*)self;
+  return self;
 }
 
 #define MEMOIZE(TYPE)\
@@ -730,41 +726,44 @@ void * symbol_decl_for_proc (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIB
 
 
 void *
-type_build_generic (type_t * _self, void * data)
+type_build_generic (type_t * self, void * data)
 {
-  A60_USER_TO_REP (type, self, *);
+  assert (self != NULL);
+
   switch (self->kind)
     {
     case tk_unknown:
-      return type_unknown_build_generic (_self, data);
+      return type_unknown_build_generic (self, data);
     case tk_any:
-      return type_any_build_generic (_self, data);
+      return type_any_build_generic (self, data);
     case tk_own:
-      return type_own_build_generic (_self, data);
+      return type_own_build_generic (self, data);
     case tk_int:
-      return type_int_build_generic (_self, data);
+      return type_int_build_generic (self, data);
     case tk_void:
-      return type_void_build_generic (_self, data);
+      return type_void_build_generic (self, data);
     case tk_real:
-      return type_real_build_generic (_self, data);
+      return type_real_build_generic (self, data);
     case tk_string:
-      return type_string_build_generic (_self, data);
+      return type_string_build_generic (self, data);
     case tk_bool:
-      return type_bool_build_generic (_self, data);
+      return type_bool_build_generic (self, data);
     case tk_label:
-      return type_label_build_generic (_self, data);
+      return type_label_build_generic (self, data);
     case tk_array:
-      return type_array_build_generic (_self, data);
+      return type_array_build_generic (self, data);
     case tk_proc:
-      return type_proc_build_generic (_self, data);
+      return type_proc_build_generic (self, data);
     };
   assert (!"Should never get there!");
 }
 
 void *
-symbol_decl_for_type (type_t * _t, symbol_t * sym, void * data)
+symbol_decl_for_type (type_t * t, symbol_t * sym, void * data)
 {
-  A60_USER_TO_REP (type, t, *);
+  assert (t != NULL);
+  assert (sym != NULL);
+
   switch (t->kind)
     {
     case tk_unknown:
