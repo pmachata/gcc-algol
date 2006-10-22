@@ -81,6 +81,10 @@ Thanks to... (FIT BUT that they gave up their rights)
 
 % ====================================================================
 
+\tableofcontents
+
+% ====================================================================
+
 \chapter{Introduction}
 
 Describe what this thesis is about, summarize chapters, provide
@@ -144,6 +148,86 @@ i.e. almost three hours
 
 
 
+
+
+\section{Other section}
+
+This work includes frontend template.  That's the smallest possible
+frontend, that even doesn't emit any code, just writes out some stuff
+(but it has all inits in place and ready for real thing).  Go through
+the files and code in that template, and briefly describe hooks and
+interesting things.  Leave the full catalogues to subsequent chapters.
+
+About integration.  Mention slow round trip time: edit->compile->test
+loop tends to be quite lengthy with GCC; you really want fast machine.
+You can use IN\_GCC to special case your frontend to use GCC services
+where available.
+
+GCC uses garbage collector.  Describe GCC poisoning.  Probably go
+through some GC codes, if apropriate.
+
+%=====================================================================%
+
+\chapter{Targeting GCC}
+
+This chapter should describe how to generate GCC intermediate language
+called GENERIC.  Also use hooks if possible.
+
+\section{Symbol Handling}
+
+Symbol handling: probably has to be frontend specific, although GCC
+can store declarations.  See how other frontends do their thing.  Name
+mangling, C and C++-compatible interfacing (extern "C").
+
+\section{Variables and Types}
+
+How to do typechecking, representing various types (including arrays,
+functions, structures).  About variables: function-static, automatic,
+file-static and global.  Notes on initialization of misc variable
+kinds/types (e.g. how does initialization of file-static struct differ
+from initialization of automatic array).
+
+Arrays: variable sized arrays, multidimensional arrays.
+
+\section{Expressions}
+
+Variable reference, constants, various expression kinds.
+
+\section{Structured Programming}
+
+Nested blocks; for, while, do; if, switch; goto and labels.
+
+\section{Functions}
+
+Declarations/definitions, function calls, global, local (nested),
+file-static, overloaded, builtin, anonymous. Pass by value, reference
+and name, varargs.
+
+\section{Modules}
+
+Variable/function visibility, module ctors and dtors.  Namespaces.
+
+\section{Object-oriented programming}
+
+Objects, dynamic typing (look at OBJ\_TYPE\_REF), virtual functions.
+
+\section{Numbers}
+
+Elaborate on numeric support in \GCC.  Including big integers, long
+floats, what's necessary big/little endian-wise, if there's anything
+to know about bits-per-byte, complex numbers (and what are possible
+types of complex number components).  Floating point, integer and
+string literals.
+
+\section{Extending GENERIC}
+
+What are custom GENERIC codes, how to declare them, how to handle
+them, what's gimplification, how to gimplify them.
+
+%=====================================================================%
+
+\chapter{GCC Services}
+
 \section{Commandline options}
 
 Each \GCC frontend has the capability of processing commandline
@@ -188,70 +272,35 @@ features of \file{lang.opt} are to be found in gcc internals
 documentation
 \footnote{\url{http://gcc.gnu.org/onlinedocs/gccint/Options.html}}.
 
+\section{Cross-compilation Issues}
 
-\section{Other section}
+Elaborate on build-host-target trichotomy.  Assure ga60 is
+cross-compilation capable and describe what problems there were.
 
-This work includes frontend template.  That's the smallest possible
-frontend, that even doesn't emit any code, just writes out some stuff
-(but it has all inits in place and ready for real thing).  Go through
-the files and code in that template, and briefly describe hooks and
-interesting things.  Leave the full catalogues to subsequent chapters.
+\section{Runtime Libraries}
 
-About integration.  Mention slow round trip time: edit->compile->test
-loop tends to be quite lengthy with GCC; you really want fast machine.
-You can use IN\_GCC to special case your frontend to use GCC services
-where available.
+How to add runtime for your language.  How to use/avoid glibc.
 
-GCC uses garbage collector.  Describe GCC poisoning.  Probably go
-through some GC codes, if apropriate.
-
-\chapter{Targeting GCC}
-
-This chapter should describe how to generate GCC intermediate language
-called GENERIC.
-
-Catalogue of constructions: how to translate symbol handing, nested
-blocks, loops, funcalls, automatic and global variables, variable
-sized arrays, multidimensional arrays, global, local (nested),
-overloaded, internal, external, anonymous functions, visibility
-(static or public), pass by value, reference and name, varargs,
-modules, module ctors and dtors, jumps, cases, expressions,
-typechecking, structures, objects, namespaces, name mangling and
-C-compatible interfacing (extern "C"), (OpenMP?),
-floating point, integer and string literals,
-dynamic typing (look at OBJ\_TYPE\_REF),
-and others to GENERIC
-(with the help of proper hooks).  Show examples taken from \Algol 60
-code.
-
-Elaborate on integer support in \GCC.  How to support big integers,
-what's necessary big/little endian-wise, if there's anything to know
-about bits-per-byte, etc.  Similarly for floats.  I.e. cover
-everything from signed char to unsigned {long} int, and from single to
-{long} double :).
-
-What are custom GENERIC codes, how to declare them, how to handle
-them, what's gimplification, how to gimplify them.
-
-Optimizing on tree level: how to emit IL that is compiled the fastest,
-that emits the fastest code.  Does it even matter?
-
-\chapter{Language Services}
-
-How to add runtime for your language.
+\section{Debuginfo}
 
 How to add debuginfos to binaries that your frontend produces.  How to
 use gdb for your language.
 
-\chapter{GCC Extensions}
+\section{Attributes}
+
+Employing attributes.  How does frontend handle attributes, how does
+it define its own.
+
+\section{Preprocessing}
 
 Employing libcpp.  How to use preprocessor for your language.
+
+\section{Inline Assembly}
 
 Employing assembly.  How to add GCC-compatible inline assembly into
 your language.
 
-Employing attributes.  How does frontend handle attributes, how does
-it define its own.
+\section{Diagnostics}
 
 Employing GCC diagnostic messages.  Btw, you really want to do that,
 otherwise your buggy programs will be passed and a binary generated,
@@ -262,10 +311,14 @@ Report code excerpts with verbatim.  It seems that GCC uses it's own
 printing functions, with their own formatting.  See e.g. comment
 before pp\_base\_format.  Describe that.
 
+\section{Testsuite}
+
 What's dejagnu testsuite, how to write tests, how to integrate them
 into GCC testsuite.  You need acurate error reporting to use the
 dejagnu GCC framework.  In fortran, they are doing transformations of
 error messages to format expected by the framework, describe that.
+
+%=====================================================================%
 
 \chapter{Conclusions}
 
