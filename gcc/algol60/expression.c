@@ -324,7 +324,13 @@ expr_to_str (expression_t const * self, estring_t * buf)
       goto done;
 
     case ek_idref:
-      buf = symbol_to_str (self->idref.sym, buf);
+      if (self->idref.sym != NULL)
+	// If sym is available, use it, it might provide more
+	// information, such as type.
+	buf = symbol_to_str (self->idref.sym, buf);
+      else
+	// Otherwise fall back to label.
+	buf = label_to_str (self->idref.lbl, buf);
       goto done;
 
     case ek_if:
@@ -384,6 +390,14 @@ expr_to_str (expression_t const * self, estring_t * buf)
 static type_t *
 expr_bin_type (expr_binop_t op, type_t * first, type_t * second)
 {
+  // strip `own'
+  if (type_is_own (first))
+    first = type_host (first);
+  assert (!type_is_own (first));
+  if (type_is_own (second))
+    second = type_host (second);
+  assert (!type_is_own (second));
+
   if (types_same (first, second))
     {
       // int X int -> int for X in [add sub mul idiv pow]

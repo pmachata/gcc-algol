@@ -314,6 +314,7 @@ BlockDeclarations:
       for (it = slist_iter ($2); slist_it_has (it); slist_it_next (it))
 	{
 	  label_t * lbl = label (slist_it_get (it));
+	  type_t * qt = rt;
 
 	  // If it was array, see if identifier has dimensions and
 	  // mangle `rt' to reflect number of dimensions.
@@ -342,8 +343,8 @@ BlockDeclarations:
 		  slist_it_t * jt = slist_iter (label_boundspairs (lbl));
 		  while (slist_it_has (jt))
 		    {
-		      rt = new_t_array (rt);
-		      t_array_set_bounds (rt, slist_it_get (jt));
+		      qt = new_t_array (qt);
+		      t_array_set_bounds (qt, slist_it_get (jt));
 		      slist_it_next (jt);
 		    }
 		  delete_slist_it (jt);
@@ -353,11 +354,11 @@ BlockDeclarations:
 
 	  // If original type is `own', make also this type `own'.
 	  if (type_is_own ($1))
-	    rt = new_t_own (rt);
+	    qt = new_t_own (qt);
 
 	  // Setup symbol and add to table.
 	  symbol_t * sym = new_symbol (lbl);
-	  symbol_set_type (sym, rt);
+	  symbol_set_type (sym, qt);
 	  int conflict = container_add_symbol (parser->block, sym, sek_ordinary);
 	  if (conflict)
 	    {

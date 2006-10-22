@@ -84,7 +84,8 @@ type_t * new_t_own (type_t * host)
 /// inside t_proc privates.
 type_t  * new_t_proc (type_t * rettype, slist_t * argtypes)
   ATTRIBUTE_MALLOC
-  ATTRIBUTE_NONNULL (1);
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2);
 
 /// Convert void* to type, if it is type, or return NULL.
 type_t * type (void * ptr)

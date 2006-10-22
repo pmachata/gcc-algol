@@ -360,7 +360,7 @@ private_resolve_symbols_assign (statement_t * self, logger_t * log)
     {
       expression_t * lhs = slist_it_get (it);
       type_t * t1 = expr_type (lhs);
-      if (!types_same (tt, t1))
+      if (!types_match (tt, t1))
 	{
 	  estring_t * s1 = expr_to_str (lhs, NULL);
 	  estring_t * s2 = expr_to_str (self->assign.rhs, NULL);

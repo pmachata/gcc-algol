@@ -153,6 +153,7 @@ new_t_label (void)
 type_t *
 new_t_array (type_t * host)
 {
+  assert (host != NULL);
   type_t * ret = private_new_type (tk_array);
   ret->t_array.host = host;
   return ret;
@@ -161,6 +162,9 @@ new_t_array (type_t * host)
 type_t *
 new_t_own (type_t * host)
 {
+  assert (host != NULL);
+  assert (host->kind != tk_own);
+
   type_t * ret = private_new_type (tk_own);
   ret->t_own.host = host;
   return ret;
@@ -169,6 +173,9 @@ new_t_own (type_t * host)
 type_t *
 new_t_proc (type_t * rettype, slist_t * argtypes)
 {
+  assert (rettype != NULL);
+  assert (argtypes != NULL);
+
   type_t * ret = private_new_type (tk_proc);
   ret->t_proc.ret_type = rettype;
   slist_set_type (argtypes, adapt_test, type);
@@ -306,19 +313,9 @@ types_match (type_t const * lhs, type_t const * rhs)
 	  return 0;
 	}
       else if (lhs->kind == tk_own)
-	{
-	  // intentionally swapped
-	  type_t const * tmp = rhs;
-	  rhs = lhs->t_own.host;
-	  lhs = tmp;
-	}
+	lhs = lhs->t_own.host;
       else if (rhs->kind == tk_own)
-	{
-	  // intentionally swapped
-	  type_t const * tmp = lhs;
-	  lhs = rhs->t_own.host;
-	  rhs = tmp;
-	}
+	rhs = rhs->t_own.host;
       else if (lhs->kind == tk_array
 	       && rhs->kind == tk_array)
 	{
@@ -332,7 +329,7 @@ types_match (type_t const * lhs, type_t const * rhs)
 	}
       else
 	{
-	  return types_same ((void*)lhs, (void*)rhs);
+	  return types_same (lhs, rhs);
 	}
     }
 }
@@ -567,25 +564,28 @@ private_type_to_str (type_t const * self, estring_t * buf, int canon)
 
     case tk_proc:
       {
-	estr_assign_cstr (buf, "<proc ");
+	estr_assign_cstr (buf, "<proc (");
 	estring_t * tmp = new_estring ();
 
-	slist_it_t * it = slist_iter (self->t_proc.arg_types);
-	while (1)
+	if (!slist_empty (self->t_proc.arg_types))
 	  {
-	    type_t * t = slist_it_get (it);
-	    private_type_to_str (t, tmp, canon);
-	    estr_append (buf, tmp);
-	    slist_it_next (it);
-	    if (slist_it_has (it))
-	      estr_append_cstr (buf, ", ");
-	    else
-	      break;
+	    slist_it_t * it = slist_iter (self->t_proc.arg_types);
+	    while (1)
+	      {
+		type_t * t = slist_it_get (it);
+		private_type_to_str (t, tmp, canon);
+		estr_append (buf, tmp);
+		slist_it_next (it);
+		if (slist_it_has (it))
+		  estr_append_cstr (buf, ", ");
+		else
+		  break;
+	      }
+	    delete_slist_it (it);
 	  }
-	delete_slist_it (it);
 
+	estr_append_cstr (buf, ") -> ");
 	private_type_to_str (self->t_proc.ret_type, tmp, canon);
-	estr_append_cstr (buf, " -> ");
 	estr_append (buf, tmp);
 	estr_append_cstr (buf, ">");
 	delete_estring (tmp);
