@@ -80,9 +80,9 @@ type_t * new_t_own (type_t * host)
   ATTRIBUTE_NONNULL (1);
 
 /// Create `proc` type, with return type `rettype` and argument types
-/// `argtypes`.  `argtypes` will be cloned for purposes of storage
+/// `argtypes`.  `argtypes` will NOT be cloned for purposes of storage
 /// inside t_proc privates.
-type_t  * new_t_proc (type_t * rettype, slist_t const * argtypes)
+type_t  * new_t_proc (type_t * rettype, slist_t * argtypes)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL (1);
 

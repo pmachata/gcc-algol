@@ -167,11 +167,12 @@ new_t_own (type_t * host)
 }
 
 type_t *
-new_t_proc (type_t * rettype, slist_t const * argtypes)
+new_t_proc (type_t * rettype, slist_t * argtypes)
 {
   type_t * ret = private_new_type (tk_proc);
   ret->t_proc.ret_type = rettype;
-  ret->t_proc.arg_types = clone_slist_typed (adapt_test, type, argtypes);
+  slist_set_type (argtypes, adapt_test, type);
+  ret->t_proc.arg_types = argtypes;
   return ret;
 }
 

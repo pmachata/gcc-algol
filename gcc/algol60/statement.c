@@ -95,13 +95,14 @@ private_check_expr_lvalue (void * ptr, void * data ATTRIBUTE_UNUSED)
 }
 
 statement_t *
-new_stmt_assign (cursor_t * cursor, slist_t const * lhss, expression_t * rhs)
+new_stmt_assign (cursor_t * cursor, slist_t * lhss, expression_t * rhs)
 {
   assert (lhss != NULL);
   assert (rhs != NULL);
 
   statement_t * ret = private_new_statement (sk_assign, cursor, NULL);
-  ret->assign.lhss = clone_slist_typed (private_check_expr_lvalue, NULL, lhss);
+  slist_set_type (lhss, private_check_expr_lvalue, NULL);
+  ret->assign.lhss = lhss;
   ret->assign.rhs = rhs;
 
   return ret;

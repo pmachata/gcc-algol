@@ -29,9 +29,9 @@ statement_t * new_stmt_dummy (cursor_t * cursor)
 
 /// Create new assignment statement.  The list of left sides `lhss'
 /// has to contain only expressions, and all have to be lvalues.
-/// It will be cloned for purposes of storage inside stmt_assign
+/// It will NOT be cloned for purposes of storage inside stmt_assign
 /// privates.
-statement_t * new_stmt_assign (cursor_t * cursor, slist_t const * lhss, expression_t * rhs)
+statement_t * new_stmt_assign (cursor_t * cursor, slist_t * lhss, expression_t * rhs)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL (2)
   ATTRIBUTE_NONNULL (3);

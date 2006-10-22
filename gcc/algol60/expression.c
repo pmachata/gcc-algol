@@ -234,7 +234,8 @@ new_expr_call (cursor_t * location, label_t * label, slist_t * arguments)
 
   expression_t * ret = private_new_expr (location, ek_call);
   ret->call.lbl = label;
-  ret->call.arguments = clone_slist_typed (adapt_test, expression, arguments);
+  slist_set_type (arguments, adapt_test, expression);
+  ret->call.arguments = arguments;
   return ret;
 }
 
@@ -259,7 +260,8 @@ new_expr_subscript (cursor_t * location, label_t * label, slist_t * indices)
 
   expression_t * ret = private_new_expr (location, ek_subscript);
   ret->subscript.lbl = label;
-  ret->subscript.indices = clone_slist_typed (adapt_test, expression, indices);
+  slist_set_type (indices, adapt_test, expression);
+  ret->subscript.indices = indices;
   return ret;
 }
 
@@ -643,7 +645,6 @@ private_resolve_symbols_call (expression_t * self,
 					   match_type, log,
 					   self->cursor);
   assert (self->call.sym != NULL);
-  delete_slist (argtypes);
 }
 
 static void

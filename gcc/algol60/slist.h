@@ -39,10 +39,15 @@ slist_t * clone_slist (slist_t const * slist)
   ATTRIBUTE_NONNULL(1);
 
 /// Clone existing slist into new typed slist.
-slist_t * clone_slist_typed (void* (*test)(void * obj, void * user), void * userdata, slist_t const * slist)
+slist_t * clone_slist_typed (slist_t const * slist, void* (*test)(void * obj, void * user), void * userdata)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(3);
+  ATTRIBUTE_NONNULL(2);
+
+/// Change typing of slist dynamically.
+void slist_set_type (slist_t * self, void* (*test)(void * obj, void * user), void * userdata)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
 
 /// For purposes of testing type, this adaptor is provided.  The
 /// `test' has to be something*(*test)(whatever*), but is declared as

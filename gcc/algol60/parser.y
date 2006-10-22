@@ -724,7 +724,6 @@ FunctionDesignator:
   Identifier SEPLPAREN ActualParamList SEPRPAREN
     {
       $$ = new_expr_call (cr_csr (parser, &@1), $1, $3);
-      delete_slist ($3);
       @$ = @1;
     }
   |
@@ -732,7 +731,6 @@ FunctionDesignator:
     {
       log_printf (parser->log, ll_debug, "Identifier SEPLBRACK Expression SEPRBRACK");
       $$ = new_expr_subscript (cr_csr (parser, &@1), $1, $3);
-      delete_slist ($3);
       @$ = @1;
     }
   |
@@ -837,7 +835,10 @@ BasicStatement:
       // $1 can happen to be empty if all targets were non-lvalues.
       // In such a case, substitute dummy stmt instead.
       if (slist_empty ($1))
-	$$ = new_stmt_dummy (cr_csr (parser, &@1));
+	{
+	  $$ = new_stmt_dummy (cr_csr (parser, &@1));
+	  delete_slist ($1);
+	}
       else
 	$$ = new_stmt_assign (cr_csr (parser, &@1), $1, $2);
     }

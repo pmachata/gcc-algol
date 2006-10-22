@@ -48,8 +48,10 @@ private_alloc_slist (void)
   ret->signature = private_slist_signature;
   ret->head = NULL;
   ret->tail = NULL;
+#ifndef NDEBUG
   ret->test = NULL;
   ret->test_userdata = NULL;
+#endif
 
   return ret;
 }
@@ -95,6 +97,17 @@ private_push_elements (slist_t * self, unsigned num, va_list * ap,
     (*slist_push) (self, va_arg(*ap, void *));
   while (--num);
 }
+
+#ifndef NDEBUG
+static void
+private_test_element (slist_t * list, void * object)
+{
+  if (list->test != NULL)
+    assert (list->test (object, list->test_userdata));
+}
+#else
+# define private_test_element(LIST,OBJECT)
+#endif
 
 slist_t *
 new_slist_from (unsigned num, ...)
@@ -145,13 +158,34 @@ clone_slist (slist_t const * slist)
 }
 
 slist_t *
-clone_slist_typed (void* (*test)(void * obj, void * user),
-		   void * userdata, slist_t const * slist)
+clone_slist_typed (slist_t const * slist,
+		   void* (*test)(void * obj, void * user),
+		   void * userdata)
 {
+#ifndef NDEBUG
   assert (slist != NULL);
   slist_t * ret = new_slist_typed (test, userdata);
   private_copy_nodes (ret, slist, slist_pushback);
   return ret;
+#else
+  return clone_slist (slist);
+#endif
+}
+
+void
+slist_set_type (slist_t * self, void* (*test)(void * obj, void * user), void * userdata)
+{
+#ifndef NDEBUG
+  assert (self != NULL);
+  assert (test != NULL);
+
+  self->test = test;
+  self->test_userdata = userdata;
+
+  slist_node_t * node = self->head;
+  for (; node != NULL; node = node->link)
+    private_test_element (self, node->object);
+#endif
 }
 
 void
@@ -177,17 +211,6 @@ slist (void * ptr)
 {
   A60_CHECKED_CONVERSION(slist, ptr);
 }
-
-#ifndef NDEBUG
-static void
-private_test_element (slist_t * list, void * object)
-{
-  if (list->test != NULL)
-    assert (list->test (object, list->test_userdata));
-}
-#else
-#  define private_test_element(LIST,OBJECT)
-#endif
 
 void
 slist_pushback (slist_t * list, void * object)
