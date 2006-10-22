@@ -113,6 +113,17 @@ expression_t * stmt_assign_rhs (statement_t const * self)
 expression_t * stmt_call_call (statement_t const * self)
   ATTRIBUTE_NONNULL(1);
 
+/// Add new label (in the sense of goto target) to the statement.
+/// Symbol has to refer to the label, i.e. this has to hold:
+///   types_same (symbol_type (label), type_label ())
+void stmt_add_label (statement_t * self, symbol_t * label)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Get list of lables (in the sense of goto targets) associated with
+/// this statements.  This is typed slist, each symbol is label.
+slist_t * stmt_labels (statement_t const * self);
+
 /// Answer the symtab associated with the container.
 slist_t * container_symtab (container_t const * self)
   ATTRIBUTE_NONNULL(1);

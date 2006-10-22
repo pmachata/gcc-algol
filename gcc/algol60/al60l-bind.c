@@ -168,6 +168,18 @@ stmt_call_build_generic (statement_t * self, void * state)
   return expr_build_generic (stmt_call_call (self), state);
 }
 
+static tree
+private_label_build_generic (container_t * context ATTRIBUTE_UNUSED,
+			     symbol_t * lbl,
+			     al60l_bind_state_rep_t * state)
+{
+  tree decl = symbol_extra (lbl);
+  gcc_assert (decl != NULL);
+  DECL_CONTEXT (decl) = slist_front (state->fundecls);
+  tree ret = build1 (LABEL_EXPR, void_type_node, decl);
+  return ret;
+}
+
 void *
 stmt_container_build_generic (container_t * self, void * _state)
 {
@@ -200,6 +212,16 @@ stmt_container_build_generic (container_t * self, void * _state)
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement_t * st = slist_it_get (it);
+      slist_t * labels = stmt_labels (st);
+      slist_it_t * it = slist_iter (labels);
+      for (; slist_it_has (it); slist_it_next (it))
+	{
+	  symbol_t * l = slist_it_get (it);
+	  tree label = private_label_build_generic (self, l, state);
+	  append_to_statement_list (label, &stmts);
+	}
+      delete_slist_it (it);
+
       tree stmt = stmt_build_generic (st, state);
       append_to_statement_list (stmt, &stmts);
     }
@@ -674,10 +696,12 @@ symbol_decl_for_bool (symbol_t * sym, void * data)
 }
 
 void *
-symbol_decl_for_label (symbol_t * sym ATTRIBUTE_UNUSED,
-		       void * data ATTRIBUTE_UNUSED)
+symbol_decl_for_label (symbol_t * sym, void * data)
 {
-  gcc_unreachable ();
+  label_t const * lbl = symbol_label (sym);
+  tree id = get_identifier (estr_cstr (label_id (lbl)));
+  tree tt = type_build_generic (type_void (), data);
+  return build_decl (LABEL_DECL, id, tt);
 }
 
 void *

@@ -60,6 +60,7 @@ struct struct_statement_t
 
   cursor_t * cursor;
   container_t * parent;
+  slist_t * labels;
   union {
     stmt_dummy_rep_t dummy;
     stmt_assign_rep_t assign;
@@ -67,6 +68,15 @@ struct struct_statement_t
     container_rep_t block; ///< Used by both block and toplev.
   };
 };
+
+static void *
+private_check_symbol_label (void * ptr, void * data ATTRIBUTE_UNUSED)
+{
+  symbol_t * sym = symbol (ptr);
+  if (sym && !types_same (symbol_type (sym), type_label ()))
+    sym = NULL;
+  return sym;
+}
 
 static statement_t *
 private_new_statement (stmt_kind_t kind, cursor_t * cursor, container_t * parent)
@@ -76,6 +86,7 @@ private_new_statement (stmt_kind_t kind, cursor_t * cursor, container_t * parent
   ret->kind = kind;
   ret->cursor = cursor;
   ret->parent = parent;
+  ret->labels = new_slist_typed (private_check_symbol_label, NULL);
   return ret;
 }
 
@@ -238,17 +249,13 @@ private_dump_container (statement_t const * self, estring_t * buf, int level)
       statement_t * stmt = slist_it_get (it);
 
       // look for any labels pointing to this command
-      slist_it_t * lt = slist_iter (self->block.symtab);
+      slist_it_t * lt = slist_iter (stmt_labels (stmt));
       for (; slist_it_has (lt); slist_it_next (lt))
 	{
 	  symbol_t * sym = slist_it_get (lt);
-	  if (types_same (symbol_type (sym), type_label ())
-	      && symbol_stmt (sym) == stmt)
-	    {
-	      estr_append_cstr (buf, padding (level));
-	      estr_append (buf, label_id (symbol_label (sym)));
-	      estr_append_cstr (buf, ":\n");
-	    }
+	  estr_append_cstr (buf, padding (level));
+	  estr_append (buf, label_id (symbol_label (sym)));
+	  estr_append_cstr (buf, ":\n");
 	}
       delete_slist_it (lt);
 
@@ -387,13 +394,8 @@ static void
 private_resolve_symbols_block (statement_t * self, logger_t * log)
 {
   assert (container (self));
+  slist_it_t * it;
 
-  slist_it_t * it = slist_iter (self->block.statements);
-  for (; slist_it_has (it); slist_it_next (it))
-    stmt_resolve_symbols (slist_it_get (it), log);
-  delete_slist_it (it);
-
-  estring_t * tmp = NULL;
   it = slist_iter (self->block.symtab);
   for (; slist_it_has (it); slist_it_next (it))
     {
@@ -401,7 +403,11 @@ private_resolve_symbols_block (statement_t * self, logger_t * log)
       type_resolve_symbols (symbol_type (sym), container (self), log);
     }
   delete_slist_it (it);
-  delete_estring (tmp);
+
+  it = slist_iter (self->block.statements);
+  for (; slist_it_has (it); slist_it_next (it))
+    stmt_resolve_symbols (slist_it_get (it), log);
+  delete_slist_it (it);
 }
 
 void
@@ -498,6 +504,21 @@ stmt_call_call (statement_t const * self)
   assert (self != NULL);
   assert (self->kind == sk_call);
   return self->call.call;
+}
+
+void
+stmt_add_label (statement_t * self, symbol_t * label)
+{
+  assert (self != NULL);
+  assert (label != NULL);
+  slist_pushback (self->labels, label);
+}
+
+slist_t *
+stmt_labels (statement_t const * self)
+{
+  assert (self != NULL);
+  return self->labels;
 }
 
 slist_t *

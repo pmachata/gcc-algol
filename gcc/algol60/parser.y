@@ -988,6 +988,7 @@ private_add_labels_to_symtab (parser_rep_t * parser ATTRIBUTE_UNUSED,
       container_add_symbol (cont, sym, sek_ordinary);
       symbol_set_stmt (sym, target);
       symbol_set_type (sym, type_label ());
+      stmt_add_label (target, sym);
     }
   delete_slist_it (it);
 }
