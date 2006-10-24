@@ -249,7 +249,7 @@ Of course, programmer has to write the handler for frontend-specific
 options herself.  All work takes place in
 \function{LANG\_HOOKS\_HANDLE\_OPTION} hook, \GCC calls this function
 each time it hits an option that the frontend understands.  The
-communication isn't done through option strings, instead, \GCC
+communication isn't done through option strings, though.  Instead, \GCC
 associates each option to a symbolic identifier with unique integer
 value.  When option is handled, simple \literal{switch} statement can
 be used to decide what should be done.  Option strings are transformed
@@ -267,7 +267,7 @@ is 1 if an option is used in its positive variant, and 0 for
 \option{no-} variant.
 
 All frontend-specific options are defined in \file{lang.opt}.  This
-file gives, though build magic, rise to \file{options.h}.  Format and
+file gives, through build magic, rise to \file{options.h}.  Format and
 features of \file{lang.opt} are to be found in gcc internals
 documentation
 \footnote{\url{http://gcc.gnu.org/onlinedocs/gccint/Options.html}}.
