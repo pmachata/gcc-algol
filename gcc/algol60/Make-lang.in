@@ -217,6 +217,9 @@ algol60.tags: force
 	cd $(srcdir)/algol60; etags -o TAGS.sub *.y *.l *.c *.h; \
 		etags --include TAGS.sub --include ../TAGS.sub
 
+
+# these are taken from Fortran frontend
+
 algol60.info: doc/algol60.info
 
 algol60.srcinfo: doc/algol60.info
@@ -224,20 +227,26 @@ algol60.srcinfo: doc/algol60.info
 
 algol60.dvi: doc/algol60.dvi
 
-TEXI_ALGOL60_FILES = algol60/ga60.texi \
-	 $(gcc_docdir)/include/gcc-common.texi \
-	 $(gcc_docdir)/include/gpl.texi \
-	 $(gcc_docdir)/include/fdl.texi \
-	 $(gcc_docdir)/include/funding.texi \
-	 gcc-vers.texi
+TEXI_ALGOL60_FILES = \
+  $(srcdir)/algol60/ga60.texi \
+  $(srcdir)/doc/include/fdl.texi \
+  $(srcdir)/doc/include/gpl.texi \
+  $(srcdir)/doc/include/funding.texi \
+  $(srcdir)/doc/include/gcc-common.texi \
+  gcc-vers.texi
 
-doc/ga60.info: $(TEXI_ALGOL60_FILES)
-	$(MAKEINFO) $(MAKEINFOFLAGS) -I $(gcc_docdir)/include -o $@ $<
+doc/algol60.info: $(TEXI_ALGOL60_FILES)
+	if [ x$(BUILD_INFO) = xinfo ]; then \
+	  rm -f doc/algol60.info-*; \
+	  $(MAKEINFO) -I $(srcdir)/doc/include -I $(srcdir)/algol60 \
+	    -o $@ $<; \
+	else true; fi
 
-doc/ga60.dvi: $(TEXI_ALGOL60_FILES)
-	$(TEXI2DVI) -I $(abs_docdir)/include -o $@ $<
+doc/algol60.dvi: $(TEXI_ALGOL60_FILES)
+	$(TEXI2DVI) -I $(srcdir)/algol60 -I $(abs_docdir)/include -o $@ $<
 
-ga60.html: $(build_htmldir)/algol60/index.html
+doc/algol60.pdf: $(TEXI_ALGOL60_FILES)
+	$(TEXI2PDF) -I $(srcdir)/algol60 -I $(abs_docdir)/include -o $@ $<
 
 $(build_htmldir)/algol60/index.html: $(TEXI_ALGOL60_FILES)
 	$(mkinstalldirs) $(@D)
