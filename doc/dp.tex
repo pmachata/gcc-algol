@@ -1,31 +1,56 @@
-\documentclass[a4paper,11pt]{report}
-\usepackage{a4wide}
+\documentclass[czech]{fitprj}
+%\documentclass[a4paper,11pt]{report}
+%\usepackage{a4wide}
 \usepackage[latin2]{inputenc}
 \usepackage[
   bookmarks=true,
   bookmarksopen=true,
-  colorlinks=false,
-  urlbordercolor={0 0 0},
+  bookmarksopenlevel=2,
   pdfhighlight=/I,
-  pdftitle=,
+  pdftitle=Construction\ of\ GNU\ Compiler\ Collection\ Frontend,
   pdfauthor=Petr\ Machata,
   pdfstartview=FitH,
-  bookmarksopenlevel=2
+  pdfborder={0 0 0}
   ]{hyperref}
 \usepackage{subscript}
 \pagestyle{empty}
 \topmargin 0in
+
+\date{29. Øíjna}
+\setyear{2006}
+\author{Bc. Petr Machata}
+\title{Construction of GNU Compiler Collection Frontend}
+\FITproject{DP}
+
+\edeclaration{
+    Prohla¹uji, ¾e jsem tuto diplomovou práci vypracoval samostatnì pod
+    vedením Ing. Milo¹e Eysselta, CSc.
+    Dal¹í informace mi poskytl zamìstnanec firmy ANF Data, Ing. Luká¹ Szemla
+    % ujistit se ze je to tak spravne, jestli neni nahodou taky vedouci
+    Uvedl jsem v¹echny literární prameny a publikace, ze kterých jsem èerpal.
+    }
+
+\acknowledgements{
+Thanks to... (FIT BUT that they gave up their rights)
+}
+
+
+\fitabstract{The Abstract}
+
+\keywords{GCC, GNU Compiler Collection, frontend, front end, Algol 60, compiler}
+
+\fitabstractCZ{Abstrakt}
+
+\keywordsCZ{GCC, GNU Compiler Collection, pøední èást, Algol 60, kompilátor}
+
 \begin{document}
 
-\title{Construction of GNU Compiler Collection Frontend}
-\author{Petr Machata\\
-  \texttt{xmacha31@stud.fit.vutbr.cz}}
-\date{2006-09-08}
 \maketitle
-
-\def\mychapter#1{{\Huge \bf \vspace{1em}#1}\vspace{1.0em}}
-\def\mysection#1{{\Large \bf \vspace{1em}#1}\vspace{1.0em}}
-\def\mysubsection#1{{\large \bf \vspace{1em}#1}\vspace{1.0em}}
+% tady bude zadani
+\grantrights
+\abstractkeywords
+\abstractkeywordsCZ
+\FITstart
 
 \def\Algol{{\sc Algol}\space}
 \def\GCC{{\sc GCC}\space}
@@ -52,32 +77,6 @@
 \def\note#1{{{\it Note.\space}#1}}
 \def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
 \def\program#1{{\tt\begin{tabbing}#1\end{tabbing}}}
-
-% ====================================================================
-
-\chapter*{Prohlá¹ení}
-
-Prohla¹uji ¾e jsem tuto bakaláøskou práci vypracoval sám pod odborným
-vedením Ing. Luká¹e Szemly.  Ve¹keré prameny, z nich¾ jsem pøi práci
-èerpal, jsou øádnì citovány, a v pøíloze uvedeny.
-
-% ====================================================================
-
-\chapter*{Acknowledgements}
-
-Thanks to... (FIT BUT that they gave up their rights)
-
-% ====================================================================
-
-\chapter*{Abstrakt}
-
-\mysection{Klíèová slova}
-
-% ====================================================================
-
-\chapter*{Abstract}
-
-\mysection{Key words}
 
 % ====================================================================
 
@@ -109,7 +108,9 @@ necessary community, corporation and academia drive, and finally
 writing such frontend isn't nearly as difficult as rolling your own
 backend (fingers crossed it's true).
 
-Describe briefly that the author has written \Algol 60 parser to get
+Describe briefly that the author has written \Algol 60 parser
+\cite{TR:ALGOL60}
+to get
 himself familiar with the stuff he describes.  Maybe drop a few notes
 about how the parser (independent from GCC) and GCC frontend got
 joined.
@@ -130,6 +131,9 @@ this setup, there are four levels actually: your parser, GCC frontend,
 GCC middleend, GCC backend.  The frontend of the parser is completely
 independent of GCC, backend of the parser is frontend of the GCC.
 With the latter approach, one defines special tree codes.
+
+Build on \cite{GDS:2003:Merill}, \cite{LDS:2006:Novillo},
+\cite{GDS:2006:Mulley}, \cite{LJ:2005:Tromey}.
 
 \chapter[Hello World]{Hello, World!}
 
@@ -203,6 +207,9 @@ Declarations/definitions, function calls, global, local (nested),
 file-static, overloaded, builtin, anonymous. Pass by value, reference
 and name, varargs.
 
+Interprocedural optimizations \cite{GDS:2004:Hubicka}, intermodule
+optimizations \cite{GDS:2005:Keating}.
+
 \section{Modules}
 
 Variable/function visibility, module ctors and dtors.  Namespaces.
@@ -219,10 +226,14 @@ to know about bits-per-byte, complex numbers (and what are possible
 types of complex number components).  Floating point, integer and
 string literals.
 
+Look into \cite{GDS:2005:Grimm}, \cite{GDS:2006:Sidwell}.
+
 \section{Extending GENERIC}
 
 What are custom GENERIC codes, how to declare them, how to handle
 them, what's gimplification, how to gimplify them.
+
+Look into \cite{GDS:2005:Dvorak}.  Maybe find better source.
 
 %=====================================================================%
 
@@ -300,6 +311,11 @@ Employing libcpp.  How to use preprocessor for your language.
 Employing assembly.  How to add GCC-compatible inline assembly into
 your language.
 
+\section{Open MP}
+
+If the time permits, elaborate on how to use Open MP in frontend.
+Look into \cite{GDS:2006:Novillo}.
+
 \section{Diagnostics}
 
 Employing GCC diagnostic messages.  Btw, you really want to do that,
@@ -336,6 +352,9 @@ paragraphs are again best. Organize from most to least important.''
 Future Research: How feasible would be to have a frontend, that just
 hands all the calls to dynamically loaded external parser?  This would
 allow for out-of-tree builds, wouldn't it?
+
+\bibliographystyle{plain}
+\bibliography{dp}
 
 \chapter*{Appendix: Frontend-to-Middleend Interface}
 
