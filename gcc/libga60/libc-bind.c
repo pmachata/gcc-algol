@@ -5,7 +5,8 @@
 #include "config.h"
 
 #ifdef HAVE_STDIO_H
-# include <stdio.h>
+int puts (char const *);
+
 int __a60__puts_PisQ (char const * s);
 
 int
@@ -16,7 +17,8 @@ __a60__puts_PisQ (char const * s)
 #endif
 
 #ifdef HAVE_STDLIB_H
-# include <stdlib.h>
+void exit (int);
+
 void __a60__exit_PviQ (int status);
 
 void

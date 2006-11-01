@@ -6,7 +6,7 @@
 #include "config.h"
 
 #ifdef HAVE_STDLIB_H
-# include <stdlib.h>
+int abs (int);
 
 int __a60__abs_PiiQ (int value);
 
@@ -20,7 +20,7 @@ __a60__abs_PiiQ (int value)
 
 
 #ifdef HAVE_MATH_H
-# include <math.h>
+double fabs (double);
 
 double __a60__abs_PrrQ (double value);
 

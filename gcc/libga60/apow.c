@@ -5,7 +5,7 @@
 #include "config.h"
 
 #ifdef HAVE_STDLIB_H
-# include <stdlib.h>
+void abort (void);
 
 int __a60__pow_PiiiQ (int a, int i);
 double __a60__pow_PrriQ (double a, int i);
@@ -69,7 +69,9 @@ __a60__pow_PrriQ (double a, int i)
 }
 
 # ifdef HAVE_MATH_H
-#  include <math.h>
+
+double exp (double);
+double log (double);
 
 double __a60__pow_PrrrQ (double a, double r);
 double __a60__pow_PrirQ (int a, double r);
