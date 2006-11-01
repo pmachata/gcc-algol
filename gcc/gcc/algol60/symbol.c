@@ -20,16 +20,39 @@ struct struct_symbol_t
   void * extra;
 };
 
-symbol_t *
-new_symbol (label_t const * label)
+static symbol_t *
+private_alloc_symbol (label_t const * label)
 {
   symbol_t * ret = malloc (sizeof (symbol_t));
   ret->signature = private_symbol_signature;
   ret->label = label;
+  return ret;
+}
+
+symbol_t *
+new_symbol (label_t const * label)
+{
+  assert (label != NULL);
+
+  symbol_t * ret = private_alloc_symbol (label);
   ret->stmt = NULL;
   ret->type = NULL;
   ret->hidden = 0;
   ret->extra = NULL;
+  return ret;
+}
+
+symbol_t *
+clone_symbol_with_name (symbol_t const * self, label_t const * label)
+{
+  assert (self != NULL);
+  assert (label != NULL);
+
+  symbol_t * ret = private_alloc_symbol (label);
+  ret->stmt = self->stmt;
+  ret->type = self->type;
+  ret->hidden = self->hidden;
+  ret->extra = self->extra;
   return ret;
 }
 

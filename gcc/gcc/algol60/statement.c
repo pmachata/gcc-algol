@@ -662,7 +662,8 @@ stmt_toplev_define_internals (container_t * _self)
     // Algol 60 intrinsics
     {"abs",  type_proc_real_real ()},
     {"abs",  type_proc_int_int ()},
-    {"sign", type_proc_real_int ()},
+    {"sign", type_proc_int_real ()},
+    {"sign", type_proc_int_int ()},
     {"sqrt", type_proc_real_real ()},
     {"sin",  type_proc_real_real ()},
     {"cos",  type_proc_real_real ()},
@@ -670,6 +671,7 @@ stmt_toplev_define_internals (container_t * _self)
     {"ln",   type_proc_real_real ()},
     {"exp",  type_proc_real_real ()},
     {"entier", type_proc_int_real ()},
+    {"entier", type_proc_real_int ()},
     // Extensions
     {"exit", type_proc_void_int ()},
     {"puts", type_proc_int_string ()},

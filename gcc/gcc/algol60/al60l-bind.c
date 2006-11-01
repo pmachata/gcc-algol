@@ -387,7 +387,6 @@ private_expr_build_apow (expression_t * self, void * data)
 
   static type_t * types[4] = {}; // NULLs by default
   static int initialized = 0;
-  static char const sigs[] = {'i', 'r'};
 
   if (! initialized)
     {
@@ -398,7 +397,7 @@ private_expr_build_apow (expression_t * self, void * data)
       initialized = 1;
     }
 
-  // sl, sr are indices into the sigs array, and are used to compute
+  // sl, sr are indices used to compute
   // index into types array
   int sl = (types_same (tl, type_int ()) ? 0
 	    : (gcc_assert (types_same (tl, type_real ())), 1));
@@ -406,7 +405,7 @@ private_expr_build_apow (expression_t * self, void * data)
 	    : (gcc_assert (types_same (tr, type_real ())), 1));
   int typeidx = 2*sl + sr; // index into types array
 
-  label_t * l = new_label (new_estring_fmt ("_a60_pow_%c_%c", sigs[sl], sigs[sr]));
+  label_t * l = new_label (new_estring_from ("pow"));
   slist_t * args = new_slist_from (2,
 				   expr_binary_left (self),
 				   expr_binary_right (self));
@@ -529,6 +528,51 @@ expr_subscript_build_generic (expression_t * self, void * data)
   return array;
 }
 
+static void
+private_mangle_for_type (type_t const * t, estring_t * ret)
+{
+  if (types_same (t, type_int ()))
+    estr_push (ret, 'i');
+  else if (types_same (t, type_real ()))
+    estr_push (ret, 'r');
+  else if (types_same (t, type_string ()))
+    estr_push (ret, 's');
+  else if (types_same (t, type_void ()))
+    estr_push (ret, 'v');
+  else if (types_same (t, type_bool ()))
+    estr_push (ret, 'b');
+  else if (types_same (t, type_label ()))
+    estr_push (ret, 'l');
+  else if (type_is_own (t))
+    private_mangle_for_type (type_host (t), ret);
+  else if (type_is_array (t))
+    {
+      estr_push (ret, 'A');
+      private_mangle_for_type (type_host (t), ret);
+    }
+  else if (type_is_proc (t))
+    {
+      estr_push (ret, 'P');
+      private_mangle_for_type (t_proc_return_type (t), ret);
+      slist_t * a = t_proc_arg_types (t);
+      slist_it_t * it = slist_iter (a);
+      for (; slist_it_has (it); slist_it_next (it))
+	private_mangle_for_type (slist_it_get (it), ret);
+      delete_slist_it (it);
+      estr_push (ret, 'Q');
+    }
+  else
+    gcc_unreachable ();
+}
+
+static estring_t *
+private_builtin_asm_name (symbol_t const * sym)
+{
+  estring_t const * orig_name = label_id (symbol_label (sym));
+  estring_t * ret = new_estring_fmt ("__a60__%s_", estr_cstr (orig_name));
+  private_mangle_for_type (symbol_type (sym), ret);
+  return ret;
+}
 
 void *
 builtin_decl_get_generic (symbol_t * sym)
@@ -541,6 +585,11 @@ builtin_decl_get_generic (symbol_t * sym)
       own = 1;
       t = type_host (t);
     }
+
+  // biltin symbols, defined inside libga60, are mangled
+  label_t * asm_label = new_label (private_builtin_asm_name (sym));
+  sym = clone_symbol_with_name (sym, asm_label);
+
   tree decl = symbol_decl_for_type (t, sym, NULL);
 
   // Builtins have file scope.

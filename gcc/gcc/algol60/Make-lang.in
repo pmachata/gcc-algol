@@ -49,8 +49,8 @@ algol601$(exeext): algol60/algol601.o algol60/lang.o algol60/algol-tree.o \
 
 # Create the compiler driver ga60
 ga60$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
-		$(LIBDEPS) algol60/spec.o
-	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ algol60/spec.o \
+		$(LIBDEPS) algol60/a60_spec.o
+	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ algol60/a60_spec.o \
 		$(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) $(LIBS)
 
 #
@@ -81,7 +81,7 @@ algol60/algol-tree.o: algol60/algol-tree.c algol60/gcc-stuff \
 algol60/tree-convert.o: algol60/tree-convert.c algol60/gcc-stuff \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
-algol60/spec.o: algol60/spec.c $(CONFIG_H) $(SYSTEM_H) \
+algol60/a60_spec.o: algol60/a60_spec.c $(CONFIG_H) $(SYSTEM_H) \
 		coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H) \
 		$(ALGOL60_GTFILES) gtype-algol60.h
 
@@ -223,7 +223,7 @@ algol60.tags: force
 algol60.info: doc/algol60.info
 
 algol60.srcinfo: doc/algol60.info
-	-cp -p $^ $(srcdir)/doc
+	-cp -p $^ $(srcdir)/algol60
 
 algol60.dvi: doc/algol60.dvi
 
@@ -276,20 +276,20 @@ algol60.install-common: installdirs
 	  fi ; \
 	fi
 
-algol60.install-info: $(DESTDIR)$(infodir)/ga60.info
+algol60.install-info: $(DESTDIR)$(infodir)/algol60.info
 
 algol60.install-man:
 #$(DESTDIR)$(man1dir)/$(GA60_INSTALL_NAME)$(man1ext)
 
 algol60.uninstall:
 	if $(SHELL) -c 'install-info --version | sed 1q | fgrep -s -v -i debian' >/dev/null 2>&1; then \
-	  echo " install-info --delete --info-dir=$(DESTDIR)$(infodir) $(DESTDIR)$(infodir)/ga60.info"; \
-	  install-info --delete --info-dir=$(DESTDIR)$(infodir) $(DESTDIR)$(infodir)/ga60.info || : ; \
+	  echo " install-info --delete --info-dir=$(DESTDIR)$(infodir) $(DESTDIR)$(infodir)/algol60.info"; \
+	  install-info --delete --info-dir=$(DESTDIR)$(infodir) $(DESTDIR)$(infodir)/algol60.info || : ; \
 	else : ; fi; \
 	rm -rf $(DESTDIR)$(bindir)/$(GA60_INSTALL_NAME)$(exeext); \
 	rm -rf $(DESTDIR)$(man1dir)/$(GA60_INSTALL_NAME)$(man1ext); \
 	rm -rf $(DESTDIR)$(bindir)/$(GA60_TARGET_INSTALL_NAME)$(exeext); \
-	rm -rf $(DESTDIR)$(infodir)/ga60.info*
+	rm -rf $(DESTDIR)$(infodir)/algol60.info*
 
 
 #

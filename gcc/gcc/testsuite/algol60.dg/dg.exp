@@ -20,9 +20,9 @@
 load_lib algol60-dg.exp
 
 # If a testcase doesn't have special options, use these.
-global DEFAULT_FFLAGS
-if ![info exists DEFAULT_FFLAGS] then {
-    set DEFAULT_FFLAGS " -pedantic-errors"
+global DEFAULT_A60LAGS
+if ![info exists DEFAULT_A60FLAGS] then {
+    set DEFAULT_A60FLAGS " -pedantic-errors"
 }
 
 # Initialize `dg'.
@@ -30,10 +30,10 @@ dg-init
 
 # Main loop.
 algol60-dg-runtest [lsort \
-       [glob -nocomplain $srcdir/$subdir/compile/*.\[aA\]60 ] ] $DEFAULT_FFLAGS
+       [glob -nocomplain $srcdir/$subdir/compile/*.\[aA\]60 ] ] $DEFAULT_A60FLAGS
 
 algol60-dg-runtest [lsort \
-       [glob -nocomplain $srcdir/$subdir/fail/*.\[aA\]60 ] ] $DEFAULT_FFLAGS
+       [glob -nocomplain $srcdir/$subdir/fail/*.\[aA\]60 ] ] $DEFAULT_A60FLAGS
 
 # All done.
 dg-finish

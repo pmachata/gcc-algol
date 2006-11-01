@@ -2,8 +2,16 @@
    should be rewritten to use more optimal computation methods,
    e.g. see how gfortran does it. */
 
+#include "config.h"
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+
+int __a60__pow_PiiiQ (int a, int i);
+double __a60__pow_PrriQ (double a, int i);
+
 int
-_a60_pow_i_i (int a, int i)
+__a60__pow_PiiiQ (int a, int i)
 {
   if (i > 0)
     {
@@ -34,7 +42,7 @@ _a60_pow_i_i (int a, int i)
 }
 
 double
-_a60_pow_r_i (double a, int i)
+__a60__pow_PrriQ (double a, int i)
 {
   if (i > 0)
     {
@@ -56,14 +64,18 @@ _a60_pow_r_i (double a, int i)
       if (a == 0)
 	abort ();
       else
-	return (double)1.0 / _a60_pow_r_i (a, -i);
+	return (double)1.0 / __a60__pow_PrriQ (a, -i);
     }
 }
 
-#include <math.h>
+# ifdef HAVE_MATH_H
+#  include <math.h>
+
+double __a60__pow_PrrrQ (double a, double r);
+double __a60__pow_PrirQ (int a, double r);
 
 double
-_a60_pow_r_r (double a, double r)
+__a60__pow_PrrrQ (double a, double r)
 {
   if (a > 0)
     return exp (r * log (a));
@@ -79,7 +91,10 @@ _a60_pow_r_r (double a, double r)
 }
 
 double
-_a60_pow_i_r (int a, double r)
+__a60__pow_PrirQ (int a, double r)
 {
-  return _a60_pow_r_r ((double)a, r);
+  return __a60__pow_PrrrQ ((double)a, r);
 }
+# endif
+
+#endif

@@ -6,5 +6,7 @@ compilers="algol601\$(exeext)"
 
 stagestuff="algol601\$(exeext) ga60\$(exeext)"
 
+target_libs=target-libga60
+
 # files for garbage collection
 gtfiles="\$(srcdir)/algol60/algol-tree.h"

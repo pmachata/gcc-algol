@@ -19,6 +19,13 @@
 
 /// Create new symbol given its name.
 symbol_t * new_symbol (label_t const * name)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_MALLOC;
+
+/// Create new symbol by cloning other symbol, only with other name.
+symbol_t * clone_symbol_with_name (symbol_t const * self, label_t const * name)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_MALLOC;
 
 /// Destroy the symbol.  `self' can be NULL.

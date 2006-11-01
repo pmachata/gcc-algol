@@ -1,0 +1,32 @@
+Index: configure
+===================================================================
+--- configure	(revision 118066)
++++ configure	(working copy)
+@@ -916,6 +916,7 @@
+ target_libraries="target-libiberty \
+ 		target-libgloss \
+ 		target-newlib \
++		target-libga60 \
+ 		target-libstdc++-v3 \
+ 		target-libmudflap \
+ 		target-libssp \
+Index: Makefile.def
+===================================================================
+--- Makefile.def	(revision 118066)
++++ Makefile.def	(working copy)
+@@ -115,6 +115,7 @@
+ host_modules= { module= utils; no_check=true; };
+ host_modules= { module= gnattools; };
+ 
++target_modules = { module= libga60; };
+ target_modules = { module= libstdc++-v3; lib_path=.libs; raw_cxx=true; };
+ target_modules = { module= libmudflap; lib_path=.libs; };
+ target_modules = { module= libssp; lib_path=.libs; };
+@@ -439,6 +440,7 @@
+ 
+ // Target modules.  These can also have dependencies on the language
+ // environment (e.g. on libstdc++).
++lang_env_dependencies = { module=libga60; };
+ lang_env_dependencies = { module=boehm-gc; };
+ lang_env_dependencies = { module=gperf; cxx=true; };
+ lang_env_dependencies = { module=libada; };
