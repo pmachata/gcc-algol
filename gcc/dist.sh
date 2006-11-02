@@ -3,5 +3,7 @@ if [ $# != 1 ]; then
     echo "e.g. $0 0.1"
     exit
 else
-    find algol60/ ! -type d | egrep -v '~$|\.svn' | tar cvjf gcc-algol60-$1.tar.bz2 -T -
+    find *.patch gcc/algol60/ gcc/testsuite/ libga60/ ! -type d\
+   	| egrep -v '~$|\.svn' \
+	| tar cvjf gcc-algol60-$1.tar.bz2 -T -
 fi
