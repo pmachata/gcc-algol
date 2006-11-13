@@ -143,6 +143,11 @@ void * slist_it_get (slist_it_t * it)
 void slist_it_put (slist_it_t * it, void * object)
   ATTRIBUTE_NONNULL(1);
 
+/// Answer the object that is pointed to by this iterator, and advance
+/// to next item.
+void * slist_it_get_next (slist_it_t * it)
+  ATTRIBUTE_NONNULL(1);
+
 /// Advance to next item.
 void slist_it_next (slist_it_t * it)
   ATTRIBUTE_NONNULL(1);

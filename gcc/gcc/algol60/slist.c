@@ -382,6 +382,15 @@ slist_it_put (slist_it_t * it, void * object)
   it->pointee->object = object;
 }
 
+void *
+slist_it_get_next (slist_it_t * it)
+{
+  assert (it != NULL);
+  void * ret = slist_it_get (it);
+  slist_it_next (it);
+  return ret;
+}
+
 void
 slist_it_next (slist_it_t * it)
 {
