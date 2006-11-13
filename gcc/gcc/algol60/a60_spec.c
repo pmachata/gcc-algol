@@ -17,8 +17,7 @@ void
 lang_specific_driver (int *in_argc, const char *const **in_argv,
 		      int *in_added_libraries)
 {
-  /* This is a tristate:
-     0  means we should not link in libga60
+  /* 0  means we should not link in libga60
      1  means we should link in libga60 */
   int library = 1;
 

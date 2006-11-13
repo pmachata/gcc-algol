@@ -154,11 +154,43 @@ stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED,
 void *
 stmt_assign_build_generic (statement_t * self, void * data)
 {
-  // @FIXME: limit ourselves to simple case `x := something`.
   slist_t * lhss = stmt_assign_lhss (self);
-  tree op1 = expr_build_generic (slist_front (lhss), data);
-  tree op2 = expr_build_generic (stmt_assign_rhs (self), data);
-  tree ret = build2 (MODIFY_EXPR, void_type_node, op1, op2);
+  gcc_assert (!slist_empty (lhss));
+
+  tree ret = NULL_TREE;
+  expression_t * rhs = stmt_assign_rhs (self);
+  tree tt = type_build_generic (expr_type (rhs), data);
+  tree rhst = build1 (SAVE_EXPR, tt,
+		      expr_build_generic (rhs, data));
+
+  if (slist_front (lhss) == slist_back (lhss))
+    {
+      // Simple case expr := expr.  We don't have to dive into
+      // compound expr hackery to handle these.
+      tree op1 = expr_build_generic (slist_front (lhss), data);
+      ret = build2 (MODIFY_EXPR, void_type_node, op1, rhst);
+    }
+  else
+    {
+      // Complex cases expr1 := expr2 := ... := expr are handled as a
+      // compound expressions, and translated like this C code:
+      //
+      //  rhst := expr;  -- note the SAVE_EXPR above
+      //  expr1 := expr, expr2 := expr, ...;
+      slist_it_t * it = slist_iter (lhss);
+      tree tgt1 = expr_build_generic (slist_it_get_next (it), data);
+      tree tgt2 = expr_build_generic (slist_it_get_next (it), data);
+      tree expr1 = build2 (MODIFY_EXPR, void_type_node, tgt1, rhst);
+      tree expr2 = build2 (MODIFY_EXPR, void_type_node, tgt2, rhst);
+      ret = build2 (COMPOUND_EXPR, void_type_node, expr1, expr2);
+      for (; slist_it_has (it); slist_it_next (it))
+	{
+	  tree tgt = expr_build_generic (slist_it_get (it), data);
+	  tree expr = build2 (MODIFY_EXPR, void_type_node, tgt, rhst);
+	  ret = build2 (COMPOUND_EXPR, void_type_node, ret, expr);
+	}
+      delete_slist_it (it);
+    }
   return ret;
 }
 
