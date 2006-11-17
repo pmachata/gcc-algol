@@ -280,8 +280,12 @@ stmt_call_build_generic (statement_t * self, void * state)
 void *
 stmt_cond_build_generic (statement_t * self, void * state)
 {
-  // NYI
-  return build_empty_stmt ();
+  tree cond = expr_build_generic (stmt_cond_cond (self), state);
+  tree stmtt = stmt_build_generic (stmt_cond_ifclause (self), state);
+  statement_t * elseclause = stmt_cond_elseclause (self);
+  tree stmtf = elseclause ? stmt_build_generic (elseclause, state) : NULL_TREE;
+  tree ret  = build3 (COND_EXPR, void_type_node, cond, stmtt, stmtf);
+  return ret;
 }
 
 static tree
