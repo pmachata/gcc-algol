@@ -314,22 +314,22 @@ stmt_container_build_generic (container_t * self, void * _state)
       TREE_CHAIN (decl) = vars;
       vars = decl;
     }
-  delete_slist_it (it);
+
+  slist_it_reset (it, container_stmts (self));
 
   tree stmts = alloc_stmt_list ();
-  it = slist_iter (container_stmts (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement_t * st = slist_it_get (it);
       slist_t * labels = stmt_labels (st);
-      slist_it_t * it = slist_iter (labels);
-      for (; slist_it_has (it); slist_it_next (it))
+      slist_it_t * jt = slist_iter (labels);
+      for (; slist_it_has (jt); slist_it_next (jt))
 	{
-	  symbol_t * l = slist_it_get (it);
+	  symbol_t * l = slist_it_get (jt);
 	  tree label = private_label_build_generic (self, l, state);
 	  append_to_statement_list (label, &stmts);
 	}
-      delete_slist_it (it);
+      delete_slist_it (jt);
 
       tree stmt = stmt_build_generic (st, state);
       append_to_statement_list (stmt, &stmts);

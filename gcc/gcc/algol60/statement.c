@@ -240,10 +240,10 @@ private_dump_container (statement_t const * self, estring_t * buf, int level)
 	}
       estr_append_cstr (buf, ";\n");
     }
-  delete_slist_it (it);
+
+  slist_it_reset (it, self->block.statements);
 
   // dump all statemenets
-  it = slist_iter (self->block.statements);
   for (;slist_it_has (it);)
     {
       statement_t * stmt = slist_it_get (it);
@@ -352,10 +352,10 @@ private_resolve_symbols_assign (statement_t * self, logger_t * log)
   slist_it_t * it = slist_iter (self->assign.lhss);
   for (; slist_it_has (it); slist_it_next (it))
     expr_resolve_symbols (slist_it_get (it), self->parent, log);
-  delete_slist_it (it);
+
+  slist_it_reset (it, self->assign.lhss);
 
   type_t * tt = expr_type (self->assign.rhs);
-  it = slist_iter (self->assign.lhss);
   for (; slist_it_has (it); slist_it_next (it))
     {
       expression_t * lhs = slist_it_get (it);
@@ -402,9 +402,9 @@ private_resolve_symbols_block (statement_t * self, logger_t * log)
       symbol_t * sym = slist_it_get (it);
       type_resolve_symbols (symbol_type (sym), container (self), log);
     }
-  delete_slist_it (it);
 
-  it = slist_iter (self->block.statements);
+  slist_it_reset (it, self->block.statements);
+
   for (; slist_it_has (it); slist_it_next (it))
     stmt_resolve_symbols (slist_it_get (it), log);
   delete_slist_it (it);
