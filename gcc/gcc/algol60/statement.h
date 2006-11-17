@@ -41,6 +41,13 @@ statement_t * new_stmt_call (cursor_t * cursor, expression_t * call)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL (2);
 
+/// Create new conditional statement.  `elseclause` may be NULL if
+/// there is no else clause in statement.
+statement_t * new_stmt_cond (cursor_t * cursor, expression_t * cond, statement_t * ifclause, statement_t * elseclause)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3);
+
 /// Create new generic statement block.
 container_t * new_stmt_block (cursor_t * cursor)
   ATTRIBUTE_MALLOC;
@@ -111,6 +118,21 @@ expression_t * stmt_assign_rhs (statement_t const * self)
 
 /// Answer the call expression representing this call statement.
 expression_t * stmt_call_call (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the condition expression associated with this conditional
+/// statement.
+expression_t * stmt_cond_cond (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the if clause statement associated with this conditional
+/// statement.
+statement_t * stmt_cond_ifclause (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the else clause statement associated with this conditional
+/// statement.  This may be NULL.
+statement_t * stmt_cond_elseclause (statement_t const * self)
   ATTRIBUTE_NONNULL(1);
 
 /// Add new label (in the sense of goto target) to the statement.
@@ -196,6 +218,9 @@ void * stmt_assign_build_generic (statement_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 
 void * stmt_call_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * stmt_cond_build_generic (statement_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 
 void * stmt_container_build_generic (container_t * self, void * data)

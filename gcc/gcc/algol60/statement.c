@@ -12,7 +12,6 @@
 #include "type.h"
 #include "estring.h"
 #include "boundspair.h"
-#include "gcc.h"
 #include "meta.h"
 
 char const * private_statement_signature = "statement";
@@ -35,6 +34,14 @@ typedef struct struct_stmt_call_rep_t
 }
 stmt_call_rep_t;
 
+typedef struct struct_stmt_cond_rep_t
+{
+  expression_t * cond;
+  statement_t * ifclause;
+  statement_t * elseclause;
+}
+stmt_cond_rep_t;
+
 /// Used for blocks as well as for toplevs.
 typedef struct struct_container_rep_t
 {
@@ -48,6 +55,7 @@ typedef enum enum_stmt_kind_t
   sk_dummy,
   sk_assign,
   sk_call,
+  sk_cond,
   sk_block,
   sk_toplev
 }
@@ -65,6 +73,7 @@ struct struct_statement_t
     stmt_dummy_rep_t dummy;
     stmt_assign_rep_t assign;
     stmt_call_rep_t call;
+    stmt_cond_rep_t cond;
     container_rep_t block; ///< Used by both block and toplev.
   };
 };
@@ -126,6 +135,20 @@ new_stmt_call (cursor_t * cursor, expression_t * call)
 
   statement_t * ret = private_new_statement (sk_call, cursor, NULL);
   ret->call.call = call;
+  return ret;
+}
+
+statement_t *
+new_stmt_cond (cursor_t * cursor, expression_t * cond,
+	       statement_t * ifclause, statement_t * elseclause)
+{
+  assert (cond != NULL);
+  assert (ifclause != NULL);
+
+  statement_t * ret = private_new_statement (sk_cond, cursor, NULL);
+  ret->cond.cond = cond;
+  ret->cond.ifclause = ifclause;
+  ret->cond.elseclause = elseclause;
   return ret;
 }
 
@@ -315,6 +338,24 @@ private_stmt_dump (statement_t const * self, estring_t * buf, int level)
 	return;
       }
 
+    case sk_cond:
+      {
+	estr_append_cstr (buf, padding (level));
+	estr_append_cstr (buf, "'if' ");
+	estring_t * buf0 = expr_to_str (self->cond.cond, NULL);
+	estr_append (buf, buf0);
+	delete_estring (buf0);
+	estr_append_cstr (buf, " 'then'\n");
+	private_stmt_dump (self->cond.ifclause, buf, level + 1);
+	if (self->cond.elseclause)
+	  {
+	    estr_append_cstr (buf, padding (level));
+	    estr_append_cstr (buf, "'else'\n");
+	    private_stmt_dump (self->cond.elseclause, buf, level + 1);
+	  }
+	return;
+      }
+
     case sk_block:
       estr_append_cstr (buf, padding (level));
       estr_append_cstr (buf, "'begin'\n");
@@ -428,6 +469,32 @@ stmt_resolve_symbols (statement_t * self, logger_t * log)
       expr_resolve_symbols (self->call.call, self->parent, log);
       return;
 
+    case sk_cond:
+      {
+	expr_resolve_symbols (self->cond.cond, self->parent, log);
+
+	stmt_set_parent (self->cond.ifclause, self->parent);
+	stmt_resolve_symbols (self->cond.ifclause, log);
+	if (self->cond.elseclause)
+	  {
+	    stmt_set_parent (self->cond.elseclause, self->parent);
+	    stmt_resolve_symbols (self->cond.elseclause, log);
+	  }
+
+	type_t * t1 = expr_type (self->cond.cond);
+	if (!types_match (t1, type_bool ()))
+	  {
+	    estring_t * s1 = expr_to_str (self->cond.cond, NULL);
+	    estring_t * s2 = type_to_str (t1, NULL);
+	    log_printfc (log, ll_error, self->cursor,
+			 "type mismatch in conditional `%s' (%s should be Boolean)",
+			 estr_cstr (s1), estr_cstr (s2));
+	    delete_estring (s2);
+	    delete_estring (s1);
+	  }
+	return;
+      }
+
     case sk_block:
     case sk_toplev:
       private_resolve_symbols_block (self, log);
@@ -504,6 +571,30 @@ stmt_call_call (statement_t const * self)
   assert (self != NULL);
   assert (self->kind == sk_call);
   return self->call.call;
+}
+
+expression_t *
+stmt_cond_cond (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_cond);
+  return self->cond.cond;
+}
+
+statement_t *
+stmt_cond_ifclause (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_cond);
+  return self->cond.ifclause;
+}
+
+statement_t *
+stmt_cond_elseclause (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_cond);
+  return self->cond.elseclause;
 }
 
 void
@@ -703,6 +794,7 @@ no_glue_built (void)
 void * stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * stmt_assign_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * stmt_call_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
+void * stmt_cond_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * container_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 
 void * ATTRIBUTE_NORETURN builtin_decl_get_generic (symbol_t * sym ATTRIBUTE_UNUSED) {
@@ -725,6 +817,9 @@ stmt_build_generic (statement_t * self, void * data)
 
     case sk_call:
       return stmt_call_build_generic (self, data);
+
+    case sk_cond:
+      return stmt_cond_build_generic (self, data);
 
     case sk_block:
     case sk_toplev:

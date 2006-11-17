@@ -194,13 +194,17 @@ static container_t * private_close_block (parser_rep_t * parser);
 %type <expr> Expression
 %type <expr> SimpleExpression
 %type <expr> FunctionDesignator
+%type <expr> VariableAccess
 %type <lst> SubscriptList
 %type <lst> ActualParamList
 %type <estr> ParameterDelimiter
 //%type <> StatementList
 %type <stmt> Statement
 %type <stmt> UnconditionalStatement
+%type <stmt> ConditionalStatement
 %type <stmt> BasicStatement
+%type <expr> IfClause
+%type <stmt> OptElseClause
 %type <lst> LeftPartList
 %type <expr> LeftPart
 
@@ -221,7 +225,7 @@ Program:
   }
   LabelList Block SEPSEMICOLON EOFTOK
     {
-      log_printf (parser->log, ll_debug, "Program -> CompoundStatement");
+      log_printf (parser->log, ll_debug, "Program -> LabelList Block SEPSEMICOLON EOFTOK");
       private_dump_log_labels (parser, $2);
       private_add_labels_to_symtab (parser, parser->block, $2, $3);
       container_add_stmt (parser->block, $3);
@@ -539,7 +543,7 @@ Expression:
   |
   KWIF Expression KWTHEN SimpleExpression KWELSE Expression
     {
-      log_printf (parser->log, ll_debug, "ArithmeticExpression -> KWIF BooleanExpression"
+      log_printf (parser->log, ll_debug, "ArithmeticExpression -> KWIF Expression"
 		  " KWTHEN SimpleArithmeticExpression ELSE SimpleArithmeticExpression");
       $$ = new_expr_if (cr_csr (parser, &@1), $2, $4, $6);
       @$ = @1;
@@ -728,6 +732,13 @@ FunctionDesignator:
       @$ = @1;
     }
   |
+  VariableAccess
+    {
+      $$ = $1;
+      @$ = @1;
+    }
+
+VariableAccess:
   Identifier SEPLBRACK SubscriptList SEPRBRACK
     {
       log_printf (parser->log, ll_debug, "Identifier SEPLBRACK Expression SEPRBRACK");
@@ -806,6 +817,12 @@ Statement:
       log_printf (parser->log, ll_debug, "Statement -> UnconditionalStatement");
       $$ = $1;
     }
+  |
+  ConditionalStatement
+    {
+      log_printf (parser->log, ll_debug, "Statement -> UnconditionalStatement");
+      $$ = $1;
+    }
 
 UnconditionalStatement:
   LabelList Block
@@ -821,6 +838,36 @@ UnconditionalStatement:
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> BasicStatement");
       private_add_labels_to_symtab (parser, parser->block, $1, $2);
       $$ = $2;
+    }
+
+ConditionalStatement:
+  LabelList IfClause UnconditionalStatement OptElseClause
+    {
+      log_printf (parser->log, ll_debug, "ConditionalStatement -> LabelList IfClause UnconditionalStatement OptElseClause");
+      private_dump_log_labels (parser, $1);
+      $$ = new_stmt_cond (cr_csr (parser, &@2), $2, $3, $4);
+      @$ = @2;
+      private_add_labels_to_symtab (parser, parser->block, $1, $$);
+    }
+
+IfClause:
+  KWIF Expression KWTHEN
+    {
+      log_printf (parser->log, ll_debug, "IfClause -> KWIF Expression KWTHEN");
+      $$ = $2;
+      @$ = @1;
+    }
+
+OptElseClause:
+  /* eps */
+    {
+      $$ = NULL;
+    }
+  |
+  KWELSE Statement
+    {
+      $$ = $2;
+      @$ = @2;
     }
 
 BasicStatement:
@@ -871,7 +918,7 @@ LeftPartList:
     }
 
 LeftPart:
-  Expression SEPASSIGN
+  VariableAccess SEPASSIGN
     {
       $$ = $1;
     }
