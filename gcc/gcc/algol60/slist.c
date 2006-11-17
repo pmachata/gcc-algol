@@ -309,6 +309,41 @@ slist_length (slist_t * list)
   return length;
 }
 
+void
+slist_append (slist_t * list, slist_t * other)
+{
+  assert (list != NULL);
+  assert (other != NULL);
+
+  if (other->head == NULL)
+    return;
+
+  assert (list->head != other->head);
+
+#ifndef NDEBUG
+  if (list->test != NULL)
+    {
+      slist_node_t * node = list->head;
+      for (; node != NULL; node = node->link)
+	private_test_element (list, node->object);
+    }
+#endif
+
+  if (list->head == NULL)
+    {
+      list->head = other->head;
+      list->tail = other->tail;
+    }
+  else
+    {
+      list->tail->link = other->head;
+      list->tail = other->tail;
+    }
+
+  other->head = NULL;
+  other->tail = NULL;
+}
+
 void slist_each (
   slist_t * list,
   void (*fn)(slist_t *, void *, void *),
@@ -396,6 +431,14 @@ slist_it_next (slist_it_t * it)
 {
   assert (it != NULL);
   it->pointee = it->pointee->link;
+}
+
+void
+slist_it_reset (slist_it_t * it, slist_t * list)
+{
+  assert (it != NULL);
+  assert (list != NULL);
+  it->pointee = list->head;
 }
 
 void

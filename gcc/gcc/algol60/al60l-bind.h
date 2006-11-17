@@ -12,7 +12,7 @@
 /// Instead, it's assumed that the unit that needs to use binder will
 /// also need to use GCC framework, and will have to include it anyway.
 
-typedef struct struct_al60l_bind_state_t {} al60l_bind_state_t;
+typedef struct struct_al60l_bind_state_t al60l_bind_state_t;
 
 /// Create new state for al60l binder.
 al60l_bind_state_t * new_bind_state (void)

@@ -100,6 +100,16 @@ int slist_empty (slist_t * list)
 int slist_length (slist_t * list)
   ATTRIBUTE_NONNULL(1);
 
+/// Append one list to the end of the other.  This operation will move
+/// all the elements from list `other` to the end of list `list`.  The
+/// `other` list will be empty after operation.  `list` and `other`
+/// must be different lists.  If `list` is typed, `other` elements are
+/// typechecked, too.  Note that in NDEBUG this is O(1) operation,
+/// while in debugging mode this is for typed lists O(n) operation.
+void slist_append (slist_t * list, slist_t * other)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
 /// Apply the function `fn' to each element of the list `list'.  The
 /// argument `userdata' will be passed over to fn verbatim.  The
 /// arguments of `fn' are, respectively, the list that is iterated
@@ -151,6 +161,12 @@ void * slist_it_get_next (slist_it_t * it)
 /// Advance to next item.
 void slist_it_next (slist_it_t * it)
   ATTRIBUTE_NONNULL(1);
+
+/// Reuse existing iterator to iterate over other slist (or the same
+/// slist once again).
+void slist_it_reset (slist_it_t * it, slist_t * list)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
 
 /// Destroy the iterator.
 void delete_slist_it (slist_it_t * it);

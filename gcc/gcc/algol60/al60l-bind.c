@@ -37,7 +37,7 @@
 #include "statement.h"
 #include "expression.h"
 
-typedef struct struct_al60l_bind_state_rep_t
+struct struct_al60l_bind_state_t
 {
   /// Function declarations stack.  As the layers of nesting are
   /// uncovered, new decls are pushed on and popped off this stack.
@@ -53,7 +53,7 @@ typedef struct struct_al60l_bind_state_rep_t
   /// tree lists.  It's pushed-on in push_function and when handling
   /// container.
   slist_t * subblocks;
-} al60l_bind_state_rep_t;
+};
 
 #ifndef IN_GCC
 # error It makes no sense to build this file outside the GCC
@@ -66,7 +66,7 @@ typedef struct struct_al60l_bind_state_rep_t
 al60l_bind_state_t *
 new_bind_state (void)
 {
-  al60l_bind_state_rep_t * ret = xmalloc (sizeof (al60l_bind_state_rep_t));
+  al60l_bind_state_t * ret = xmalloc (sizeof (al60l_bind_state_t));
   if (ret == NULL)
     return NULL;
 
@@ -88,7 +88,7 @@ new_bind_state (void)
 void
 delete_bind_state (al60l_bind_state_t * _state)
 {
-  al60l_bind_state_rep_t * state = (void*)_state;
+  al60l_bind_state_t * state = (void*)_state;
   if (state != NULL)
     {
       delete_slist (state->fundecls);
@@ -101,7 +101,7 @@ delete_bind_state (al60l_bind_state_t * _state)
 void
 bind_state_push_function (al60l_bind_state_t * _state, tree resultdecl, tree decl)
 {
-  al60l_bind_state_rep_t * state = (void*)_state;
+  al60l_bind_state_t * state = (void*)_state;
   gcc_assert (state != NULL);
   slist_pushfront (state->fundecls, decl);
   slist_pushfront (state->resultdecls, resultdecl);
@@ -111,7 +111,7 @@ bind_state_push_function (al60l_bind_state_t * _state, tree resultdecl, tree dec
 tree
 bind_state_enclosing_decl (al60l_bind_state_t const* _state)
 {
-  al60l_bind_state_rep_t const* state = (void*)_state;
+  al60l_bind_state_t const* state = (void*)_state;
   gcc_assert (state != NULL);
   gcc_assert (!slist_empty (state->fundecls));
   return slist_front (state->fundecls);
@@ -120,7 +120,7 @@ bind_state_enclosing_decl (al60l_bind_state_t const* _state)
 tree
 bind_state_enclosing_resultdecl (al60l_bind_state_t const* _state)
 {
-  al60l_bind_state_rep_t const* state = (void*)_state;
+  al60l_bind_state_t const* state = (void*)_state;
   gcc_assert (state != NULL);
   gcc_assert (!slist_empty (state->resultdecls));
   return slist_front (state->resultdecls);
@@ -129,7 +129,7 @@ bind_state_enclosing_resultdecl (al60l_bind_state_t const* _state)
 void
 bind_state_pop_function (al60l_bind_state_t * _state)
 {
-  al60l_bind_state_rep_t * state = (void*)_state;
+  al60l_bind_state_t * state = (void*)_state;
   gcc_assert (state != NULL);
   gcc_assert (!slist_empty (state->fundecls));
   gcc_assert (!slist_empty (state->resultdecls));
@@ -143,6 +143,39 @@ bind_state_pop_function (al60l_bind_state_t * _state)
 // ------------------------------------
 //   STATEMENT
 // ------------------------------------
+
+static tree
+private_build_bind_expr (tree vars, tree stmts, tree subblocks,
+			 tree supercontext, tree chain,
+			 al60l_bind_state_t * state)
+{
+  // Create new block and make it a superblock of all subblocks.
+  tree block = build_block (vars, subblocks, supercontext, chain);
+  if (subblocks)
+    {
+      tree subblock_node;
+      for (subblock_node = subblocks; subblock_node != NULL_TREE;
+	   subblock_node = TREE_CHAIN (subblock_node))
+	{
+	  tree subblock = TREE_VALUE (subblock_node);
+	  BLOCK_SUPERCONTEXT (subblock) = block;
+	}
+    }
+
+  // Then add the block to super's subblocks.
+  slist_it_t * it = slist_iter (state->subblocks);
+  tree super_subs = slist_it_get (it);
+  super_subs = tree_cons (NULL_TREE, block, super_subs);
+  slist_it_put (it, super_subs);
+  delete_slist_it (it);
+
+  // Finally return the binding expression that represents our block.
+  tree bind = build3 (BIND_EXPR, void_type_node,
+		      BLOCK_VARS (block), stmts, block);
+  TREE_USED (block) = 1;
+
+  return bind;
+}
 
 void *
 stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED,
@@ -165,31 +198,75 @@ stmt_assign_build_generic (statement_t * self, void * data)
 
   if (slist_front (lhss) == slist_back (lhss))
     {
-      // Simple case expr := expr.  We don't have to dive into
-      // compound expr hackery to handle these.
+      // Simple case expr := expr.
       tree op1 = expr_build_generic (slist_front (lhss), data);
       ret = build2 (MODIFY_EXPR, void_type_node, op1, rhst);
     }
   else
     {
-      // Complex cases expr1 := expr2 := ... := expr are handled as a
-      // compound expressions, and translated like this C code:
+      // Complex cases expr1 := expr2 := ... := expr are handled with
+      // special care.  At first, the address of each LHS expression
+      // is extracted to temporary variable.  Then each temporary is
+      // dereferenced and assigned RHS.  RRA60 requires the array
+      // subscripts to be evaluated before the first assignment is
+      // done, and this is our way to do it without having to look
+      // into LHS expressions.
       //
-      //  rhst := expr;  -- note the SAVE_EXPR above
-      //  expr1 := expr, expr2 := expr, ...;
+      // @TODO: More optimal solution would be to check if given LHS
+      // is array access expression.  Even more optimal would be to
+      // check if the array access expression uses some LHS assigned
+      // earlier and only compute address then.
+
+      al60l_bind_state_t * state = data;
+      tree stmts = alloc_stmt_list ();
+      tree vars = NULL_TREE;
+
+      // List of dereferences of LHS address temporaries.
+      slist_t * derefs = new_slist ();
+
+      // evaluate LHS references
       slist_it_t * it = slist_iter (lhss);
-      tree tgt1 = expr_build_generic (slist_it_get_next (it), data);
-      tree tgt2 = expr_build_generic (slist_it_get_next (it), data);
-      tree expr1 = build2 (MODIFY_EXPR, void_type_node, tgt1, rhst);
-      tree expr2 = build2 (MODIFY_EXPR, void_type_node, tgt2, rhst);
-      ret = build2 (COMPOUND_EXPR, void_type_node, expr1, expr2);
       for (; slist_it_has (it); slist_it_next (it))
 	{
-	  tree tgt = expr_build_generic (slist_it_get (it), data);
-	  tree expr = build2 (MODIFY_EXPR, void_type_node, tgt, rhst);
-	  ret = build2 (COMPOUND_EXPR, void_type_node, ret, expr);
+	  tree expr, base_type, pointer_type;
+
+	  // compute type of pointer to LHS
+	  expr = expr_build_generic (slist_it_get (it), data);
+	  base_type = TREE_TYPE (expr);
+	  pointer_type = build_pointer_type (base_type);
+	  expr = build1 (ADDR_EXPR, pointer_type, expr);
+
+	  // assign the pointer to the temporary
+	  tree tmp_decl = create_tmp_var_raw (pointer_type, NULL);
+	  tree tmp_init = build2 (INIT_EXPR, void_type_node, tmp_decl, expr);
+	  TREE_SIDE_EFFECTS (tmp_init) = 1;
+	  TREE_USED (tmp_init) = 1;
+	  append_to_statement_list (tmp_init, &stmts);
+	  TREE_CHAIN (tmp_decl) = vars;
+	  vars = tmp_decl;
+
+	  // remember the reference to temporary for later assignments
+	  expr = build1 (INDIRECT_REF, base_type, tmp_decl);
+	  slist_pushback (derefs, expr);
 	}
+
+      // build assignments
+      slist_it_reset (it, derefs);
+      for (; slist_it_has (it); slist_it_next (it))
+	{
+	  tree tgt = slist_it_get (it);
+	  tree assign = build2 (MODIFY_EXPR, void_type_node, tgt, rhst);
+	  TREE_SIDE_EFFECTS (assign) = 1;
+	  TREE_USED (assign) = 1;
+	  append_to_statement_list (assign, &stmts);
+	}
+
+      ret = private_build_bind_expr (vars, stmts,
+				     NULL_TREE, NULL_TREE, NULL_TREE,
+				     state);
+
       delete_slist_it (it);
+      delete_slist (derefs);
     }
   return ret;
 }
@@ -203,7 +280,7 @@ stmt_call_build_generic (statement_t * self, void * state)
 static tree
 private_label_build_generic (container_t * context ATTRIBUTE_UNUSED,
 			     symbol_t * lbl,
-			     al60l_bind_state_rep_t * state)
+			     al60l_bind_state_t * state)
 {
   tree decl = symbol_extra (lbl);
   gcc_assert (decl != NULL);
@@ -215,7 +292,7 @@ private_label_build_generic (container_t * context ATTRIBUTE_UNUSED,
 void *
 stmt_container_build_generic (container_t * self, void * _state)
 {
-  al60l_bind_state_rep_t * state = _state;
+  al60l_bind_state_t * state = _state;
   slist_it_t * it;
 
   // Open new subblock level.  All substatements that are containers
@@ -265,31 +342,8 @@ stmt_container_build_generic (container_t * self, void * _state)
   if (subblocks)
     subblocks = nreverse (subblocks);
 
-  // Create new block and make it a superblock of all subblocks.
-  tree block = build_block (vars, subblocks, NULL_TREE, NULL_TREE);
-  if (subblocks)
-    {
-      tree subblock_node;
-      for (subblock_node = subblocks; subblock_node != NULL_TREE;
-	   subblock_node = TREE_CHAIN (subblock_node))
-	{
-	  tree subblock = TREE_VALUE (subblock_node);
-	  BLOCK_SUPERCONTEXT (subblock) = block;
-	}
-    }
-
-  // Then add the block to super's subblocks.
-  it = slist_iter (state->subblocks);
-  tree super_subs = slist_it_get (it);
-  super_subs = tree_cons (NULL_TREE, block, super_subs);
-  slist_it_put (it, super_subs);
-
-  // Finally return the binding expression that represents our block.
-  tree bind = build3 (BIND_EXPR, void_type_node,
-		      BLOCK_VARS (block), stmts, block);
-  TREE_USED (block) = 1;
-
-  return bind;
+  return private_build_bind_expr (vars, stmts, subblocks, NULL_TREE, NULL_TREE,
+				  state);
 }
 
 
