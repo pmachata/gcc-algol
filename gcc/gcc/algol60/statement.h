@@ -48,6 +48,16 @@ statement_t * new_stmt_cond (cursor_t * cursor, expression_t * cond, statement_t
   ATTRIBUTE_NONNULL (2)
   ATTRIBUTE_NONNULL (3);
 
+/// Create new for statement.
+/// `variable' is an expression that denotes the loop control variable.
+/// The list of for elements `elmts' has to contain only for_elmt_t
+/// entries. It will NOT be cloned.  `body' is the body of for loop.
+statement_t * new_stmt_for (cursor_t * cursor, expression_t * variable, slist_t * elmts, statement_t * body)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+  ATTRIBUTE_NONNULL (4);
+
 /// Create new generic statement block.
 container_t * new_stmt_block (cursor_t * cursor)
   ATTRIBUTE_MALLOC;
@@ -133,6 +143,18 @@ statement_t * stmt_cond_ifclause (statement_t const * self)
 /// Answer the else clause statement associated with this conditional
 /// statement.  This may be NULL.
 statement_t * stmt_cond_elseclause (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the control variable of the for statement.
+expression_t * stmt_for_variable (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the for elements of this for statement.
+slist_t * stmt_for_elmts (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the body of this for statement.
+statement_t * stmt_for_body (statement_t const * self)
   ATTRIBUTE_NONNULL(1);
 
 /// Add new label (in the sense of goto target) to the statement.
@@ -221,6 +243,9 @@ void * stmt_call_build_generic (statement_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 
 void * stmt_cond_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * stmt_for_build_generic (statement_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 
 void * stmt_container_build_generic (container_t * self, void * data)

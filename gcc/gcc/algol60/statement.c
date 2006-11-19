@@ -12,9 +12,10 @@
 #include "type.h"
 #include "estring.h"
 #include "boundspair.h"
+#include "for-elmt.h"
 #include "meta.h"
 
-char const * private_statement_signature = "statement";
+static char const * private_statement_signature = "statement";
 
 typedef struct struct_stmt_dummy_rep_t
 {
@@ -42,6 +43,14 @@ typedef struct struct_stmt_cond_rep_t
 }
 stmt_cond_rep_t;
 
+typedef struct struct_stmt_for_rep_t
+{
+  expression_t * variable;
+  slist_t * elmts;
+  statement_t * body;
+}
+stmt_for_rep_t;
+
 /// Used for blocks as well as for toplevs.
 typedef struct struct_container_rep_t
 {
@@ -56,6 +65,7 @@ typedef enum enum_stmt_kind_t
   sk_assign,
   sk_call,
   sk_cond,
+  sk_for,
   sk_block,
   sk_toplev
 }
@@ -74,6 +84,7 @@ struct struct_statement_t
     stmt_assign_rep_t assign;
     stmt_call_rep_t call;
     stmt_cond_rep_t cond;
+    stmt_for_rep_t afor;
     container_rep_t block; ///< Used by both block and toplev.
   };
 };
@@ -149,6 +160,21 @@ new_stmt_cond (cursor_t * cursor, expression_t * cond,
   ret->cond.cond = cond;
   ret->cond.ifclause = ifclause;
   ret->cond.elseclause = elseclause;
+  return ret;
+}
+
+statement_t *
+new_stmt_for (cursor_t * cursor, expression_t * variable, slist_t * elmts, statement_t * body)
+{
+  assert (variable != NULL);
+  assert (elmts != NULL);
+  assert (body != NULL);
+
+  statement_t * ret = private_new_statement (sk_for, cursor, NULL);
+  ret->afor.variable = variable;
+  slist_set_type (elmts, adapt_test, for_elmt);
+  ret->afor.elmts = elmts;
+  ret->afor.body = body;
   return ret;
 }
 
@@ -356,6 +382,34 @@ private_stmt_dump (statement_t const * self, estring_t * buf, int level)
 	return;
       }
 
+    case sk_for:
+      {
+	estr_append_cstr (buf, padding (level));
+	estr_append_cstr (buf, "'for' ");
+	estring_t * buf0 = expr_to_str (self->afor.variable, NULL);
+	estr_append (buf, buf0);
+	estr_append_cstr (buf, " := ");
+
+	slist_it_t * it = slist_iter (self->afor.elmts);
+	int first = 1;
+	for (; slist_it_has (it); slist_it_next (it))
+	  {
+	    for_elmt_t * elmt = slist_it_get (it);
+	    if (first)
+	      first = 0;
+	    else
+	      estr_append_cstr (buf, ", ");
+	    for_elmt_to_str (elmt, buf0);
+	    estr_append (buf, buf0);
+	  }
+	delete_slist_it (it);
+	delete_estring (buf0);
+
+	estr_append_cstr (buf, " 'do'\n");
+	private_stmt_dump (self->afor.body, buf, level + 1);
+	return;
+      }
+
     case sk_block:
       estr_append_cstr (buf, padding (level));
       estr_append_cstr (buf, "'begin'\n");
@@ -495,6 +549,19 @@ stmt_resolve_symbols (statement_t * self, logger_t * log)
 	return;
       }
 
+    case sk_for:
+      {
+	expr_resolve_symbols (self->afor.variable, self->parent, log);
+	slist_it_t * it = slist_iter (self->afor.elmts);
+	for (; slist_it_has (it); slist_it_next (it))
+	  for_elmt_resolve_symbols (slist_it_get (it), self->afor.variable,
+				    self->parent, log);
+	delete_slist_it (it);
+	stmt_set_parent (self->afor.body, self->parent);
+	stmt_resolve_symbols (self->afor.body, log);
+	return;
+      }
+
     case sk_block:
     case sk_toplev:
       private_resolve_symbols_block (self, log);
@@ -595,6 +662,30 @@ stmt_cond_elseclause (statement_t const * self)
   assert (self != NULL);
   assert (self->kind == sk_cond);
   return self->cond.elseclause;
+}
+
+expression_t *
+stmt_for_variable (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_for);
+  return self->afor.variable;
+}
+
+slist_t *
+stmt_for_elmts (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_for);
+  return self->afor.elmts;
+}
+
+statement_t *
+stmt_for_body (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_for);
+  return self->afor.body;
 }
 
 void
@@ -795,6 +886,7 @@ void * stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * dat
 void * stmt_assign_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * stmt_call_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * stmt_cond_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
+void * stmt_for_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * container_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 
 void * ATTRIBUTE_NORETURN builtin_decl_get_generic (symbol_t * sym ATTRIBUTE_UNUSED) {
@@ -820,6 +912,9 @@ stmt_build_generic (statement_t * self, void * data)
 
     case sk_cond:
       return stmt_cond_build_generic (self, data);
+
+    case sk_for:
+      return stmt_for_build_generic (self, data);
 
     case sk_block:
     case sk_toplev:

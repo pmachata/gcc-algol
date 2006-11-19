@@ -11,6 +11,7 @@
 #include "symbol.h"
 #include "boundspair.h"
 #include "expression.h"
+#include "for-elmt.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -83,6 +84,7 @@ static container_t * private_close_block (parser_rep_t * parser);
   boundspair_t * bnds;
   expression_t * expr;
   estring_t * estr;
+  void * lelm;
 }
 
 %pure-parser
@@ -207,6 +209,9 @@ static container_t * private_close_block (parser_rep_t * parser);
 %type <stmt> OptElseClause
 %type <lst> LeftPartList
 %type <expr> LeftPart
+%type <stmt> ForStatement
+%type <lst> ForList
+%type <lelm> ForListElmt
 
 %%
 
@@ -820,7 +825,13 @@ Statement:
   |
   ConditionalStatement
     {
-      log_printf (parser->log, ll_debug, "Statement -> UnconditionalStatement");
+      log_printf (parser->log, ll_debug, "Statement -> ConditionalStatement");
+      $$ = $1;
+    }
+  |
+  ForStatement
+    {
+      log_printf (parser->log, ll_debug, "Statement -> ForStatement");
       $$ = $1;
     }
 
@@ -838,36 +849,6 @@ UnconditionalStatement:
       log_printf (parser->log, ll_debug, "UnconditionalStatement -> BasicStatement");
       private_add_labels_to_symtab (parser, parser->block, $1, $2);
       $$ = $2;
-    }
-
-ConditionalStatement:
-  LabelList IfClause UnconditionalStatement OptElseClause
-    {
-      log_printf (parser->log, ll_debug, "ConditionalStatement -> LabelList IfClause UnconditionalStatement OptElseClause");
-      private_dump_log_labels (parser, $1);
-      $$ = new_stmt_cond (cr_csr (parser, &@2), $2, $3, $4);
-      @$ = @2;
-      private_add_labels_to_symtab (parser, parser->block, $1, $$);
-    }
-
-IfClause:
-  KWIF Expression KWTHEN
-    {
-      log_printf (parser->log, ll_debug, "IfClause -> KWIF Expression KWTHEN");
-      $$ = $2;
-      @$ = @1;
-    }
-
-OptElseClause:
-  /* eps */
-    {
-      $$ = NULL;
-    }
-  |
-  KWELSE Statement
-    {
-      $$ = $2;
-      @$ = @2;
     }
 
 BasicStatement:
@@ -921,6 +902,83 @@ LeftPart:
   VariableAccess SEPASSIGN
     {
       $$ = $1;
+    }
+
+ConditionalStatement:
+  LabelList IfClause UnconditionalStatement OptElseClause
+    {
+      log_printf (parser->log, ll_debug, "ConditionalStatement -> LabelList IfClause UnconditionalStatement OptElseClause");
+      private_dump_log_labels (parser, $1);
+      $$ = new_stmt_cond (cr_csr (parser, &@2), $2, $3, $4);
+      @$ = @2;
+      private_add_labels_to_symtab (parser, parser->block, $1, $$);
+    }
+
+IfClause:
+  KWIF Expression KWTHEN
+    {
+      log_printf (parser->log, ll_debug, "IfClause -> KWIF Expression KWTHEN");
+      $$ = $2;
+      @$ = @1;
+    }
+
+OptElseClause:
+  /* eps */
+    {
+      $$ = NULL;
+    }
+  |
+  KWELSE Statement
+    {
+      $$ = $2;
+      @$ = @2;
+    }
+
+ForStatement:
+  LabelList KWFOR Identifier SEPASSIGN ForList KWDO Statement
+    {
+      log_printf (parser->log, ll_debug, "ForStatement -> LabelList KWFOR Identifier SEPASSIGN ForList KWDO Statement");
+      private_dump_log_labels (parser, $1);
+      $$ = new_stmt_for (cr_csr (parser, &@2),
+			 new_expr_idref (cr_csr (parser, &@3), $3),
+			 $5, $7);
+      @$ = @2;
+      private_add_labels_to_symtab (parser, parser->block, $1, $$);
+    }
+
+ForList:
+  ForListElmt
+    {
+      log_printf (parser->log, ll_debug, "ForList -> ForListElmt");
+      $$ = new_slist_typed_from (adapt_test, for_elmt, 1, $1);
+      @$ = @1;
+    }
+  |
+  ForList SEPCOMMA ForListElmt
+    {
+      log_printf (parser->log, ll_debug, "ForList -> ForList SEPCOMMA ForListElmt");
+      slist_pushback ($1, $3);
+      $$ = $1;
+      @$ = @1;
+    }
+
+ForListElmt:
+  Expression
+    {
+      $$ = new_for_elmt_expr (cr_csr (parser, &@1), $1);
+      @$ = @1;
+    }
+  |
+  Expression KWSTEP Expression KWUNTIL Expression
+    {
+      $$ = new_for_elmt_until (cr_csr (parser, &@1), $1, $3, $5);
+      @$ = @1;
+    }
+  |
+  Expression KWWHILE Expression
+    {
+      $$ = new_for_elmt_while (cr_csr (parser, &@1), $1, $3);
+      @$ = @1;
     }
 
 %%

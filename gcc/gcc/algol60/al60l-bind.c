@@ -288,6 +288,12 @@ stmt_cond_build_generic (statement_t * self, void * state)
   return ret;
 }
 
+void *
+stmt_for_build_generic (statement_t * self, void * state)
+{
+  return build_empty_stmt ();
+}
+
 static tree
 private_label_build_generic (container_t * context ATTRIBUTE_UNUSED,
 			     symbol_t * lbl,
