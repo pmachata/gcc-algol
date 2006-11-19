@@ -76,7 +76,6 @@ Thanks to... (FIT BUT that they gave up their rights)
 
 \def\note#1{{{\it Note.\space}#1}}
 \def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
-\def\program#1{{\tt\begin{tabbing}#1\end{tabbing}}}
 
 % ====================================================================
 
@@ -299,7 +298,149 @@ before pp\_base\_format.  Describe that.
 
 \section{Runtime Libraries}
 
-How to add runtime for your language.  How to use/avoid glibc.
+Languages usually need a support beyond mere syntactic and semantic
+actions.  This includes input and output routines, some cunning
+numerical algorithms for scientific languages, or simply language
+standard library, such as \literal{libstdc++} or \literal{java}
+platform.  Most probably you will have to roll one of these for your
+language.
+
+Runtime support also includes system's \literal{libc} and
+\literal{libm}.  To honor \GCC interfaces, you will have to pay some
+attention to these, too.
+
+\GCC doesn't support integration of the runtime library with the same
+ease it supports new language frontends.  There are files to be
+patched, an operation inherently unsafe in a volatile environment of
+\GCC trunk.  Apart from that, however, the automation works nicely,
+and with some rules in mind, you can build cross-compilation safe
+runtime library that is linked to your binaries by default.  Let's get
+dirty!
+
+\subsection{Agenda}
+
+You need the following.
+
+\begin{enumerate}
+\item To write the library itself.  This includes source files and
+  build system.
+\item To include the library into the build chain.  This includes
+  patching toplevel \file{configure} and \file{Makefile.def}.
+\item To inject the library into compilation commandline, so that it's
+  linked in produced binaries.
+\end{enumerate}
+
+\subsection{The Library Subdirectory}
+
+Given a toplevel directory \file{gcc}, runtime libraries typically
+reside in subdirectory \file{gcc/libsomething}.  This directory is
+basically ordinary library build directory: it is almost possible to
+simply copy preexisting library files there.
+
+\GCC expects that the library provides a \file{configure} script,
+which, when launched, creates \file{Makefile}.  (Note that the created
+\file{Makefile} has to reside in a {\em build} directory, but the
+script is launched from a {\em source} directory.)  I assume that you
+obey autotools, as it will save you a lot of work.
+
+The best approach is probably simply to take other frontend's
+\file{configure.ac} and \file{Makefile.am}, look how is it done, and
+bend it to suit your needs.  The files are mostly classical autotools
+source files, but there are certain hacks here and there necessary for
+integration into \GCC build system.  In particular:
+
+\begin{itemize}
+\item \file{configure.ac} has to call \variable{GCC\_TOPLEV\_SUBDIRS}
+  macro after \variable{AC\_INIT}.  This relates to the dreaded
+  \GCC{}'s build/host/target trichotomy.  Each of builds is separated
+  in directory of its own: \variable{build\_subdir},
+  \variable{host\_subdir}, and \variable{target\_subdir}.  This macro
+  determines these values.
+
+\item In \file{Makefile.am}, \variable{gcc\_version} has to be
+  calculated for use in expansion of \variable{toolexeclibdir}
+  variable.  This can be done by reading the contents of file
+  \file{gcc/gcc/BASE-VER}.
+
+\item libtool version info (i.e. library soname) is not hardcoded into
+  the \file{Makefile}, but rather is stored in a file called
+  \file{gcc/libsomething/libtool-version}.  This is not compulsory
+  step, it just eases things a bit in that you don't have to rebuild
+  autotools-generated files when you update library version.
+\end{itemize}
+
+Besides the concrete cases just mentioned, other frontends usually
+contain workarounds that were necessary to resolve problems in past.
+It's certainly not wise to copy blindly every hack, as many of them
+may be outdated and superfluous.  But other implementors likely fallen
+into the same traps you did, and reinventing the wheel rarely pays
+off.
+
+\subsection{Patching Toplevel Buildsystem}
+
+One last step is necessary before your library gets built as part of
+build process.  \GCC has to {\em know} about it.  As it is, you have
+to touch \GCC{}'s privates to do it: you need to patch toplevel
+\file{configure} and \file{Makefile.def}.  Fortunately, both patches
+are trivial.
+
+There is a variable \variable{target\_libraries} in toplevel
+\file{configure}.  As the name implies, what libraries get built is
+driven by the contents of this variable.  You need to add the name of
+your library among the others.
+
+Patching \file{Makefile.def} is more creative task.  This file is used
+in concert with \file{Makefile.tpl} by a tool called \literal{autogen}
+to produce \file{Makefile.in}.  Inside \file{Makefile.def}, it is
+possible to express various inter-library dependencies to define exact
+conditions when your library should be built, as well as whether the
+library should be installed, bootstrapped, or checked.
+
+@@@TODO if there is time, revisit this section and write some more
+about what and how can be defined.@@@
+
+\subsection{Linking the Binaries With Runtime Library}
+
+The method that \GCC uses to decide which runtime libraries to link in
+is pretty much a hack: you will inject necessary libraries into the
+commandline, before it's processed.
+
+The work is done in \function{lang\_specific\_driver}.  Very general
+commandline tweaking can take place here.  The function is given
+pointer to \variable{argc} and \variable{argv} variables, and is free
+to reorder, add or remove any of the arguments as seems fit.  To
+support proper linking, you will want to detect the situation when
+your runtime library, \literal{libc}, \literal{libm}, or any other
+required library isn't at the commandline yet, in which situation you
+will add it to the vector and adjust \variable{argc} accordingly.
+It's necessary to support native \GCC switches, such as
+\option{-nostdlib} and \option{-nodefaultlibs}, as well as your own
+switches that imply that no linking is to be done
+(e.g. \option{-fsyntax-only} or similar).
+
+Unfortunately that implies processing commandline arguments one at a
+time, skipping their arguments as necessary (think \option{-o},
+\option{-Xlinker}).  It's really not nice solution, but that's the way
+it works.
+
+\subsection{Depending on System Libraries}
+
+You may or may not want to depend on system libraries, such as
+\literal{libc} or \literal{libm}.  Their handling is mostly the same as
+handling your own runtime library, except that you don't have to build
+them.
+
+@TODO:maybe move to numerical support chapter:
+Since version 4.3.0, \GCC uses \literal{libgmp} to do its constant
+folding, which means that the library will be available at compiler
+runtime.  Very often that means the library will also be available at
+binary run site.  That doesn't hold universally, but at least
+\literal{libgmp} was ported to all platforms where \GCC has supported
+backends.  What this means for you is that you can dispatch to this
+library many numerical algorithms that would otherwise have to be
+handrolled or cut'n'pasted.  As far as I know, this is the approach
+Fortran fronted is about to take.
+
 
 \section{Testsuite}
 
