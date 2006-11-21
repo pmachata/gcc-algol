@@ -87,7 +87,7 @@ algol60/a60_spec.o: algol60/a60_spec.c $(CONFIG_H) $(SYSTEM_H) \
 algol60/al60l-bind.o: algol60/al60l-bind.c algol60/al60l-bind.h \
 		algol60/slist.h algol60/estring.h algol60/boundspair.h\
 		algol60/label.h algol60/symbol.h algol60/type.h algol60/statement.h\
-		algol60/expression.h\
+		algol60/expression.h algol60/for-elmt.h algol60/for-elmt.i\
 		algol60/util.h algol60/meta.h $(ALGOL60_GTFILES) gtype-algol60.h algol60/gcc-stuff
 
 # AL60L side

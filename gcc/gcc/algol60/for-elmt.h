@@ -61,6 +61,10 @@ void for_elmt_resolve_symbols (for_elmt_t * self, expression_t * variable, conta
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
 
+/// Answer the type of this for element.
+for_elmt_kind_t for_elmt_kind (for_elmt_t * self)
+  ATTRIBUTE_NONNULL(1);
+
 /// Answer the expression of given expr for element.
 expression_t * for_elmt_expr_expr (for_elmt_t const * self)
   ATTRIBUTE_NONNULL(1);

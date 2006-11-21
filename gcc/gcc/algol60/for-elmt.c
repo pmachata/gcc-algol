@@ -31,14 +31,6 @@ typedef struct struct_for_elmt_while_t
 }
 for_elmt_while_t;
 
-typedef enum enum_for_elmt_kind_t
-{
-  fek_expr,
-  fek_until,
-  fek_while
-}
-for_elmt_kind_t;
-
 struct struct_for_elmt_t
 {
   char const * signature;
@@ -195,6 +187,13 @@ for_elmt_resolve_symbols (for_elmt_t * self, expression_t * variable, container_
       private_check_elmt_type ("while condition", self->fewhile.cond, type_bool (), log);
       break;
     };
+}
+
+for_elmt_kind_t
+for_elmt_kind (for_elmt_t * self)
+{
+  assert (self != NULL);
+  return self->kind;
 }
 
 expression_t *

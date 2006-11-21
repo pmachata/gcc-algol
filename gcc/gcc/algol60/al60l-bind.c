@@ -36,6 +36,7 @@
 #include "type.h"
 #include "statement.h"
 #include "expression.h"
+#include "for-elmt.h"
 
 struct struct_al60l_bind_state_t
 {
@@ -49,10 +50,17 @@ struct struct_al60l_bind_state_t
   /// fundecl from top of fundecl stack.
   slist_t * resultdecls;
 
-  /// Stack of subblocks on current binding level.  This is slist of
-  /// tree lists.  It's pushed-on in push_function and when handling
-  /// container.
+  /// Stack of subblocks on binding levels.  This is slist of
+  /// tree lists.
   slist_t * subblocks;
+
+  /// Stack of vars on binding levels.  This is slist of
+  /// tree chains.
+  slist_t * vars;
+
+  /// Stack of statements on binding levels.  This is slist of
+  /// tree chains.
+  slist_t * stmts;
 };
 
 #ifndef IN_GCC
@@ -76,11 +84,13 @@ new_bind_state (void)
       guard_ptr (buf, 1, ret->fundecls = new_slist ());
       guard_ptr (buf, 1, ret->resultdecls = new_slist ());
       guard_ptr (buf, 1, ret->subblocks = new_slist ());
-      return (void*)ret;
+      guard_ptr (buf, 1, ret->vars = new_slist ());
+      guard_ptr (buf, 1, ret->stmts = new_slist ());
+      return ret;
     }
   else
     {
-      delete_bind_state ((al60l_bind_state_t*)ret);
+      delete_bind_state (ret);
       return NULL;
     }
 }
@@ -94,63 +104,48 @@ delete_bind_state (al60l_bind_state_t * _state)
       delete_slist (state->fundecls);
       delete_slist (state->resultdecls);
       delete_slist (state->subblocks);
+      delete_slist (state->vars);
+      delete_slist (state->stmts);
       free (state);
     }
 }
 
 void
-bind_state_push_function (al60l_bind_state_t * _state, tree resultdecl, tree decl)
+bind_state_push_block (al60l_bind_state_t * state)
 {
-  al60l_bind_state_t * state = (void*)_state;
   gcc_assert (state != NULL);
-  slist_pushfront (state->fundecls, decl);
-  slist_pushfront (state->resultdecls, resultdecl);
   slist_pushfront (state->subblocks, NULL_TREE);
-}
-
-tree
-bind_state_enclosing_decl (al60l_bind_state_t const* _state)
-{
-  al60l_bind_state_t const* state = (void*)_state;
-  gcc_assert (state != NULL);
-  gcc_assert (!slist_empty (state->fundecls));
-  return slist_front (state->fundecls);
-}
-
-tree
-bind_state_enclosing_resultdecl (al60l_bind_state_t const* _state)
-{
-  al60l_bind_state_t const* state = (void*)_state;
-  gcc_assert (state != NULL);
-  gcc_assert (!slist_empty (state->resultdecls));
-  return slist_front (state->resultdecls);
+  slist_pushfront (state->vars, NULL_TREE);
+  slist_pushfront (state->stmts, alloc_stmt_list ());
 }
 
 void
-bind_state_pop_function (al60l_bind_state_t * _state)
+bind_state_discard_block (al60l_bind_state_t * state)
 {
-  al60l_bind_state_t * state = (void*)_state;
   gcc_assert (state != NULL);
-  gcc_assert (!slist_empty (state->fundecls));
-  gcc_assert (!slist_empty (state->resultdecls));
   gcc_assert (!slist_empty (state->subblocks));
-  slist_popfront (state->fundecls);
-  slist_popfront (state->resultdecls);
+  gcc_assert (!slist_empty (state->vars));
+  gcc_assert (!slist_empty (state->stmts));
   slist_popfront (state->subblocks);
+  slist_popfront (state->vars);
+  slist_popfront (state->stmts);
 }
 
-
-// ------------------------------------
-//   STATEMENT
-// ------------------------------------
-
-static tree
-private_build_bind_expr (tree vars, tree stmts, tree subblocks,
-			 tree supercontext, tree chain,
-			 al60l_bind_state_t * state)
+tree
+bind_state_build_block (al60l_bind_state_t * state)
 {
+  // Collect the subblocks that might have been added during
+  // translation of container statements.
+  tree subblocks = slist_popfront (state->subblocks);
+  if (subblocks)
+    subblocks = nreverse (subblocks);
+  tree vars = slist_popfront (state->vars);
+  tree stmts = slist_popfront (state->stmts);
+
   // Create new block and make it a superblock of all subblocks.
-  tree block = build_block (vars, subblocks, supercontext, chain);
+  tree block = build_block (vars, subblocks,
+			    /*supercontext*/NULL_TREE,
+			    /*chain*/NULL_TREE);
   if (subblocks)
     {
       tree subblock_node;
@@ -176,6 +171,66 @@ private_build_bind_expr (tree vars, tree stmts, tree subblocks,
 
   return bind;
 }
+
+void
+bind_state_add_decl (al60l_bind_state_t * state, tree decl)
+{
+  // Add variable to the chain.  This really has to be chain of
+  // variables, not a list of conses.
+  slist_it_t * it = slist_iter (state->vars);
+  tree vars = slist_it_get (it);
+  TREE_CHAIN (decl) = vars;
+  slist_it_put (it, decl);
+}
+
+void
+bind_state_add_stmt (al60l_bind_state_t * state ATTRIBUTE_UNUSED,
+		     tree stmt ATTRIBUTE_UNUSED)
+{
+  tree stmts = slist_front (state->stmts);
+  append_to_statement_list (stmt, &stmts);
+}
+
+void
+bind_state_push_function (al60l_bind_state_t * state, tree resultdecl, tree decl)
+{
+  gcc_assert (state != NULL);
+  slist_pushfront (state->fundecls, decl);
+  slist_pushfront (state->resultdecls, resultdecl);
+  bind_state_push_block (state);
+}
+
+tree
+bind_state_enclosing_decl (al60l_bind_state_t const * state)
+{
+  gcc_assert (state != NULL);
+  gcc_assert (!slist_empty (state->fundecls));
+  return slist_front (state->fundecls);
+}
+
+tree
+bind_state_enclosing_resultdecl (al60l_bind_state_t const * state)
+{
+  gcc_assert (state != NULL);
+  gcc_assert (!slist_empty (state->resultdecls));
+  return slist_front (state->resultdecls);
+}
+
+void
+bind_state_pop_function (al60l_bind_state_t * state)
+{
+  gcc_assert (state != NULL);
+  gcc_assert (!slist_empty (state->fundecls));
+  gcc_assert (!slist_empty (state->resultdecls));
+  slist_popfront (state->fundecls);
+  slist_popfront (state->resultdecls);
+  bind_state_discard_block (state);
+}
+
+
+// ------------------------------------
+//   STATEMENT
+// ------------------------------------
 
 void *
 stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED,
@@ -218,8 +273,7 @@ stmt_assign_build_generic (statement_t * self, void * data)
       // earlier and only compute address then.
 
       al60l_bind_state_t * state = data;
-      tree stmts = alloc_stmt_list ();
-      tree vars = NULL_TREE;
+      bind_state_push_block (state);
 
       // List of dereferences of LHS address temporaries.
       slist_t * derefs = new_slist ();
@@ -241,9 +295,9 @@ stmt_assign_build_generic (statement_t * self, void * data)
 	  tree tmp_init = build2 (INIT_EXPR, void_type_node, tmp_decl, expr);
 	  TREE_SIDE_EFFECTS (tmp_init) = 1;
 	  TREE_USED (tmp_init) = 1;
-	  append_to_statement_list (tmp_init, &stmts);
-	  TREE_CHAIN (tmp_decl) = vars;
-	  vars = tmp_decl;
+
+	  bind_state_add_decl (state, tmp_decl);
+	  bind_state_add_stmt (state, tmp_init);
 
 	  // remember the reference to temporary for later assignments
 	  expr = build1 (INDIRECT_REF, base_type, tmp_decl);
@@ -258,12 +312,10 @@ stmt_assign_build_generic (statement_t * self, void * data)
 	  tree assign = build2 (MODIFY_EXPR, void_type_node, tgt, rhst);
 	  TREE_SIDE_EFFECTS (assign) = 1;
 	  TREE_USED (assign) = 1;
-	  append_to_statement_list (assign, &stmts);
+	  bind_state_add_stmt (state, assign);
 	}
 
-      ret = private_build_bind_expr (vars, stmts,
-				     NULL_TREE, NULL_TREE, NULL_TREE,
-				     state);
+      ret = bind_state_build_block (state);
 
       delete_slist_it (it);
       delete_slist (derefs);
@@ -289,9 +341,57 @@ stmt_cond_build_generic (statement_t * self, void * state)
 }
 
 void *
-stmt_for_build_generic (statement_t * self, void * state)
+stmt_for_build_generic (statement_t * self, void * _state)
 {
-  return build_empty_stmt ();
+  al60l_bind_state_t * state = _state;
+  bind_state_push_block (state);
+
+  /// @TODO: check spec, but I suppose that any variable declared
+  /// inside the loops have to be shared...
+  statement_t * body = stmt_for_body (self);
+  slist_t * elements = stmt_for_elmts (self);
+  slist_it_t * it = slist_iter (elements);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      for_elmt_t * elmt = slist_it_get (it);
+      switch (for_elmt_kind (elmt))
+	{
+	case fek_expr:
+	  {
+	    // case `for i := expr do <body>` is translated like
+	    // `begin i := expr; <body>; end;`
+	    bind_state_push_block (state);
+
+	    // We are reusing AST that has already resolved symbols
+	    // etc.  I don't think the reuse will cause trouble, and
+	    // it will save us the need to do the resolution again.
+	    slist_t * assign_tgts = new_slist_from (1, stmt_for_variable (self));
+	    expression_t * expr = for_elmt_expr_expr (elmt);
+	    statement_t * assign = new_stmt_assign (NULL, assign_tgts, expr);
+	    tree a1 = stmt_assign_build_generic (assign, state);
+	    bind_state_add_stmt (state, a1);
+	    tree a2 = stmt_build_generic (body, state);
+	    bind_state_add_stmt (state, a2);
+
+	    // Collect the block just built and we are done.
+	    tree b = bind_state_build_block (state);
+	    bind_state_add_stmt (state, b);
+	  }
+	  break;
+
+	case fek_while:
+	  // NYI
+	  break;
+
+	case fek_until:
+	  // NYI
+	  break;
+	};
+    }
+  delete_slist_it (it);
+
+  tree ret = bind_state_build_block (state);
+  return ret;
 }
 
 static tree
@@ -314,9 +414,8 @@ stmt_container_build_generic (container_t * self, void * _state)
 
   // Open new subblock level.  All substatements that are containers
   // will add their bind_exprs to the _front of state->subblocks.
-  slist_pushfront (state->subblocks, NULL_TREE);
+  bind_state_push_block (state);
 
-  tree vars = NULL_TREE;
   it = slist_iter (container_symtab (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
@@ -326,15 +425,11 @@ stmt_container_build_generic (container_t * self, void * _state)
       tree decl = symbol_decl_for_type (symbol_type (sym), sym, _state);
       symbol_set_extra (sym, decl);
 
-      // Add variable to the chain.  This really has to be chain of
-      // variables, not a list of conses.
-      TREE_CHAIN (decl) = vars;
-      vars = decl;
+      bind_state_add_decl (state, decl);
     }
 
   slist_it_reset (it, container_stmts (self));
 
-  tree stmts = alloc_stmt_list ();
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement_t * st = slist_it_get (it);
@@ -344,23 +439,16 @@ stmt_container_build_generic (container_t * self, void * _state)
 	{
 	  symbol_t * l = slist_it_get (jt);
 	  tree label = private_label_build_generic (self, l, state);
-	  append_to_statement_list (label, &stmts);
+	  bind_state_add_stmt (state, label);
 	}
       delete_slist_it (jt);
 
       tree stmt = stmt_build_generic (st, state);
-      append_to_statement_list (stmt, &stmts);
+      bind_state_add_stmt (state, stmt);
     }
   delete_slist_it (it);
 
-  // Collect the subblocks that might have been added during
-  // translation of container statements.
-  tree subblocks = slist_popfront (state->subblocks);
-  if (subblocks)
-    subblocks = nreverse (subblocks);
-
-  return private_build_bind_expr (vars, stmts, subblocks, NULL_TREE, NULL_TREE,
-				  state);
+  return bind_state_build_block (state);
 }
 
 
