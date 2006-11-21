@@ -411,11 +411,11 @@ pointer to \variable{argc} and \variable{argv} variables, and is free
 to reorder, add or remove any of the arguments as seems fit.  To
 support proper linking, you will want to detect the situation when
 your runtime library, \literal{libc}, \literal{libm}, or any other
-required library isn't at the commandline yet, in which situation you
-will add it to the vector and adjust \variable{argc} accordingly.
-It's necessary to support native \GCC switches, such as
-\option{-nostdlib} and \option{-nodefaultlibs}, as well as your own
-switches that imply that no linking is to be done
+required library isn't at the commandline yet (or is and shouldn't
+be), in which situation you will add or remove it from the vector and
+adjust \variable{argc} accordingly.  It's necessary to support native
+\GCC switches, such as \option{-nostdlib} and \option{-nodefaultlibs},
+as well as your own switches that imply that no linking is to be done
 (e.g. \option{-fsyntax-only} or similar).
 
 Unfortunately that implies processing commandline arguments one at a
@@ -533,3 +533,7 @@ COND\_EXPR breaks when other value than 0 or 1 is used as condition.
 
 
 \end{document}
+
+% Local Variables:
+% compile-command: "make show-dp"
+% End:
