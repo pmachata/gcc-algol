@@ -208,6 +208,7 @@ Nested blocks; for, while, do; if, switch; goto and labels.
 Declarations/definitions, function calls, global, local (nested),
 file-static, overloaded, builtin, anonymous. Pass by value, reference
 and name, varargs.
+Builtins.
 
 Interprocedural optimizations \cite{GDS:2004:Hubicka}, intermodule
 optimizations \cite{GDS:2005:Keating}.
@@ -229,6 +230,31 @@ types of complex number components).  Floating point, integer and
 string literals.
 
 Look into \cite{GDS:2005:Grimm}, \cite{GDS:2006:Sidwell}.
+
+Read this:
+\url{http://gcc.gnu.org/ml/gcc-patches/2003-09/msg00862.html}
+and this:
+\url{http://gcc.gnu.org/bugzilla/show\_bug.cgi?id=29335}.
+Seems that inclusion of GMP in GCC means we can use the same functions
+both for constant folding and for runtime computations.
+Using gmp/mfpr in runtime vs. using systemwide libm.
+
+\begin{quote}
+I think using long double defeats the whole purpose of using mpfr.  We're
+supposed to avoid relying on the properties of the host's floating point for
+cross-compilers where the target format is different.  Otherwise I could simply
+call out to e.g. cosl() on the host and avoid the whole mpfr thing (okay okay,
+assuming cosl() and the rest of c99 math functions exist... which they don't
+always, but my point about target long double remains.)
+\end{quote}
+
+\begin{quote}
+I think there's a very important distinction that needs to be drawn
+between a tool that needs to be installed to *build* gcc and a tool that
+needs to be installed in order to *run* gcc.  GMP/MPFR is needed for the
+latter;
+\end{quote}
+(Aha, so gmp stuff is really meant to be used in constant folding.)
 
 \section{Extending GENERIC}
 
@@ -295,6 +321,9 @@ and friends.  report\_diagnostic, diagnostic\_info and friends.
 Report code excerpts with verbatim.  It seems that GCC uses it's own
 printing functions, with their own formatting.  See e.g. comment
 before pp\_base\_format.  Describe that.
+
+See this:
+\url{http://vmlinux.org/joachim/mirror/www.objsw.com/CrossGCC/FAQ-12.html}.
 
 \section{Runtime Libraries}
 
