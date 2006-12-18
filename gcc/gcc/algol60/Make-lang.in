@@ -93,7 +93,7 @@ algol60/al60l-bind.o: algol60/al60l-bind.c algol60/al60l-bind.h \
 # AL60L side
 
 algol60.srcextra: algol60/parse-tab.c algol60/parse-tab.h \
-		algol60/lexer-tab.c algol60/lexer-tab.h \
+		algol60/lexer-tab.c \
 		algol60/ast-tab.c algol60/ast-tab.h
 	-cp -p $^ $(srcdir)/algol60
 
@@ -187,12 +187,7 @@ algol60/lexer-tab.o: algol60/lexer.h algol60/lexer-tab.c algol60/gcc-stuff
 algol60/lexer-tab.c: algol60/lexer.l algol60/lexer.h algol60/parser-tab.h \
 		algol60/estring.h algol60/logger.h algol60/pd.h algol60/cursor.h \
 		algol60/gcc-stuff
-	$(FLEX) --never-interactive $(FLEXFLAGS) -o algol60/lexer-tab.c \
-		--header-file=algol60/lexer-tab.h $(srcdir)/algol60/lexer.l
-	sed -i -e '/static void yyunput/s/;/__attribute__((unused));/' algol60/lexer-tab.c
-
-algol60/lexer-tab.h: algol60/lexer-tab.c
-	[ -f algol60/lexer-tab.h ]
+	$(FLEX) -B $(FLEXFLAGS) -oalgol60/lexer-tab.c $(srcdir)/algol60/lexer.l
 
 
 
@@ -314,7 +309,7 @@ algol60.distclean: algol60.clean
 
 algol60.maintainer-clean: algol60.distclean
 	-rm -f algol60/parser-tab.output algol60/parser-tab.c algol60/parser-tab.h
-	-rm -f algol60/lexer-tab.c algol60/lexer-tab.h
+	-rm -f algol60/lexer-tab.c
 	-rm -R $(srcdir)/algol60/*~
 
 #
