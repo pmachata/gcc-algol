@@ -122,6 +122,19 @@ void slist_each (
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
 
+/// Apply the function `fn' to each element of the list `list', and
+/// replace that element with return value of call.  The argument
+/// `userdata' will be passed over to fn verbatim.  The arguments of
+/// `fn' are, respectively, the list that is iterated over, the object
+/// that is currently under the cursor, and the userdata passed to
+/// slist_map.
+void slist_map (
+  slist_t * list,
+  void* (*fn)(void * /*object*/, void * /*userdata*/),
+  void * userdata)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
 /// Filter the slist according to predicate pred.  This function
 /// creates a new list, that contains only the objects, for which the
 /// predicate holds.  The argument `userdata' will be passed over to
@@ -151,6 +164,13 @@ void * slist_it_get (slist_it_t * it)
 
 /// Put given object to the position pointed to by this iterator.
 void slist_it_put (slist_it_t * it, void * object)
+  ATTRIBUTE_NONNULL(1);
+
+/// Remove the element after the one pointed by the iterator from the
+/// list and return it to callee.  slist_it_has has to hold for the
+/// iterator in question. The iterator advances to the next element
+/// after the removal.
+void * slist_it_erase_after (slist_it_t * it)
   ATTRIBUTE_NONNULL(1);
 
 /// Answer the object that is pointed to by this iterator, and advance

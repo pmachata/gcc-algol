@@ -344,7 +344,8 @@ slist_append (slist_t * list, slist_t * other)
   other->tail = NULL;
 }
 
-void slist_each (
+void
+slist_each (
   slist_t * list,
   void (*fn)(slist_t *, void *, void *),
   void * userdata)
@@ -360,6 +361,19 @@ void slist_each (
     }
 }
 
+void
+slist_map (
+  slist_t * list,
+  void* (*fn)(void * /*object*/, void * /*userdata*/),
+  void * userdata)
+{
+  assert (list != NULL);
+  assert (fn != NULL);
+
+  slist_node_t * node = list->head;
+  for (; node != NULL; node = node->link)
+    node->object = (*fn) (node->object, userdata);
+}
 
 slist_t *
 slist_filter (
@@ -423,6 +437,20 @@ slist_it_get_next (slist_it_t * it)
   assert (it != NULL);
   void * ret = slist_it_get (it);
   slist_it_next (it);
+  return ret;
+}
+
+void *
+slist_it_erase_after (slist_it_t * it)
+{
+  assert (it != NULL);
+  assert (slist_it_has (it));
+  assert (it->pointee->link != NULL);
+
+  slist_node_t * tmp = it->pointee->link;
+  void * ret = tmp->object;
+  it->pointee->link = it->pointee->link->link;
+  free (tmp);
   return ret;
 }
 
