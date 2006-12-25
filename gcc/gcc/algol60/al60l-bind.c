@@ -343,14 +343,68 @@ stmt_cond_build_generic (statement_t * self, void * state)
 void *
 stmt_for_build_generic (statement_t * self, void * _state)
 {
-  al60l_bind_state_t * state = _state;
-  bind_state_push_block (state);
+  // Transform the loop:
+  //   for i := expr1, expr2 while expr3, expr4 do statement;
+  //
+  // like this:
+  //   begin <-- toplevel wrapper block
+  //     begin i := expr1; statement; end;
+  //     while (1) do begin i := expr2; if not expr3 then break; statement; end;
+  //   end;
+  //
+  // Variable sharing: as per spec, variable declared `own' retain
+  // their value between exit from block and entry to the same block.
+  // Other variables have undefined values on block entry.  So under
+  // the copying scheme we don't have to do anything for ordinary
+  // variables.  But we want to handle owns specifically, because the
+  // value has to be shared across copied blocks.
+  // We don't this, but it has to be done as part of `own' handling.
+  //
+  // Label sharing: local labels can be copied with the rest of the
+  // code, the gotos will then lead into the same iteration.
+  // Non-local labels are OK, because they will appear outside the
+  // toplevel wrapper block.  We have to take care of the labels
+  // before the for statement itself, they have to be reassigned to
+  // the toplevel wrapper.
 
-  /// @TODO: check spec, but I suppose that any variable declared
-  /// inside the loops have to be shared...
-  statement_t * body = stmt_for_body (self);
+  // Prepare the toplevel wrapper block
+  statement_t * for_body = stmt_for_body (self);
+  container_t * topwrap = new_stmt_block (stmt_cursor (self));
+  container_set_parent (topwrap, stmt_parent (self));
+
+  /*
+
+    This might come in handy when we start handling `own' in for
+    bodies.  Just don't forget that this only peels the outermost
+    block's variables, and actually it's necessary to dive into the
+    sctructure and pick each `own', and make all copies of particular
+    own's `extra' point to the same declaration tree.
+
+  if (container (for_body))
+    {
+      container_t * for_body_c = container (for_body);
+      slist_t * for_body_symtab = container_symtab (for_body_c);
+      slist_it_t * it = slist_iter (for_body_symtab);
+      for (; slist_it_has (it); slist_it_next (it))
+	{
+	  symbol_t * sym = slist_it_get (it);
+	  if (!types_same (symbol_type (sym), type_label ()))
+	    {
+	      symbol_t * erased = container_erase_symbol (for_body_c, sym);
+	      gcc_assert (erased == sym);
+	      int st = container_add_symbol (topwrap, sym, sek_ordinary);
+	      gcc_assert (st == 0);
+	    }
+	}
+      delete_slist_it (it);
+    }
+  */
+
+  // Translate for elements...
   slist_t * elements = stmt_for_elmts (self);
+  slist_t * assign_tgts = new_slist_from (1, stmt_for_variable (self));
   slist_it_t * it = slist_iter (elements);
+
   for (; slist_it_has (it); slist_it_next (it))
     {
       for_elmt_t * elmt = slist_it_get (it);
@@ -358,38 +412,63 @@ stmt_for_build_generic (statement_t * self, void * _state)
 	{
 	case fek_expr:
 	  {
-	    // case `for i := expr do <body>` is translated like
-	    // `begin i := expr; <body>; end;`
-	    bind_state_push_block (state);
+	    //   for i := A do <body>
+	    //
+	    // is translated like this:
+	    //
+	    //   i := expr;
+	    //   <body>;
 
-	    // We are reusing AST that has already resolved symbols
-	    // etc.  I don't think the reuse will cause trouble, and
-	    // it will save us the need to do the resolution again.
-	    slist_t * assign_tgts = new_slist_from (1, stmt_for_variable (self));
 	    expression_t * expr = for_elmt_expr_expr (elmt);
 	    statement_t * assign = new_stmt_assign (NULL, assign_tgts, expr);
-	    tree a1 = stmt_assign_build_generic (assign, state);
-	    bind_state_add_stmt (state, a1);
-	    tree a2 = stmt_build_generic (body, state);
-	    bind_state_add_stmt (state, a2);
-
-	    // Collect the block just built and we are done.
-	    tree b = bind_state_build_block (state);
-	    bind_state_add_stmt (state, b);
+	    container_add_stmt (topwrap, assign);
+	    container_add_stmt (topwrap, clone_statement (for_body));
 	  }
 	  break;
 
 	case fek_while:
-	  // NYI
+	  {
+	    // this needs GOTO to be implemented:
+	    //
+	    //   for i := E while F do <body>;
+	    //
+	    // is translated like this:
+	    //
+	    // L1: i := E;
+	    //     if F then begin
+	    //       <body>;
+	    //       goto L1;
+	    //     end;
+	  }
 	  break;
 
 	case fek_until:
-	  // NYI
+	  {
+	    // this needs GOTO to be implemented:
+	    //
+	    //   for i := A step B until C do <body>;
+	    //
+	    // is translated like this:
+	    //
+	    //     i := A;
+	    // L1: if (i - C) * sign (B) <= 0 then begin
+	    //       <body>;
+	    //       goto L1;
+	    //     end
+	  }
 	  break;
 	};
     }
   delete_slist_it (it);
 
+  logger_t * logger = new_logger ("al60l-bind");
+  stmt_resolve_symbols (statement (topwrap), logger);
+  delete_logger (logger);
+
+  al60l_bind_state_t * state = _state;
+  bind_state_push_block (state);
+  tree t = stmt_container_build_generic (topwrap, state);
+  bind_state_add_stmt (state, t);
   tree ret = bind_state_build_block (state);
   return ret;
 }

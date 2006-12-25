@@ -40,6 +40,12 @@ for_elmt_t * new_for_elmt_while (cursor_t * cursor, expression_t * expr, express
   ATTRIBUTE_NONNULL(3)
   ATTRIBUTE_NONNULL(2);
 
+/// Create a copy of subtree starting at given for element.
+/// Recursively clones whole subtree.
+for_elmt_t * clone_for_elmt (for_elmt_t const * self)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
+
 /// Convert void* to for element, if it is statement, or return NULL.
 for_elmt_t * for_elmt (void * ptr)
   ATTRIBUTE_NONNULL(1);

@@ -200,6 +200,71 @@ new_stmt_toplev (cursor_t * cursor)
 }
 
 statement_t *
+clone_statement (statement_t const * self)
+{
+  assert (self != NULL);
+
+  statement_t * ret = private_new_statement (self->kind, self->cursor, NULL);
+
+  switch (self->kind)
+    {
+    case sk_dummy:
+      break;
+
+    case sk_assign:
+      ret->assign.lhss = clone_slist (self->assign.lhss);
+      slist_map (ret->assign.lhss, adapt_test, clone_expression);
+      ret->assign.rhs = clone_expression (self->assign.rhs);
+      break;
+
+    case sk_call:
+      ret->call.call = clone_expression (self->call.call);
+      break;
+
+    case sk_cond:
+      ret->cond.cond = clone_expression (self->cond.cond);
+      ret->cond.ifclause = clone_statement (self->cond.ifclause);
+      ret->cond.elseclause
+	= ret->cond.elseclause ? clone_statement (self->cond.elseclause) : NULL;
+      break;
+
+    case sk_for:
+      ret->afor.variable = clone_expression (self->afor.variable);
+      ret->afor.elmts = clone_slist (self->afor.elmts);
+      slist_map (ret->afor.elmts, adapt_test, clone_for_elmt);
+      ret->afor.body = clone_statement (self->afor.body);
+      break;
+
+    case sk_block:
+    case sk_toplev:
+      {
+	ret->block.statements = clone_slist (self->block.statements);
+	slist_map (ret->block.statements, adapt_test, clone_statement);
+	ret->block.symtab = clone_slist (self->block.symtab);
+	slist_map (ret->block.symtab, adapt_test, clone_symbol);
+
+	// Give the statements proper parents.
+	slist_it_t * it = slist_iter (ret->block.statements);
+	for (; slist_it_has (it); slist_it_next (it))
+	  {
+	    statement_t * statement = slist_it_get (it);
+	    stmt_set_parent (statement, container (ret));
+	  }
+	delete_slist_it (it);
+      }
+      break;
+    };
+
+  return ret;
+}
+
+container_t *
+clone_container (container_t const * self)
+{
+  return container (clone_statement (statement ((container_t *)self)));
+}
+
+statement_t *
 statement (void * ptr)
 {
   A60_CHECKED_CONVERSION (statement, ptr);
@@ -571,6 +636,13 @@ stmt_resolve_symbols (statement_t * self, logger_t * log)
   assert (!"Should never get there!");
 }
 
+cursor_t *
+stmt_cursor (statement_t const * self)
+{
+  assert (self != NULL);
+  return self->cursor;
+}
+
 container_t *
 stmt_parent (statement_t const * self)
 {
@@ -721,6 +793,39 @@ container_stmts (container_t const * _self)
   return self->block.statements;
 }
 
+static void
+private_container_find_it (statement_t * container, label_t const * lbl, type_t const * atype, slist_it_t ** ret_prev, slist_it_t ** ret_it)
+{
+  slist_it_t * it = slist_iter (container->block.symtab);
+  slist_it_t * prev = NULL;
+
+  for (; slist_it_has (it); )
+    {
+      symbol_t * sym = slist_it_get (it);
+      type_t * symtype = symbol_type (sym);
+      if (label_eq (symbol_label (sym), lbl)
+	  && (symtype == NULL || types_match (symtype, atype)))
+	break;
+
+      slist_it_next (it);
+      if (ret_prev)
+	{
+	  if (prev)
+	    slist_it_next (prev);
+	  else
+	    prev = slist_iter (container->block.symtab);
+	}
+    }
+
+  if (ret_it)
+    *ret_it = it;
+  else
+    delete_slist_it (it);
+
+  if (ret_prev)
+    *ret_prev = prev;
+}
+
 int
 container_add_symbol (container_t * _self, symbol_t * sym,
 		      symtab_entry_kind_t internal)
@@ -739,6 +844,37 @@ container_add_symbol (container_t * _self, symbol_t * sym,
 }
 
 symbol_t *
+container_erase_symbol (container_t * _self, symbol_t * sym)
+{
+  assert (_self != NULL);
+  assert (sym != NULL);
+  A60_USER_TO_REP (statement, self, *);
+  assert (container (self));
+
+  slist_it_t * pr, * it;
+  symbol_t * ret;
+
+  private_container_find_it (self, symbol_label (sym), symbol_type (sym), &pr, &it);
+
+  if (pr == NULL && it != NULL)
+    // found at the beginning
+    {
+      ret = slist_popfront (self->block.symtab);
+      delete_slist_it (it);
+    }
+  else
+    // found somewhere in the middle
+    {
+      assert (pr != NULL && it != NULL);
+      ret = slist_it_erase_after (pr);
+      delete_slist_it (pr);
+      delete_slist_it (it);
+    }
+
+  return ret;
+}
+
+symbol_t *
 container_find_name (container_t * _self, label_t const * lbl, type_t const * atype)
 {
   assert (_self != NULL);
@@ -746,16 +882,11 @@ container_find_name (container_t * _self, label_t const * lbl, type_t const * at
   A60_USER_TO_REP (statement, self, *);
   assert (container (self));
 
-  slist_it_t * it = slist_iter (self->block.symtab);
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      symbol_t * sym = slist_it_get (it);
-      type_t * symtype = symbol_type (sym);
-      if (label_eq (symbol_label (sym), lbl)
-	  && (symtype == NULL || types_match (symtype, atype)))
-	return sym;
-    }
-  return NULL;
+  slist_it_t * it;
+  private_container_find_it (self, lbl, atype, NULL, &it);
+  symbol_t * ret = slist_it_has (it) ? slist_it_get (it) : NULL;
+  delete_slist_it (it);
+  return ret;
 }
 
 symbol_t *

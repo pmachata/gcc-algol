@@ -43,6 +43,12 @@ new_symbol (label_t const * label)
 }
 
 symbol_t *
+clone_symbol (symbol_t const * self)
+{
+  return clone_symbol_with_name (self, self->label);
+}
+
+symbol_t *
 clone_symbol_with_name (symbol_t const * self, label_t const * label)
 {
   assert (self != NULL);

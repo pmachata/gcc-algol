@@ -266,6 +266,72 @@ new_expr_subscript (cursor_t * location, label_t * label, slist_t * indices)
 }
 
 expression_t *
+clone_expression (expression_t const * self)
+{
+  assert (self != NULL);
+
+  expression_t * ret = private_new_expr (self->cursor, self->kind);
+
+  switch (self->kind)
+    {
+    case ek_int:
+      ret->eint.value = self->eint.value;
+      break;
+
+    case ek_real:
+      ret->ereal.value = self->ereal.value;
+      break;
+
+    case ek_string:
+      ret->estring.value = self->estring.value;
+      break;
+
+    case ek_bool:
+      ret->ebool.value = self->ebool.value;
+      break;
+
+    case ek_idref:
+      ret->idref.lbl = self->idref.lbl;
+      ret->idref.sym = clone_symbol (self->idref.sym);
+      break;
+
+    case ek_if:
+      ret->eif.cond = clone_expression (self->eif.cond);
+      ret->eif.exp_t = clone_expression (self->eif.exp_t);
+      ret->eif.exp_f = clone_expression (self->eif.exp_f);
+      ret->eif.result_type = self->eif.result_type;
+      break;
+
+    case ek_binary:
+      ret->binary.op = self->binary.op;
+      ret->binary.left = clone_expression (self->binary.left);
+      ret->binary.right = clone_expression (self->binary.right);
+      break;
+
+    case ek_unary:
+      ret->unary.op = self->unary.op;
+      ret->unary.operand = clone_expression (self->unary.operand);
+      break;
+
+    case ek_call:
+      ret->call.lbl = self->call.lbl;
+      ret->call.arguments = clone_slist (self->call.arguments);
+      slist_map (ret->call.arguments, adapt_test, clone_expression);
+      ret->call.sym = clone_symbol (self->call.sym);
+      break;
+
+    case ek_subscript:
+      ret->subscript.lbl = self->subscript.lbl;
+      ret->subscript.indices = clone_slist (self->subscript.indices);
+      slist_map (ret->subscript.indices, adapt_test, clone_expression);
+      ret->subscript.sym = clone_symbol (self->subscript.sym);
+      break;
+    };
+
+  return ret;
+}
+
+expression_t *
 expression (void * ptr)
 {
   A60_CHECKED_CONVERSION (expression, ptr);

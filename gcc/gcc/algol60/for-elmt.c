@@ -92,6 +92,34 @@ new_for_elmt_while (cursor_t * cursor, expression_t * expr, expression_t * cond)
 }
 
 for_elmt_t *
+clone_for_elmt (for_elmt_t const * self)
+{
+  assert (self != NULL);
+
+  for_elmt_t * ret = private_new_for_elmt (self->kind, self->cursor);
+
+  switch (self->kind)
+    {
+    case fek_expr:
+      ret->feexpr.expr = clone_expression (self->feexpr.expr);
+      break;
+
+    case fek_until:
+      ret->feuntil.start = clone_expression (self->feuntil.start);
+      ret->feuntil.step = clone_expression (self->feuntil.step);
+      ret->feuntil.stop = clone_expression (self->feuntil.stop);
+      break;
+
+    case fek_while:
+      ret->fewhile.expr = clone_expression (self->fewhile.expr);
+      ret->fewhile.cond = clone_expression (self->fewhile.cond);
+      break;
+    };
+
+  return ret;
+}
+
+for_elmt_t *
 for_elmt (void * ptr)
 {
   A60_CHECKED_CONVERSION (for_elmt, ptr);

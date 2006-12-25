@@ -66,6 +66,18 @@ container_t * new_stmt_block (cursor_t * cursor)
 container_t * new_stmt_toplev (cursor_t * cursor)
   ATTRIBUTE_MALLOC;
 
+/// Create a copy of subtree starting at given statement.
+/// Cursor is shared, and parent is set to NULL, but other components
+/// are recursively cloned.
+statement_t * clone_statement (statement_t const * self)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
+
+/// The same as above, just with typing for containers.
+container_t * clone_container (container_t const * self)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
+
 /// Convert void* to statement, if it is statement, or return NULL.
 statement_t * statement (void * ptr)
   ATTRIBUTE_NONNULL(1);
@@ -96,6 +108,10 @@ estring_t * stmt_to_str (statement_t const * self, estring_t * buf)
 void stmt_resolve_symbols (statement_t * self, logger_t * log)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
+
+/// Answer the cursor of given statement.
+cursor_t * stmt_cursor (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
 
 /// Answer the parent of given statement.
 container_t * stmt_parent (statement_t const * self)
@@ -188,6 +204,12 @@ typedef enum enum_symtab_entry_kind_t
 /// may be overloaded) and sek_ordinary for ordinary symbols (which
 /// may not).
 int container_add_symbol (container_t * self, symbol_t * sym, symtab_entry_kind_t internal)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Remove the symbol from symtab.  The symbol must be present in
+/// symtab.
+symbol_t * container_erase_symbol (container_t * self, symbol_t * sym)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
 

@@ -98,6 +98,14 @@ expression_t * new_expr_subscript (cursor_t * location, label_t * label, slist_t
   ATTRIBUTE_NONNULL(3)
   ATTRIBUTE_MALLOC;
 
+/// Create a copy of subtree starting at given expression.
+/// Cursor is shared; estring values of real and string expressions
+/// are shared; label of idref and call is shared; other components
+/// are recursively cloned.
+expression_t * clone_expression (expression_t const * self)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_MALLOC;
+
 /// Convert void* to expression, if it is expression, or return NULL.
 expression_t * expression (void * ptr)
   ATTRIBUTE_NONNULL(1);
