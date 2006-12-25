@@ -238,19 +238,44 @@ clone_statement (statement_t const * self)
     case sk_block:
     case sk_toplev:
       {
-	ret->block.statements = clone_slist (self->block.statements);
-	slist_map (ret->block.statements, adapt_test, clone_statement);
 	ret->block.symtab = clone_slist (self->block.symtab);
 	slist_map (ret->block.symtab, adapt_test, clone_symbol);
+	ret->block.statements = new_slist_typed (adapt_test, statement);
 
-	// Give the statements proper parents.
-	slist_it_t * it = slist_iter (ret->block.statements);
+	// extract labels from the list
+	slist_t * labels = new_slist ();
+	slist_it_t * jt = slist_iter (ret->block.symtab);
+	for (; slist_it_has (jt); slist_it_next (jt))
+	  {
+	    symbol_t * sym = slist_it_get (jt);
+	    if (types_same (symbol_type (sym), type_label ()))
+	      slist_pushback (labels, sym);
+	  }
+
+	// clone statement list and retarget labels in one pass
+	slist_it_t * it = slist_iter (self->block.statements);
 	for (; slist_it_has (it); slist_it_next (it))
 	  {
-	    statement_t * statement = slist_it_get (it);
-	    stmt_set_parent (statement, container (ret));
+	    statement_t * stmt = slist_it_get (it);
+	    statement_t * clone = clone_statement (stmt);
+	    container_add_stmt (container (ret), clone);
+
+	    slist_it_reset (jt, labels);
+	    for (; slist_it_has (jt); slist_it_next (jt))
+	      {
+		symbol_t * sym = slist_it_get (jt);
+		statement_t * target = symbol_stmt (sym);
+		if (target == stmt)
+		  {
+		    symbol_set_stmt (sym, clone);
+		    stmt_add_label (clone, sym);
+		  }
+	      }
 	  }
+
+	delete_slist_it (jt);
 	delete_slist_it (it);
+	delete_slist (labels);
       }
       break;
     };
