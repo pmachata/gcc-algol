@@ -11,6 +11,7 @@
 #include "symbol.h"
 #include "boundspair.h"
 #include "expression.h"
+#include "desig-expr.h"
 #include "for-elmt.h"
 
 #include <stdio.h>
@@ -83,6 +84,7 @@ static container_t * private_close_block (parser_rep_t * parser);
   type_t * type;
   boundspair_t * bnds;
   expression_t * expr;
+  desig_expr_t * dexpr;
   estring_t * estr;
   void * lelm;
 }
@@ -203,6 +205,8 @@ static container_t * private_close_block (parser_rep_t * parser);
 //%type <> StatementList
 %type <stmt> Statement
 %type <stmt> UnconditionalStatement
+%type <dexpr> DesignationalExpression
+%type <dexpr> SimpleDesignationalExpression
 %type <stmt> ConditionalStatement
 %type <stmt> BasicStatement
 %type <expr> IfClause
@@ -876,6 +880,11 @@ BasicStatement:
     {
       $$ = new_stmt_call (cr_csr (parser, &@1), $1);
     }
+  |
+  KWGOTO DesignationalExpression
+    {
+      $$ = new_stmt_goto (cr_csr (parser, &@1), $2);
+    }
 
 LeftPartList:
   LeftPart
@@ -902,6 +911,38 @@ LeftPart:
   VariableAccess SEPASSIGN
     {
       $$ = $1;
+    }
+
+DesignationalExpression:
+  SimpleDesignationalExpression
+    {
+      log_printf (parser->log, ll_debug, "DesignationalExpression -> SimpleDesignationalExpression");
+      $$ = $1;
+    }
+  |
+  IfClause SimpleDesignationalExpression KWELSE SimpleDesignationalExpression
+    {
+      log_printf (parser->log, ll_debug, "DesignationalExpression -> IfClause SimpleDesignationalExpression KWELSE SimpleDesignationalExpression");
+      $$ = new_desig_expr_if (cr_csr (parser, &@1), $1, $2, $4);
+    }
+
+SimpleDesignationalExpression:
+  LabelIdentifier
+    {
+      log_printf (parser->log, ll_debug, "SimpleDesignationalExpression -> LabelIdentifier");
+      $$ = new_desig_expr_label (cr_csr (parser, &@1), $1);
+    }
+  |
+  Identifier SEPLBRACK Expression SEPRBRACK
+    {
+      log_printf (parser->log, ll_debug, "SimpleDesignationalExpression -> Identifier SEPLBRACK Expression SEPRBRACK");
+      $$ = new_desig_expr_switch (cr_csr (parser, &@1), $1, $3);
+    }
+  |
+  SEPLPAREN DesignationalExpression SEPRPAREN
+    {
+      log_printf (parser->log, ll_debug, "SimpleDesignationalExpression -> SEPLPAREN DesignationalExpression SEPRPAREN");
+      $$ = $2;
     }
 
 ConditionalStatement:

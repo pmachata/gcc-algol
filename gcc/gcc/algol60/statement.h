@@ -16,6 +16,7 @@
 #include "cursor.i"
 #include "slist.i"
 #include "expression.i"
+#include "desig-expr.i"
 #include "logger.i"
 #include "symbol.i"
 #include "label.i"
@@ -57,6 +58,11 @@ statement_t * new_stmt_for (cursor_t * cursor, expression_t * variable, slist_t 
   ATTRIBUTE_NONNULL (2)
   ATTRIBUTE_NONNULL (3)
   ATTRIBUTE_NONNULL (4);
+
+/// Create new goto statement.
+statement_t * new_stmt_goto (cursor_t * cursor, desig_expr_t * target)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (2);
 
 /// Create new generic statement block.
 container_t * new_stmt_block (cursor_t * cursor)
@@ -171,6 +177,10 @@ slist_t * stmt_for_elmts (statement_t const * self)
 
 /// Answer the body of this for statement.
 statement_t * stmt_for_body (statement_t const * self)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the target of this goto statement.
+desig_expr_t * stmt_goto_target (statement_t const * self)
   ATTRIBUTE_NONNULL(1);
 
 /// Add new label (in the sense of goto target) to the statement.

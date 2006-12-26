@@ -6,6 +6,7 @@
 #include "cursor.h"
 #include "slist.h"
 #include "expression.h"
+#include "desig-expr.h"
 #include "logger.h"
 #include "symbol.h"
 #include "label.h"
@@ -51,6 +52,12 @@ typedef struct struct_stmt_for_rep_t
 }
 stmt_for_rep_t;
 
+typedef struct struct_stmt_goto_rep_t
+{
+  desig_expr_t * target;
+}
+stmt_goto_rep_t;
+
 /// Used for blocks as well as for toplevs.
 typedef struct struct_container_rep_t
 {
@@ -66,6 +73,7 @@ typedef enum enum_stmt_kind_t
   sk_call,
   sk_cond,
   sk_for,
+  sk_goto,
   sk_block,
   sk_toplev
 }
@@ -85,6 +93,7 @@ struct struct_statement_t
     stmt_call_rep_t call;
     stmt_cond_rep_t cond;
     stmt_for_rep_t afor;
+    stmt_goto_rep_t agoto;
     container_rep_t block; ///< Used by both block and toplev.
   };
 };
@@ -175,6 +184,16 @@ new_stmt_for (cursor_t * cursor, expression_t * variable, slist_t * elmts, state
   slist_set_type (elmts, adapt_test, for_elmt);
   ret->afor.elmts = elmts;
   ret->afor.body = body;
+  return ret;
+}
+
+statement_t *
+new_stmt_goto (cursor_t * cursor, desig_expr_t * target)
+{
+  assert (target != NULL);
+
+  statement_t * ret = private_new_statement (sk_goto, cursor, NULL);
+  ret->agoto.target = target;
   return ret;
 }
 
@@ -500,6 +519,16 @@ private_stmt_dump (statement_t const * self, estring_t * buf, int level)
 	return;
       }
 
+    case sk_goto:
+      {
+	estr_append_cstr (buf, padding (level));
+	estr_append_cstr (buf, "'goto' ");
+	estring_t * buf0 = expr_to_str (self->agoto.target, NULL);
+	estr_append (buf, buf0);
+	delete_estring (buf0);
+	return;
+      }
+
     case sk_block:
       estr_append_cstr (buf, padding (level));
       estr_append_cstr (buf, "'begin'\n");
@@ -652,6 +681,10 @@ stmt_resolve_symbols (statement_t * self, logger_t * log)
 	return;
       }
 
+    case sk_goto:
+      desig_expr_resolve_symbols (self->agoto.target, self->parent, log);
+      return;
+
     case sk_block:
     case sk_toplev:
       private_resolve_symbols_block (self, log);
@@ -783,6 +816,14 @@ stmt_for_body (statement_t const * self)
   assert (self != NULL);
   assert (self->kind == sk_for);
   return self->afor.body;
+}
+
+desig_expr_t *
+stmt_goto_target (statement_t const * self)
+{
+  assert (self != NULL);
+  assert (self->kind == sk_goto);
+  return self->agoto.target;
 }
 
 void
@@ -1043,6 +1084,7 @@ void * stmt_assign_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * da
 void * stmt_call_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * stmt_cond_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * stmt_for_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
+void * stmt_goto_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * container_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 
 void * ATTRIBUTE_NORETURN builtin_decl_get_generic (symbol_t * sym ATTRIBUTE_UNUSED) {
@@ -1071,6 +1113,9 @@ stmt_build_generic (statement_t * self, void * data)
 
     case sk_for:
       return stmt_for_build_generic (self, data);
+
+    case sk_goto:
+      return stmt_goto_build_generic (self, data);
 
     case sk_block:
     case sk_toplev:

@@ -473,6 +473,15 @@ stmt_for_build_generic (statement_t * self, void * _state)
   return ret;
 }
 
+void *
+stmt_goto_build_generic (statement_t * self, void * _state)
+{
+  al60l_bind_state_t * state = _state;
+  tree target = desig_expr_build_generic (stmt_goto_target (self), state);
+  tree ret = build1 (GOTO_EXPR, void_type_node, target);
+  return ret;
+}
+
 static tree
 private_label_build_generic (container_t * context ATTRIBUTE_UNUSED,
 			     symbol_t * lbl,
@@ -885,63 +894,30 @@ builtin_decl_get_generic (symbol_t * sym)
   return decl;
 }
 
+
+// ------------------------------------
+//   DESIGNATIONAL EXPRESSION
+// ------------------------------------
+
 void *
-type_unknown_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			    void * data ATTRIBUTE_UNUSED)
+desig_expr_label_build_generic (desig_expr_t * self, void * data ATTRIBUTE_UNUSED)
 {
-  gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
+  symbol_t * sym = desig_expr_symbol (self);
+  return symbol_extra (sym);
+}
+
+void *
+desig_expr_if_build_generic (desig_expr_t * self, void * data)
+{
+  // NYI!
   gcc_unreachable ();
 }
 
 void *
-type_any_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			void * data ATTRIBUTE_UNUSED)
+desig_expr_switch_build_generic (desig_expr_t * self, void * data)
 {
-  gcc_assert (!"You shouldn't ask for GENERIC of `any'.");
+  // NYI!
   gcc_unreachable ();
-}
-
-void *
-type_own_build_generic (type_t * self, void * data)
-{
-  tree ret = type_build_generic (type_host (self), data);
-  TREE_STATIC (ret) = 1;
-  return ret;
-}
-
-void *
-type_int_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			void * data ATTRIBUTE_UNUSED)
-{
-  return integer_type_node;
-}
-
-void *
-type_void_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			 void * data ATTRIBUTE_UNUSED)
-{
-  return void_type_node;
-}
-
-void *
-type_real_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			 void * data ATTRIBUTE_UNUSED)
-{
-  return double_type_node;
-}
-
-void *
-type_string_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			   void * data ATTRIBUTE_UNUSED)
-{
-  return string_type_node;
-}
-
-void *
-type_bool_build_generic (type_t * self ATTRIBUTE_UNUSED,
-			 void * data ATTRIBUTE_UNUSED)
-{
-  return boolean_type_node;
 }
 
 
@@ -1067,6 +1043,65 @@ symbol_decl_for_proc (symbol_t * sym, void * data)
 // ------------------------------------
 //   TYPE
 // ------------------------------------
+
+void *
+type_unknown_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			    void * data ATTRIBUTE_UNUSED)
+{
+  gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
+  gcc_unreachable ();
+}
+
+void *
+type_any_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			void * data ATTRIBUTE_UNUSED)
+{
+  gcc_assert (!"You shouldn't ask for GENERIC of `any'.");
+  gcc_unreachable ();
+}
+
+void *
+type_own_build_generic (type_t * self, void * data)
+{
+  tree ret = type_build_generic (type_host (self), data);
+  TREE_STATIC (ret) = 1;
+  return ret;
+}
+
+void *
+type_int_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			void * data ATTRIBUTE_UNUSED)
+{
+  return integer_type_node;
+}
+
+void *
+type_void_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
+{
+  return void_type_node;
+}
+
+void *
+type_real_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
+{
+  return double_type_node;
+}
+
+void *
+type_string_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			   void * data ATTRIBUTE_UNUSED)
+{
+  return string_type_node;
+}
+
+void *
+type_bool_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			 void * data ATTRIBUTE_UNUSED)
+{
+  return boolean_type_node;
+}
 
 void *
 type_label_build_generic (type_t * self ATTRIBUTE_UNUSED,

@@ -14,6 +14,7 @@
 #include "type.i"
 #include "boundspair.i"
 #include "expression.i"
+#include "desig-expr.h"
 #include "estring.i"
 
 // direct includes
