@@ -217,15 +217,35 @@ void * expr_build_generic (expression_t * self, void * data)
 // defined, those have dummy definitions in expression.c.  Otherwise
 // you have to roll your own.
 
-void * expr_int_build_generic (expression_t * self, void * data);
-void * expr_real_build_generic (expression_t * self, void * data);
-void * expr_string_build_generic (expression_t * self, void * data);
-void * expr_bool_build_generic (expression_t * self, void * data);
-void * expr_idref_build_generic (expression_t * self, void * data);
-void * expr_if_build_generic (expression_t * self, void * data);
-void * expr_binary_build_generic (expression_t * self, void * data);
-void * expr_unary_build_generic (expression_t * self, void * data);
-void * expr_call_build_generic (expression_t * self, void * data);
-void * expr_subscript_build_generic (expression_t * self, void * data);
+void * expr_int_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_real_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_string_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_bool_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_idref_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_if_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_binary_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_unary_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_call_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * expr_subscript_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
 
 #endif//_AL60L_EXPRESSION_H_

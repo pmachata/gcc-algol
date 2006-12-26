@@ -254,6 +254,10 @@ clone_statement (statement_t const * self)
       ret->afor.body = clone_statement (self->afor.body);
       break;
 
+    case sk_goto:
+      ret->agoto.target = clone_desig_expr (self->agoto.target);
+      break;
+
     case sk_block:
     case sk_toplev:
       {
@@ -523,7 +527,7 @@ private_stmt_dump (statement_t const * self, estring_t * buf, int level)
       {
 	estr_append_cstr (buf, padding (level));
 	estr_append_cstr (buf, "'goto' ");
-	estring_t * buf0 = expr_to_str (self->agoto.target, NULL);
+	estring_t * buf0 = desig_expr_to_str (self->agoto.target, NULL);
 	estr_append (buf, buf0);
 	delete_estring (buf0);
 	return;

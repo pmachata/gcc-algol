@@ -280,6 +280,9 @@ void * stmt_cond_build_generic (statement_t * self, void * data)
 void * stmt_for_build_generic (statement_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 
+void * stmt_goto_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
 void * stmt_container_build_generic (container_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 

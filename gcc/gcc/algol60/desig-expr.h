@@ -101,8 +101,13 @@ void * desig_expr_build_generic (desig_expr_t * self, void * data)
 // defined, those have dummy definitions in desig-expr.c.  Otherwise
 // you have to roll your own.
 
-void * desig_expr_label_build_generic (desig_expr_t * self, void * data);
-void * desig_expr_if_build_generic (desig_expr_t * self, void * data);
-void * desig_expr_switch_build_generic (desig_expr_t * self, void * data);
+void * desig_expr_label_build_generic (desig_expr_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * desig_expr_if_build_generic (desig_expr_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+void * desig_expr_switch_build_generic (desig_expr_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
 
 #endif//_AL60L_DESIG_EXPR_H_

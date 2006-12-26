@@ -36,6 +36,7 @@
 #include "type.h"
 #include "statement.h"
 #include "expression.h"
+#include "desig-expr.h"
 #include "for-elmt.h"
 
 struct struct_al60l_bind_state_t
@@ -184,8 +185,8 @@ bind_state_add_decl (al60l_bind_state_t * state, tree decl)
 }
 
 void
-bind_state_add_stmt (al60l_bind_state_t * state ATTRIBUTE_UNUSED,
-		     tree stmt ATTRIBUTE_UNUSED)
+bind_state_add_stmt (al60l_bind_state_t * state,
+		     tree stmt)
 {
   tree stmts = slist_front (state->stmts);
   append_to_statement_list (stmt, &stmts);
@@ -343,34 +344,22 @@ stmt_cond_build_generic (statement_t * self, void * state)
 void *
 stmt_for_build_generic (statement_t * self, void * _state)
 {
-  // Transform the loop:
-  //   for i := expr1, expr2 while expr3, expr4 do statement;
-  //
-  // like this:
-  //   begin <-- toplevel wrapper block
-  //     begin i := expr1; statement; end;
-  //     while (1) do begin i := expr2; if not expr3 then break; statement; end;
-  //   end;
-  //
   // Variable sharing: as per spec, variable declared `own' retain
   // their value between exit from block and entry to the same block.
-  // Other variables have undefined values on block entry.  So under
-  // the copying scheme we don't have to do anything for ordinary
-  // variables.  But we want to handle owns specifically, because the
-  // value has to be shared across copied blocks.
+  // Other variables have undefined values on block entry.  We want to
+  // handle owns specifically for this reason, because the value has
+  // to be shared across copied blocks.
   // We don't this, but it has to be done as part of `own' handling.
   //
   // Label sharing: local labels can be copied with the rest of the
   // code, the gotos will then lead into the same iteration.
   // Non-local labels are OK, because they will appear outside the
-  // toplevel wrapper block.  We have to take care of the labels
-  // before the for statement itself, they have to be reassigned to
-  // the toplevel wrapper.
+  // toplevel wrapper block.  Labels before the for statements itself
+  // should be also ok, because whole thing is compiled into a single
+  // tree node, and goto will then lead before that node.
 
-  // Prepare the toplevel wrapper block
+  al60l_bind_state_t * state = _state;
   statement_t * for_body = stmt_for_body (self);
-  container_t * topwrap = new_stmt_block (stmt_cursor (self));
-  container_set_parent (topwrap, stmt_parent (self));
 
   /*
 
@@ -402,9 +391,10 @@ stmt_for_build_generic (statement_t * self, void * _state)
 
   // Translate for elements...
   slist_t * elements = stmt_for_elmts (self);
-  slist_t * assign_tgts = new_slist_from (1, stmt_for_variable (self));
   slist_it_t * it = slist_iter (elements);
+  expression_t * loop_ctrl_var = stmt_for_variable (self);
 
+  bind_state_push_block (state);
   for (; slist_it_has (it); slist_it_next (it))
     {
       for_elmt_t * elmt = slist_it_get (it);
@@ -419,26 +409,51 @@ stmt_for_build_generic (statement_t * self, void * _state)
 	    //   i := expr;
 	    //   <body>;
 
-	    expression_t * expr = for_elmt_expr_expr (elmt);
-	    statement_t * assign = new_stmt_assign (NULL, assign_tgts, expr);
-	    container_add_stmt (topwrap, assign);
-	    container_add_stmt (topwrap, clone_statement (for_body));
+	    tree lhs_tree = expr_build_generic (loop_ctrl_var, state);
+	    expression_t * rhs = for_elmt_expr_expr (elmt);
+	    tree rhs_tree = expr_build_generic (rhs, state);
+	    tree assign_tree = build2 (MODIFY_EXPR, void_type_node, lhs_tree, rhs_tree);
+	    bind_state_add_stmt (state, assign_tree);
+	    bind_state_add_stmt (state, stmt_build_generic (for_body, state));
 	  }
 	  break;
 
 	case fek_while:
 	  {
-	    // this needs GOTO to be implemented:
-	    //
 	    //   for i := E while F do <body>;
 	    //
 	    // is translated like this:
 	    //
-	    // L1: i := E;
-	    //     if F then begin
-	    //       <body>;
-	    //       goto L1;
-	    //     end;
+	    //   ENDLESS_LOOP (void, {
+	    //    1: i := E;
+	    //    2: EXIT (void, !F);
+	    //    3: <body>;
+	    //   })
+
+	    // this block is a body of the endless loop
+	    bind_state_push_block (state);
+
+	    // #1
+	    tree lhs_tree = expr_build_generic (loop_ctrl_var, state);
+	    expression_t * rhs = for_elmt_while_expr (elmt);
+	    tree rhs_tree = expr_build_generic (rhs, state);
+	    tree assign_tree = build2 (MODIFY_EXPR, void_type_node, lhs_tree, rhs_tree);
+	    bind_state_add_stmt (state, assign_tree);
+
+	    // #2
+	    expression_t * cond = for_elmt_while_cond (elmt);
+	    cond = new_expr_unary (expr_cursor (cond), euk_not, cond);
+	    tree cond_tree = expr_build_generic (cond, state);
+	    tree break_tree = build1 (EXIT_EXPR, void_type_node, cond_tree);
+	    bind_state_add_stmt (state, break_tree);
+
+	    // #3
+	    bind_state_add_stmt (state, stmt_build_generic (for_body, state));
+
+	    // and build the loop body & the loop itself
+	    tree endless_body = bind_state_build_block (state);
+	    tree stmt = build1 (LOOP_EXPR, void_type_node, endless_body);
+	    bind_state_add_stmt (state, stmt);
 	  }
 	  break;
 
@@ -461,14 +476,6 @@ stmt_for_build_generic (statement_t * self, void * _state)
     }
   delete_slist_it (it);
 
-  logger_t * logger = new_logger ("al60l-bind");
-  stmt_resolve_symbols (statement (topwrap), logger);
-  delete_logger (logger);
-
-  al60l_bind_state_t * state = _state;
-  bind_state_push_block (state);
-  tree t = stmt_container_build_generic (topwrap, state);
-  bind_state_add_stmt (state, t);
   tree ret = bind_state_build_block (state);
   return ret;
 }
@@ -508,8 +515,6 @@ stmt_container_build_generic (container_t * self, void * _state)
   for (; slist_it_has (it); slist_it_next (it))
     {
       symbol_t * sym = slist_it_get (it);
-      gcc_assert (symbol_extra (sym) == NULL);
-
       tree decl = symbol_decl_for_type (symbol_type (sym), sym, _state);
       symbol_set_extra (sym, decl);
 
@@ -900,21 +905,24 @@ builtin_decl_get_generic (symbol_t * sym)
 // ------------------------------------
 
 void *
-desig_expr_label_build_generic (desig_expr_t * self, void * data ATTRIBUTE_UNUSED)
+desig_expr_label_build_generic (desig_expr_t * self,
+				void * data ATTRIBUTE_UNUSED)
 {
   symbol_t * sym = desig_expr_symbol (self);
   return symbol_extra (sym);
 }
 
 void *
-desig_expr_if_build_generic (desig_expr_t * self, void * data)
+desig_expr_if_build_generic (desig_expr_t * self ATTRIBUTE_UNUSED,
+			     void * data ATTRIBUTE_UNUSED)
 {
   // NYI!
   gcc_unreachable ();
 }
 
 void *
-desig_expr_switch_build_generic (desig_expr_t * self, void * data)
+desig_expr_switch_build_generic (desig_expr_t * self ATTRIBUTE_UNUSED,
+				 void * data ATTRIBUTE_UNUSED)
 {
   // NYI!
   gcc_unreachable ();
