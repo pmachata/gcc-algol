@@ -249,12 +249,12 @@ algol60_parse_file (int debug ATTRIBUTE_UNUSED)
   DECL_RESULT (decl) = resultdecl;
 
   // toplev 'begin'-'end' block is the body of `main'
-  statement_t * stmt0 = slist_front (container_stmts (as_container (ast)));
+  //statement_t * stmt0 = slist_front (container_stmts (as_container (ast)));
 
   al60l_bind_state_t * state = new_bind_state ();
   bind_state_push_function (state, resultdecl, decl);
   {
-    tree bind = stmt_build_generic (stmt0, state);
+    tree bind = stmt_build_generic (ast, state);
 
     // add fallback return to the body
     tree ret_expr = build1 (RETURN_EXPR, void_type_node, NULL_TREE);

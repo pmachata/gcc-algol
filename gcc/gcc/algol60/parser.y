@@ -32,6 +32,7 @@ typedef struct struct_parser_rep_t
 
   slist_t * blockstack;
   container_t * block;
+  container_t * program_block;
   estring_t * tmp;
 } parser_rep_t;
 
@@ -235,10 +236,13 @@ Program:
   LabelList Block SEPSEMICOLON EOFTOK
     {
       log_printf (parser->log, ll_debug, "Program -> LabelList Block SEPSEMICOLON EOFTOK");
-      private_dump_log_labels (parser, $2);
-      private_add_labels_to_symtab (parser, parser->block, $2, $3);
       container_add_stmt (parser->block, $3);
-      parser->result = as_statement (private_close_block (parser));
+      if (!slist_empty ($2))
+	log_printfc (parser->log, ll_error, cr_csr (parser, &@3),
+		     "labels not allowed at program block.");
+      private_close_block (parser); // toplev
+      private_close_block (parser); // dummy
+      parser->result = as_statement (parser->program_block);
       YYACCEPT;
     }
 
@@ -291,7 +295,16 @@ Identifier:
 
 Block:
   KWBEGIN
-  { private_open_block (parser, new_stmt_block (NULL));}
+  {
+    container_t * c = new_stmt_block (cr_csr (parser, &@1));
+    container_set_parent (c, parser->block);
+    private_open_block (parser, c);
+    if (parser->program_block == NULL)
+      {
+	log_printf (parser->log, ll_debug, "  %p is program block", c);
+	parser->program_block = c;
+      }
+  }
   BlockDeclarationsList StatementList
   KWEND
     {
@@ -417,12 +430,12 @@ Type:
     }
 
 OptOwn:
-  /*eps*/ { $$ = 0; }
+  /*epsilon*/ { $$ = 0; }
   |
   KWOWN   { $$ = 1; @$ = @1; }
 
 OptIntrinsicType:
-  /* epsilon */
+  /*epsilon*/
     {
       log_printf (parser->log, ll_debug, "OptIntrinsicType -> epsilon");
       $$ = NULL;
@@ -497,7 +510,7 @@ IdentifierList:
     }
 
 OptBoundsPairList:
-  /* epsilon */
+  /*epsilon*/
     {
       log_printf (parser->log, ll_debug, "OptBoundsPairList -> epsilon");
       $$ = NULL;
@@ -856,7 +869,7 @@ UnconditionalStatement:
     }
 
 BasicStatement:
-  /* eps */
+  /*epsilon*/
     {
       log_printf (parser->log, ll_debug, "BasicStatement -> LabelList");
       $$ = new_stmt_dummy (NULL);
@@ -964,7 +977,7 @@ IfClause:
     }
 
 OptElseClause:
-  /* eps */
+  /*epsilon*/
     {
       $$ = NULL;
     }
@@ -1045,6 +1058,7 @@ new_parser (lexer_t * lexer, int manage)
       log_set_filter (ret->log, ll_debug);
       guard_ptr (buf, 1, ret->blockstack = new_slist ());
       guard_ptr (buf, 1, ret->tmp = new_estring ());
+      ret->program_block = NULL;
       return (void*)ret;
     }
   else
@@ -1123,19 +1137,41 @@ private_dump_log_labels (parser_rep_t * parser, slist_t * slist)
 }
 
 static void
-private_add_labels_to_symtab (parser_rep_t * parser ATTRIBUTE_UNUSED,
-			      container_t * cont,
+private_add_labels_to_symtab (parser_rep_t * parser,
+			      container_t * context,
 			      slist_t * slist, statement_t * target)
 {
+  // Algol has an interesting quirk: labels are local to the nearest
+  // enclosing *block* (as opposed to mere compound statement).  So we
+  // must actually look up nearest block with declarations.
+  //
+  // Strictly speaking, when there are no declarations at program
+  // block, then it's actually program compound statement, and no
+  // labels may be defined at that level.  However we will put all
+  // labels to the program block, if no other block is closer.
+
+  while (context != parser->program_block
+	 && slist_empty (container_symtab (context)))
+    context = container_parent (context);
+
   slist_it_t * it = slist_iter (slist);
   for (; slist_it_has (it); slist_it_next (it))
     {
       label_t * lbl = slist_it_get (it);
       symbol_t * sym = new_symbol (lbl);
-      container_add_symbol (cont, sym, sek_ordinary);
-      symbol_set_stmt (sym, target);
-      symbol_set_type (sym, type_label ());
-      stmt_add_label (target, sym);
+      if (container_add_symbol (context, sym, sek_ordinary) != 0)
+	{
+	  cursor_t * csr = stmt_cursor (target);
+	  log_printfc (parser->log, ll_error, csr,
+		       "duplicate label `%s'.", estr_cstr (label_id (lbl)));
+	  delete_symbol (sym);
+	}
+      else
+	{
+	  symbol_set_stmt (sym, target);
+	  symbol_set_type (sym, type_label ());
+	  stmt_add_label (target, sym);
+	}
     }
   delete_slist_it (it);
 }
@@ -1145,6 +1181,7 @@ private_open_block (parser_rep_t * parser, container_t * cont)
 {
   assert (cont != NULL);
   slist_pushfront (parser->blockstack, parser->block);
+  log_printf (parser->log, ll_debug, "open %p", cont);
   parser->block = cont;
 }
 
@@ -1154,6 +1191,7 @@ private_close_block (parser_rep_t * parser)
   assert (!slist_empty (parser->blockstack));
   container_t * cont = parser->block;
   parser->block = slist_popfront (parser->blockstack);
+  log_printf (parser->log, ll_debug, "close %p", cont);
   return cont;
 }
 
