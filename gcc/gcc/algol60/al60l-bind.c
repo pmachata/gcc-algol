@@ -424,9 +424,9 @@ stmt_for_build_generic (statement_t * self, void * _state)
 	    //
 	    // is translated like this:
 	    //
-	    //   ENDLESS_LOOP (void, {
+	    //   LOOP_EXPR (void, {
 	    //    1: i := E;
-	    //    2: EXIT (void, !F);
+	    //    2: EXIT_EXPR (void, !F);
 	    //    3: <body>;
 	    //   })
 
@@ -459,17 +459,77 @@ stmt_for_build_generic (statement_t * self, void * _state)
 
 	case fek_until:
 	  {
-	    // this needs GOTO to be implemented:
-	    //
 	    //   for i := A step B until C do <body>;
 	    //
 	    // is translated like this:
 	    //
-	    //     i := A;
-	    // L1: if (i - C) * sign (B) <= 0 then begin
-	    //       <body>;
-	    //       goto L1;
-	    //     end
+	    //   i := A;
+	    //   LOOP_EXPR (void, {
+	    //    1: EXIT_EXPR (void, ((i - C) * (if B > 0 then 1 else if B < 0 then -1 else 0)) > 0);
+	    //    2: <body>;
+	    //    3: i := i + B;
+	    //   })
+
+	    expression_t * start = for_elmt_until_start (elmt);
+	    expression_t * stop = for_elmt_until_stop (elmt);
+	    expression_t * step = for_elmt_until_step (elmt);
+	    cursor_t * csr = expr_cursor (step);
+
+	    // initialization element
+	    {
+	      tree lhs_tree = expr_build_generic (loop_ctrl_var, state);
+	      expression_t * rhs = start;
+	      tree rhs_tree = expr_build_generic (rhs, state);
+	      tree assign_tree = build2 (MODIFY_EXPR, void_type_node, lhs_tree, rhs_tree);
+	      bind_state_add_stmt (state, assign_tree);
+	    }
+
+	    // this block is a body of the endless loop
+	    bind_state_push_block (state);
+
+	    // #1
+	    {
+	      expression_t * i_minus_C = new_expr_binary (csr, ebk_asub, loop_ctrl_var, stop);
+	      // if B < 0 then -1 else 0
+	      expression_t * expr2 = new_expr_if (csr,
+						  new_expr_binary (csr, ebk_rlt, step,
+								   new_expr_int (csr, 0)),
+						  new_expr_int (csr, -1),
+						  new_expr_int (csr, 0));
+	      // if B > 0 then 1 else <expr2>
+	      expression_t * sgn_B = new_expr_if (csr,
+						  new_expr_binary (csr, ebk_rgt, step,
+								   new_expr_int (csr, 0)),
+						  new_expr_int (csr, 1),
+						  expr2);
+	      // whole exit condition
+	      expression_t * cond = new_expr_binary (csr, ebk_rgt,
+						     new_expr_binary (csr, ebk_amul, i_minus_C, sgn_B),
+						     new_expr_int (csr, 0));
+	      expr_resolve_symbols (cond, stmt_parent (self), (void*)0xdeadbeef); // logger shouldn't be necessary
+	      tree cond_tree = expr_build_generic (cond, state);
+	      tree break_tree = build1 (EXIT_EXPR, void_type_node, cond_tree);
+	      bind_state_add_stmt (state, break_tree);
+	    }
+
+	    // #2
+	    {
+	      bind_state_add_stmt (state, stmt_build_generic (for_body, state));
+	    }
+
+	    // #3
+	    {
+	      tree lhs_tree = expr_build_generic (loop_ctrl_var, state);
+	      expression_t * rhs = new_expr_binary (csr, ebk_aadd, loop_ctrl_var, step);
+	      tree rhs_tree = expr_build_generic (rhs, state);
+	      tree assign_tree = build2 (MODIFY_EXPR, void_type_node, lhs_tree, rhs_tree);
+	      bind_state_add_stmt (state, assign_tree);
+	    }
+
+	    // and build the loop body & the loop itself
+	    tree endless_body = bind_state_build_block (state);
+	    tree stmt = build1 (LOOP_EXPR, void_type_node, endless_body);
+	    bind_state_add_stmt (state, stmt);
 	  }
 	  break;
 	};
