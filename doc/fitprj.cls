@@ -24,22 +24,22 @@
 \usepackage{mathptm}
 
 \ifx\pdfoutput\undefined  % nejedeme pod pdftexem
+  \usepackage[czech,english]{babel}
+  \usepackage[latin2]{inputenc}
   \ifczech
-    \usepackage[czech,english]{babel}
     \main@language{czech}
-    \usepackage[latin2]{inputenc}
   \else
-    \usepackage[english]{babel}
+    \main@language{english}
   \fi
   \usepackage{graphics}
   \usepackage{epsfig}
 \else % je to pdftex !
+  \usepackage[czech,english]{babel}
+  \usepackage[latin2]{inputenc}
   \ifczech
-    \usepackage[czech,english]{babel}
     \main@language{czech}
-    \usepackage[latin2]{inputenc}
   \else
-    \usepackage[english]{babel}
+    \main@language{english}
   \fi
   \usepackage[pdftex]{graphicx}
 \fi
@@ -98,7 +98,9 @@
   \def\@uitsname{Department of Intelligent Systems}
   \def\@upgmname{Department of Computer Graphics and Multimedia}
 
+  \def\@keywordsnameCZ{Klíèová  slova}
   \def\@keywordsname{Keywords}
+  \def\@abstractnameCZ{Abstrakt}
   \def\@abstractname{Abstract}
   \def\@projectBP{Bachelor project}
   \def\@projectRP{Two-semester project}
@@ -107,16 +109,15 @@
   \def\@projectPGST{Thesis}
   \def\@projectPGSD{Doctoral Thesis}
 
-  \def\@grantstuff{{\em The author thereby grants to \@vutname \@fitname
+  \def\@grantstuff{{\em The author thereby grants to \@vutname \space \@fitname \space
                    persmission to reproduce and distribute copies
    of this thesis document in whole or in part.}}
   \def\@authsign{Signiture of the Author}
   \def\@suprsign{Certified by}
-  \def\@submittext{Submitted %to the {\em \@departmentname} 
-                   in partial %%%% as??? PP
-                   fulfillment of the requirements for
-   \@requirementstext at}
+  \def\@submittext{Submitted to Faculty of Information Technologies %
+  of the Brno University of Technology}
   \def\@acknowname{Acknowledgements}
+  \def\@prohlaseni{Declaration}
   \def\@tocheader{Contents}
 \fi
 \renewcommand\maketitle{%
@@ -165,7 +166,12 @@
    %  {\Large \sc \MakeUppercase{\@vutnameL} }\\[5mm]
    %  {\Large \sc \MakeUppercase{\@fitnameL} }\\[5mm]
    %  \@date
-   \\  dne \@date
+\ifczech
+   \\  dne
+\else
+   \\  at
+\fi
+   \@date
    %\end{center}
 
    \vspace{10mm}
@@ -216,7 +222,6 @@
   \clearpage
 }
 
-\ifczech
 \newcommand{\abstractkeywordsCZ}{%
   \thispagestyle{empty}
   \noindent {\Large \bf \@abstractnameCZ}\\[5mm]
@@ -239,7 +244,6 @@
 
   \clearpage
 }
-\fi
 
 \newcommand{\FITstart}{%
   \pagestyle{plain}
@@ -269,14 +273,12 @@
   \def\@keywordstext{#1}
 }
 
-\ifczech
 \newcommand{\fitabstractCZ}[1]{%
   \def\@abstracttextCZ{#1}
 }
 \newcommand{\keywordsCZ}[1]{%
   \def\@keywordstextCZ{#1}
 }
-\fi
 
 \newcommand{\requirements}[1]{%
   \def\@requirementstext{#1}

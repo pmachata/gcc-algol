@@ -1,4 +1,4 @@
-\documentclass[czech]{fitprj}
+\documentclass[english]{fitprj}
 %\documentclass[a4paper,11pt]{report}
 %\usepackage{a4wide}
 \usepackage[latin2]{inputenc}
@@ -16,23 +16,24 @@
 \pagestyle{empty}
 \topmargin 0in
 
-\date{29. Øíjna}
-\setyear{2006}
+\date{January 3rd}
+\setyear{2007}
 \author{Bc. Petr Machata}
 \title{Construction of GNU Compiler Collection Frontend}
-\FITproject{DP}
+\FITproject{SP}
 
-\edeclaration{
-    Prohla¹uji, ¾e jsem tuto diplomovou práci vypracoval samostatnì pod
-    vedením Ing. Milo¹e Eysselta, CSc.
-    Dal¹í informace mi poskytl zamìstnanec firmy ANF Data, Ing. Luká¹ Szemla
-    % ujistit se ze je to tak spravne, jestli neni nahodou taky vedouci
-    Uvedl jsem v¹echny literární prameny a publikace, ze kterých jsem èerpal.
-    }
+\def\Algol{{\sc Algol}\space}
 
-\acknowledgements{
-Thanks to... (FIT BUT that they gave up their rights)
-}
+\edeclaration{ I hereby declare that this work has been created by me,
+  under the supervision of Milo¹ Eysselt, and under technical lead of
+  Luká¹ Szemla.  All information resources that I have used are
+  properly cited.  }
+
+\acknowledgements{ I owe thanks for patience and advices to the
+  thesis' technical advisor, Luká¹ Szemla, who was bombarded by my
+  status reports monthly; and Professor Jan van Katwijk of Delft
+  University of Technology, for advices regarding odds and ends of
+  \Algol 60. }
 
 
 \fitabstract{The Abstract}
@@ -48,13 +49,9 @@ Thanks to... (FIT BUT that they gave up their rights)
 \maketitle
 % tady bude zadani
 \grantrights
-\abstractkeywords
 \abstractkeywordsCZ
+\abstractkeywords
 \FITstart
-
-\def\Algol{{\sc Algol}\space}
-\def\GCC{{\sc GCC}\space}
-\def\C{{\sc C}\space}
 
 % for various computer-related terms
 \def\literal#1{{\sffamily{}#1}}
@@ -77,9 +74,7 @@ Thanks to... (FIT BUT that they gave up their rights)
 \def\note#1{{{\it Note.\space}#1}}
 \def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
 
-% ====================================================================
-
-\tableofcontents
+\def\term#1{{\it #1}}
 
 % ====================================================================
 
@@ -88,34 +83,110 @@ Thanks to... (FIT BUT that they gave up their rights)
 Describe what this thesis is about, summarize chapters, provide
 insight to how to read it.
 
+In this work, I will refer to myself as ``me'', and a reader as
+``you''.
+
 \chapter{Why GCC, Why Now}
 
-(Reference: Tom Tromey's Java paper) Summarize options available when
-one writes new language.  Interpreters and compilers, hand-rolling
-compiler, compiling via C (this sucks mostly because C compiler has to
-recover the higher level model from C, which of course isn't possible;
-and debugging--GCC will preserve symbol names where necessary, while
-in C, you'd have to mangle them without chance to give a clue to
-target C compiler (you want to emit \#line directives to point the user
-to the place where the error originated, and in debugger you have no
-way to hide the fact that you are going through C)), compiling via GCC
-(what if it's dynamic language, what if static).
+When facing a~task of engineering a processor
+\footnote{In a general sense of a tool that allows direct or indirect
+  execution of a program in a given language.} of a given language,
+you have several options.
 
-Personal opinions aside, writing GCC frontend is probably best choice.
-GCC is ported to dozens of platforms, has tons of optimizations, has
-necessary community, corporation and academia drive, and finally
-writing such frontend isn't nearly as difficult as rolling your own
-backend (fingers crossed it's true).
-Even rolling C backend would be a pain for some language features,
-such as exception handling and object orientation, that GCC readily
-supports.
+\section{Language Processors Breakdown}
 
-Describe briefly that the author has written \Algol 60 parser
-\cite{TR:ALGOL60}
-to get
-himself familiar with the stuff he describes.  Maybe drop a few notes
-about how the parser (independent from GCC) and GCC frontend got
-joined.
+You could write an interpreter, a tool that, given a~program, emulates
+its actions token by token without restricting to any form of
+compilation into intermediate code.  Interpreter has the advantage of
+being rather simple to write.  And if the language still isn't sorted
+out completely, it will be simple to adjust the processor.
+
+You could write a compiler that emits other high-level language, such
+as C.  Compilation via C is quite popular, but it has drawbacks.
+E.g. programs in C will contain artifacts introduced during the
+compilation, and those will be visible in debugger.  C may not support
+all the necessary constructs that your language needs, and you may
+have to use an even higher-level language.  You will typically have to
+give artificial names to various thunks of code, and mangle program
+identifiers.  On the other hand, C is well understood, with
+ubiquitious compilers, and tons of documentation.
+
+Another option is producing virtual machine instructions, such as JVM
+or CLR.  This can be advantageous, if you can count on having the
+target machine on binary host site.  Virtual machines typically do
+just in time compilation, so you can experience near-native speed of
+programs.  And they can be ported to several platforms, which means
+your compiler will be portable for free.
+
+\section{Processing With GCC}
+
+This thesis describes yet another option: writing the processor as a
+part of a well known compiler suite, GCC.
+
+Crafting GCC frontends used to be hard.  One had to understand quirks
+of RTL, GCC's intermediate language, which was neither easy, nor
+high-level.  But things changed: GCC team took tree language used as
+an AST representation in C and C++ frontends, and generalized it into
+an official intermediate language called GENERIC.  Work with GENERIC
+is rather easy\cite{LJ:2005:Tromey}, on par, I'd say, with emitting C.
+Unlike C, there are all GCC bells and whistles: attributes, inline
+assembly, OpenMP, whole C++ (albeit e.g. templates make up a {\em
+  very} obscure corner).  So it's very powerful platform, compared
+with C.
+
+Unlike C, however, the documentation is rather thin.  Quite often I
+found myself scanning through other frontends in hunt for particular
+usage of some feature.  Quite often GCC died on me with assertion
+error, and I had to look up what went wrong, and figure out why.  This
+is actually easier than it sounds, but the fact is, GCC would benefit
+from better documentation.
+
+GCC is work in progres.  For some ten years as of now.  Things change.
+If you won't get your frontend into GCC trunk, you will have to deal
+with those changes yourself.  And as far as I know, new languages are
+not exactly the priority of GCC team, supposedly for exactly the
+reason that they would have to maintain them.  It would have to be
+very high-impact language for that to happen.  If you won't carry your
+compiler forward, it will become irrelevant as time passes.  Just as
+are GCC-2.9x frontends irrelevant today, and just as GCC-3.x frontends
+will become one day.
+
+Given GCC's strong C heritage, it's still best fit for compilation of
+C-like languages.  Currently the GCC family contains C, C++, their
+Objective variants, Java, Fortran, and Ada.  Those are all rather
+C-like languages.  I can imagine compiling something like Python
+through GCC, and Mercury, a declarative logic/functional language was
+implemented as GCC frontend.  But still the best match will be for
+imperative C-like languages.
+
+Last but not least, GCC is a mature, even if underdocumented compiler.
+Big companies depend on GCC, on both the vendor and the consumer
+sides.  It is ported to a huge number of platforms, and has the
+necessary drive and impact.  Lots of people know how to use it, build
+it, package it, distribute it, and that means lots of people will know
+how to work with your frontend from the day one.  This is very
+important.  Clever usage of GCC features will make your processor
+another option for wide range of tasks, from parallel to systems
+programming.
+
+\section{What's Ahead}
+
+I have written an \Algol 60 \cite{TR:ALGOL60} frontend for
+GCC\footnote{\url{http://projects.almad.net/gcc-algol}} to get myself
+familiar with the platform.  I was expecting days\footnote{Or rather
+  nights. With lots of tea.} spent in GCC's internals, digging in code
+knee deep.  Much to my surprise, no such thing happened.  I had my
+share of cursing, but overall I was pleasantly surprised.  I doubt
+going via C would make the work significantly easier.
+
+What's ahead is description of my experience with development of
+\Algol 60 frontend.  It's a mix of things from GCC Internals
+documentation \cite{TR:GCCInt}, things cut'n'pasted from other
+people's code and later analyzed, and things either found in GCC
+comments or tried by chance and found to work, all wrapped up and
+delivered as a continuous, and hopefully coherent text.
+
+
 
 \chapter{GCC Architecture}
 
@@ -223,7 +294,7 @@ Objects, dynamic typing (look at OBJ\_TYPE\_REF), virtual functions.
 
 \section{Numbers}
 
-Elaborate on numeric support in \GCC.  Including big integers, long
+Elaborate on numeric support in GCC.  Including big integers, long
 floats, what's necessary big/little endian-wise, if there's anything
 to know about bits-per-byte, complex numbers (and what are possible
 types of complex number components).  Floating point, integer and
@@ -269,16 +340,16 @@ Look into \cite{GDS:2005:Dvorak}.  Maybe find better source.
 
 \section{Commandline options}
 
-Each \GCC frontend has the capability of processing commandline
-options.  Moreover it inherits all the options from \GCC proper, so
+Each GCC frontend has the capability of processing commandline
+options.  Moreover it inherits all the options from GCC proper, so
 e.g. \option{-O3}, \option{-o file} and others are available for all
 frontends with no work.  The only work is necessary for definition of
 options peculiar to given frontend, and even there is the tedium of
 commandline parsing left off programmer's shoulders.
 
-\GCC understands both positive and negative variants of \option{-f},
+GCC understands both positive and negative variants of \option{-f},
 \option{-W} and \option{-m} options.  E.g. when your frontend supports
-\option{-fdump-ast}, \GCC will understand also \option{-fno-dump-ast}.
+\option{-fdump-ast}, GCC will understand also \option{-fno-dump-ast}.
 Furthermore, each option can be parametrized.  Thus you can have
 e.g. \option{-{}-output-pch=} option for output of precompiled headers,
 and the part after ``='' is delivered to option handler as an
@@ -286,9 +357,9 @@ argument.
 
 Of course, programmer has to write the handler for frontend-specific
 options herself.  All work takes place in
-\function{LANG\_HOOKS\_HANDLE\_OPTION} hook, \GCC calls this function
+\function{LANG\_HOOKS\_HANDLE\_OPTION} hook, GCC calls this function
 each time it hits an option that the frontend understands.  The
-communication isn't done through option strings, though.  Instead, \GCC
+communication isn't done through option strings, though.  Instead, GCC
 associates each option a symbolic identifier with unique integer
 value.  When option is handled, simple \literal{switch} statement can
 be used to decide what should be done.  Option strings are transformed
@@ -307,7 +378,7 @@ is 1 if an option is used in its positive variant, and 0 for
 
 All frontend-specific options are defined in \file{lang.opt}.  This
 file gives, through build magic, rise to \file{options.h}.  Format and
-features of \file{lang.opt} are to be found in \GCC internals
+features of \file{lang.opt} are to be found in GCC internals
 documentation
 \cite[chapter Options]{TR:GCCInt}.
 
@@ -335,13 +406,13 @@ platform.  Most probably you will have to roll one of these for your
 language.
 
 Runtime support also includes system's \literal{libc} and
-\literal{libm}.  To honor \GCC interfaces, you will have to pay some
+\literal{libm}.  To honor GCC interfaces, you will have to pay some
 attention to these, too.
 
-\GCC doesn't support integration of the runtime library with the same
+GCC doesn't support integration of the runtime library with the same
 ease it supports new language frontends.  There are files to be
 patched, an operation inherently unsafe in a volatile environment of
-\GCC trunk.  Apart from that, however, the automation works nicely,
+GCC trunk.  Apart from that, however, the automation works nicely,
 and with some rules in mind, you can build cross-compilation safe
 runtime library that is linked to your binaries by default.  Let's get
 dirty!
@@ -366,7 +437,7 @@ reside in subdirectory \file{gcc/libsomething}.  This directory is
 basically ordinary library build directory: it is almost possible to
 simply copy preexisting library files there.
 
-\GCC expects that the library provides a \file{configure} script,
+GCC expects that the library provides a \file{configure} script,
 which, when launched, creates \file{Makefile}.  (Note that the created
 \file{Makefile} has to reside in a {\em build} directory, but the
 script is launched from a {\em source} directory.)  I assume that you
@@ -376,12 +447,12 @@ The best approach is probably simply to take other frontend's
 \file{configure.ac} and \file{Makefile.am}, look how is it done, and
 bend it to suit your needs.  The files are mostly classical autotools
 source files, but there are certain hacks here and there necessary for
-integration into \GCC build system.  In particular:
+integration into GCC build system.  In particular:
 
 \begin{itemize}
 \item \file{configure.ac} has to call \variable{GCC\_TOPLEV\_SUBDIRS}
   macro after \variable{AC\_INIT}.  This relates to the dreaded
-  \GCC{}'s build/host/target trichotomy.  Each of builds is separated
+  GCC{}'s build/host/target trichotomy.  Each of builds is separated
   in directory of its own: \variable{build\_subdir},
   \variable{host\_subdir}, and \variable{target\_subdir}.  This macro
   determines these values.
@@ -408,8 +479,8 @@ off.
 \subsection{Patching Toplevel Buildsystem}
 
 One last step is necessary before your library gets built as part of
-build process.  \GCC has to {\em know} about it.  As it is, you have
-to touch \GCC{}'s privates to do it: you need to patch toplevel
+build process.  GCC has to {\em know} about it.  As it is, you have
+to touch GCC{}'s privates to do it: you need to patch toplevel
 \file{configure} and \file{Makefile.def}.  Fortunately, both patches
 are trivial.
 
@@ -430,7 +501,7 @@ about what and how can be defined.@@@
 
 \subsection{Linking the Binaries With Runtime Library}
 
-The method that \GCC uses to decide which runtime libraries to link in
+The method that GCC uses to decide which runtime libraries to link in
 is pretty much a hack: you will inject necessary libraries into the
 commandline, before it's processed.
 
@@ -443,7 +514,7 @@ your runtime library, \literal{libc}, \literal{libm}, or any other
 required library isn't at the commandline yet (or is and shouldn't
 be), in which situation you will add or remove it from the vector and
 adjust \variable{argc} accordingly.  It's necessary to support native
-\GCC switches, such as \option{-nostdlib} and \option{-nodefaultlibs},
+GCC switches, such as \option{-nostdlib} and \option{-nodefaultlibs},
 as well as your own switches that imply that no linking is to be done
 (e.g. \option{-fsyntax-only} or similar).
 
@@ -460,11 +531,11 @@ handling your own runtime library, except that you don't have to build
 them.
 
 @TODO:maybe move to numerical support chapter:
-Since version 4.3.0, \GCC uses \literal{libgmp} to do its constant
+Since version 4.3.0, GCC uses \literal{libgmp} to do its constant
 folding, which means that the library will be available at compiler
 runtime.  Very often that means the library will also be available at
 binary run site.  That doesn't hold universally, but at least
-\literal{libgmp} was ported to all platforms where \GCC has supported
+\literal{libgmp} was ported to all platforms where GCC has supported
 backends.  What this means for you is that you can dispatch to this
 library many numerical algorithms that would otherwise have to be
 handrolled or cut'n'pasted.  As far as I know, this is the approach
