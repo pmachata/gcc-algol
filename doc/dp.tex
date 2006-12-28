@@ -102,7 +102,7 @@ you have several options.
 \section{Language Processors Breakdown}
 
 You could write an interpreter, a tool that, given a~program, emulates
-its actions token by token without restricting to any form of
+its actions token by token, possibly using some form of
 compilation into intermediate code.  Interpreter has the advantage of
 being rather simple to write.  And if the language still isn't sorted
 out completely, it will be simple to adjust the processor.
@@ -257,7 +257,8 @@ Both interfaces mentioned are {\em unidirectional}: front end feeds
 GENERIC into middle end, middle end feeds RTL into back end.  But
 sometimes the other direction is also necessary.  For example, during
 alias analysis, middle end has to know whether two objects of
-different data types may occupy the same memory location.  Each
+different data types may occupy the same memory location \cite{LDS:2006:Novillo}.
+Each
 language has its own rules for that, and front end is the place where
 language-dependent things happen.  For this purpose, GCC has a
 mechanism of \term{language hooks} or \term{langhooks}, which provide
@@ -269,7 +270,7 @@ types are correct and all constraints required by the language
 definition hold.  If everything is OK, it has to provide GENERIC
 representation of the program.  For this reason, a bulk of this thesis
 deals with GENERIC.  You don't have to know anything about RTL to
-write front end--at least I don't.
+write front end---at least I don't.
 
 \section{GENERIC and GIMPLE}
 
@@ -283,8 +284,9 @@ etc.
 GENERIC is a tree language (thus the Lisp qualities).  As any well
 behaving tree, it's recursive in nature, having both internal and leaf
 nodes, with internal nodes capable of holding other internal nodes.
-Leaves would be identifier references, integer numbers, etc.  Internal
-nodes would be unary or binary operations, block containers, etc.
+Typical leaves are identifier references, integer numbers, etc.
+Internal nodes are then unary or binary operations, block containers,
+etc.
 
 For optimization purposes, GENERIC is still too high level a
 representation.  During a course of compilation, it's lowered.  The
@@ -298,7 +300,7 @@ GIMPLE.  In low GIMPLE containers are further transformed into
 \literal{goto}s and labels.
 
 Apart from pre-defined nodes, GCC provides a mechanism to define your
-own node GENERIC types.  Of course it wouldn't know how to gimplify
+own GENERIC node types.  Of course it wouldn't know how to gimplify
 them, and a langhook is necessary for this purpose.  C and C++
 front ends actually don't use GENERIC for their AST representation, but
 extend it with their own node types, and then provide means of
@@ -339,7 +341,7 @@ directories are referred to relatively to the directory where you
 unpacked a distribution tar file.  E.g. \file{gcc/} refers to actual
 directory \file{gcc-4.2.0/}.
 
-The core of compiler is stored in directory (\file{gcc/gcc/}).
+The core of compiler is stored in directory \file{gcc/gcc/}.
 Directly in this directory are the files that compose a C Front End,
 general GCC services, whole middle end, and a machine independent
 parts of back end.  Besides this, there is a number of directories
@@ -382,15 +384,15 @@ internal details that will be useful later.  Let's recap.
 
 \item[$\bullet$] The language that is used to represent programs in
   middle end, and that front end emits, is called GENERIC.  GENERIC is
-  C-like tree language.  Apart from predefined node types, front end
+  C-like tree language.  Besides predefined node types, front end
   can register its own node types and use them at will.  Subset of
   GENERIC, used for optimizations, is called GIMPLE, and the process
   of lowering GENERIC to GIMPLE a gimplification.  You have to provide
   gimplifying routines for your front end's own tree nodes.
 
 \item[$\bullet$] While it is possible to use GENERIC as an AST
-  representation, it is advisable to use rather as a target language,
-  and craft AST to suit your front end's needs.
+  representation, it is advisable to use it rather as a target language,
+  and craft the AST to suit your front end's needs.
 
 \end{enumerate}
 
