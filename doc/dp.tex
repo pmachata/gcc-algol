@@ -19,7 +19,7 @@
 \date{January 3rd}
 \setyear{2007}
 \author{Bc. Petr Machata}
-\title{Construction of GNU Compiler Collection Frontend}
+\title{Construction of GNU Compiler Collection Front End}
 \FITproject{SP}
 
 \def\Algol{{\sc Algol}\space}
@@ -30,7 +30,7 @@
   properly cited.  }
 
 \acknowledgements{ I owe thanks for patience and advices to the
-  thesis' technical advisor, Luká¹ Szemla, who was bombarded by my
+  thesis' technical adviser, Luká¹ Szemla, who was bombarded by my
   status reports monthly; and Professor Jan van Katwijk of Delft
   University of Technology, for advices regarding odds and ends of
   \Algol 60. }
@@ -76,6 +76,9 @@
 
 \def\term#1{{\it #1}}
 
+\def\NWY{(\note{This is not written yet.  It's in plan for
+    final thesis.})}
+
 % ====================================================================
 
 \chapter{Introduction}
@@ -85,6 +88,9 @@ insight to how to read it.
 
 In this work, I will refer to myself as ``me'', and a reader as
 ``you''.
+
+
+% ====================================================================
 
 \chapter{Why GCC, Why Now}
 
@@ -109,7 +115,7 @@ all the necessary constructs that your language needs, and you may
 have to use an even higher-level language.  You will typically have to
 give artificial names to various thunks of code, and mangle program
 identifiers.  On the other hand, C is well understood, with
-ubiquitious compilers, and tons of documentation.
+ubiquitous compilers, and tons of documentation.
 
 Another option is producing virtual machine instructions, such as JVM
 or CLR.  This can be advantageous, if you can count on having the
@@ -123,40 +129,38 @@ your compiler will be portable for free.
 This thesis describes yet another option: writing the processor as a
 part of a well known compiler suite, GCC.
 
-Crafting GCC frontends used to be hard.  One had to understand quirks
+Crafting GCC front ends used to be hard.  One had to understand quirks
 of RTL, GCC's intermediate language, which was neither easy, nor
 high-level.  But things changed: GCC team took tree language used as
-an AST representation in C and C++ frontends, and generalized it into
+an AST representation in C and C++ front ends, and generalized it into
 an official intermediate language called GENERIC.  Work with GENERIC
 is rather easy\cite{LJ:2005:Tromey}, on par, I'd say, with emitting C.
 Unlike C, there are all GCC bells and whistles: attributes, inline
-assembly, OpenMP, whole C++ (albeit e.g. templates make up a {\em
-  very} obscure corner).  So it's very powerful platform, compared
-with C.
+assembly, OpenMP.  So it's very powerful platform, compared to C.
 
 Unlike C, however, the documentation is rather thin.  Quite often I
-found myself scanning through other frontends in hunt for particular
+found myself scanning through other front ends in hunt for particular
 usage of some feature.  Quite often GCC died on me with assertion
 error, and I had to look up what went wrong, and figure out why.  This
 is actually easier than it sounds, but the fact is, GCC would benefit
 from better documentation.
 
-GCC is work in progres.  For some ten years as of now.  Things change.
-If you won't get your frontend into GCC trunk, you will have to deal
+GCC is work in progress.  For some twenty years as of now.  Things change.
+If you won't get your front end into GCC trunk, you will have to deal
 with those changes yourself.  And as far as I know, new languages are
 not exactly the priority of GCC team, supposedly for exactly the
 reason that they would have to maintain them.  It would have to be
 very high-impact language for that to happen.  If you won't carry your
 compiler forward, it will become irrelevant as time passes.  Just as
-are GCC-2.9x frontends irrelevant today, and just as GCC-3.x frontends
+are GCC-2.9x front ends irrelevant today, and just as GCC-3.x front ends
 will become one day.
 
 Given GCC's strong C heritage, it's still best fit for compilation of
 C-like languages.  Currently the GCC family contains C, C++, their
-Objective variants, Java, Fortran, and Ada.  Those are all rather
+Objective variants, Java, FORTRAN, and Ada.  Those are all rather
 C-like languages.  I can imagine compiling something like Python
 through GCC, and Mercury, a declarative logic/functional language was
-implemented as GCC frontend.  But still the best match will be for
+implemented as GCC front end.  But still the best match will be for
 imperative C-like languages.
 
 Last but not least, GCC is a mature, even if underdocumented compiler.
@@ -164,14 +168,14 @@ Big companies depend on GCC, on both the vendor and the consumer
 sides.  It is ported to a huge number of platforms, and has the
 necessary drive and impact.  Lots of people know how to use it, build
 it, package it, distribute it, and that means lots of people will know
-how to work with your frontend from the day one.  This is very
+how to work with your front end from the day one.  This is very
 important.  Clever usage of GCC features will make your processor
 another option for wide range of tasks, from parallel to systems
 programming.
 
 \section{What's Ahead}
 
-I have written an \Algol 60 \cite{TR:ALGOL60} frontend for
+I have written an \Algol 60 \cite{TR:ALGOL60} front end for
 GCC\footnote{\url{http://projects.almad.net/gcc-algol}} to get myself
 familiar with the platform.  I was expecting days\footnote{Or rather
   nights. With lots of tea.} spent in GCC's internals, digging in code
@@ -180,35 +184,221 @@ share of cursing, but overall I was pleasantly surprised.  I doubt
 going via C would make the work significantly easier.
 
 What's ahead is description of my experience with development of
-\Algol 60 frontend.  It's a mix of things from GCC Internals
+\Algol 60 front end.  It's a mix of things from GCC Internals
 documentation \cite{TR:GCCInt}, things cut'n'pasted from other
 people's code and later analyzed, and things either found in GCC
 comments or tried by chance and found to work, all wrapped up and
 delivered as a continuous, and hopefully coherent text.
 
 
+% ====================================================================
 
 \chapter{GCC Architecture}
 
-How does GCC work.  What's driver, what's the frontend proper.  Bird's
-eye view of compilation passes, internal structure, references to
-other documents with more detailed description.  Main source will be
-Diego Novillo's OLS paper.  Mention garbage collector (only mention).
-Also
-mention hooks, but don't go into depth (go as far as Tom Tromey's
-Linux Journal article).
+GCC can translate from variety of source languages into variety of
+assemblers.  With one command, decorated with various flags, it's
+possible to do preprocessing, compilation, assembly and linking.  How
+does it achieve this?
 
-Mention that there are two approaches: targeting GENERIC, and using
-GENERIC as AST rep.  This work aims at the former scenario.  Under
-this setup, there are four levels actually: your parser, GCC frontend,
-GCC middleend, GCC backend.  The frontend of the parser is completely
-independent of GCC, backend of the parser is frontend of the GCC.
-With the latter approach, one defines special tree codes.
+In following sections, we delve into successively deeper levels of
+overall GCC architecture.
 
-Build on \cite{GDS:2003:Merill}, \cite{LDS:2006:Novillo},
-\cite{GDS:2006:Mulley}, \cite{LJ:2005:Tromey}.
+\section{Compilation Driver and Compiler Proper}
+
+On the outermost level, GCC is divided into a \term{compilation
+  driver}, and a \term{compiler proper}.  Besides this, GCC uses
+several host tool chain components, an assembler and linker.
+
+Compilation driver is a user-interfacing application.  It knows about
+all languages that GCC supports.  Given a source file, it can guess
+what to do based on file's suffix.  Then it launches various other
+tools, most prominently compiler proper, but also preprocessor,
+assembler, and, eventually, linker.
+
+Whole compilation works as a pipeline on an application level.  After
+optional preprocessing, the source file is fed into compiler proper,
+that emits assembly.  This is then assembled into object file.
+Finally, object file is handed over to linker to produce final
+executable.  This process is managed by compilation driver.  Depending
+on command line switches in effect it can be cut short in any of the
+stages: after preprocessing (\option{-E}), after compilation
+(\option{-S}), and after assembly (\option{-c}).
+
+From our standpoint, the critical component is the compiler proper.
+There is one such component for each language, each in separated
+executable binary.  You can run the binary yourself if you so wish,
+just as driver does.  Let's look at that component closer in next
+section.
+
+\section{Front End, Middle End, and Back End}
+
+The compiler proper itself is composed of three components: a
+\term{front end}, a \term{back end}, and a \term{middle end}.  While
+the front end is suited specifically to each language, the two other
+ends are the same in all various compiler propers.  Front end is the
+part that encapsulates all the logic special to your language.
+
+Just like the compilation process done by the driver, the compilation
+of a source file can be viewed as a pipeline that converts one program
+representation into another.  Source code enters the front end and
+flows through the pipeline, being converted at each stage into
+successively lower-level representation forms until final code
+generation in the form of assembly code \cite{LDS:2006:Novillo}.
+
+There are two intermediate languages that are used on the interfaces
+between the three GCC's ends.  The higher level one, used between
+front end and middle end, is called \term{GENERIC}.  The lower level
+one, used between middle end and back end, is called RTL, or Register
+Transfer Language.  Both middle end and back end do various
+optimizations on their intermediate representation before they turn it
+into yet lower level one.
+
+Both interfaces mentioned are {\em unidirectional}: front end feeds
+GENERIC into middle end, middle end feeds RTL into back end.  But
+sometimes the other direction is also necessary.  For example, during
+alias analysis, middle end has to know whether two objects of
+different data types may occupy the same memory location.  Each
+language has its own rules for that, and front end is the place where
+language-dependent things happen.  For this purpose, GCC has a
+mechanism of \term{language hooks} or \term{langhooks}, which provide
+a way to front end's participation in lower layers of compilation
+process.
+
+The goal of front end is to analyze source program, and ensure all
+types are correct and all constraints required by the language
+definition hold.  If everything is OK, it has to provide GENERIC
+representation of the program.  For this reason, a bulk of this thesis
+deals with GENERIC.  You don't have to know anything about RTL to
+write front end--at least I don't.
+
+\section{GENERIC and GIMPLE}
+
+The intermediate form that is important to us is called GENERIC.  From
+expressiveness point of view, it's similar to C.  From notation point of
+view, it's similar to Lisp.  GENERIC is capable of representing whole
+functions, i.e. it supports everything there is to represent in a
+typical C function: variables, loops, conditionals, function calls,
+etc.
+
+GENERIC is a tree language (thus the Lisp qualities).  As any well
+behaving tree, it's recursive in nature, having both internal and leaf
+nodes, with internal nodes capable of holding other internal nodes.
+Leaves would be identifier references, integer numbers, etc.  Internal
+nodes would be unary or binary operations, block containers, etc.
+
+For optimization purposes, GENERIC is still too high level a
+representation.  During a course of compilation, it's lowered.  The
+intermediate code that it's lowered into is called \term{GIMPLE}.  The
+process of lowering is thus inevitably called \term{gimplification}.
+GIMPLE is a subset of GENERIC.  Nesting structures are still
+represented as containers in GIMPLE, but all expressions are broken
+down to three address code, using temporaries to store intermediate
+results.  There are actually two GIMPLE forms: high GIMPLE and low
+GIMPLE.  In low GIMPLE containers are further transformed into
+\literal{goto}s and labels.
+
+Apart from pre-defined nodes, GCC provides a mechanism to define your
+own node GENERIC types.  Of course it wouldn't know how to gimplify
+them, and a langhook is necessary for this purpose.  C and C++
+front ends actually don't use GENERIC for their AST representation, but
+extend it with their own node types, and then provide means of
+gimplification.
+
+(Citations from \cite{GDS:2003:Merill} and \cite{LDS:2006:Novillo}
+were used thorough this section.)
+
+\section{Fronted ASTs}
+
+While it is possible to use GENERIC for representation of programs in
+your front end, it is recommended not to do so \cite{LDS:2006:Novillo}
+\cite{LJ:2005:Tromey}.  Your own AST representation can suit the
+language in hand better, and furthermore you are better shielded from
+the changes in GCC core.  Besides, the language analysis tools that
+you write are then shielded from {\em GCC itself}, which makes them
+reusable in other tasks: e.g. as a syntax checker and pretty printer
+in smart editors.
+
+This thesis aims very strongly towards the direction of your own AST.
+Under such a scenario, there are four layers actually: front end is
+further divided into two.  The top one is a generic language
+processing library; the bottom one is actual GCC front end, and it
+translates one tree form (your AST) into other (GCC's GENERIC).
+
+When you pick the other way, and will represent AST with GENERIC, you
+will probably want to read chapters about defining your own GENERIC
+codes. \\ \NWY
+
+\section{Source Base}
+
+Unfortunately, all GCC front ends have to be built inside the GCC tree.
+There is no way to use e.g. public headers and link against GCC
+libraries that would implement lower layers of compilation process.
+You will have to store your source files into places where GCC expects
+them and adhere to the overall GCC build policy.  In following text,
+directories are referred to relatively to the directory where you
+unpacked a distribution tar file.  E.g. \file{gcc/} refers to actual
+directory \file{gcc-4.2.0/}.
+
+The core of compiler is stored in directory (\file{gcc/gcc/}).
+Directly in this directory are the files that compose a C Front End,
+general GCC services, whole middle end, and a machine independent
+parts of back end.  Besides this, there is a number of directories
+with front ends.  E.g. \file{gcc/gcc/cp/} contains a C++ front end.
+One interesting front end is Treelang (\file{gcc/gcc/treelang/}), a
+toy language showing off how to write front ends.  You will have to
+create one such directory, chapter \ref{HalloWorld} deals with this.
+
+Another interesting directory is \file{gcc/gcc/testsuite/}, which
+contains automated DejaGNU testsuite.  You will most probably want to
+have your own files there.  Part of this thesis is dedicated to
+subject of writing testsuite.  \NWY
+
+In toplevel directory, a GCC runtime services are stored.  This
+includes runtime libraries for various front ends,
+e.g. \file{gcc/libstdc++-v3/} with C++ runtime library.  Most probably
+you will want to write your own runtime library.  Section
+\ref{RuntimeLibraries} deals with this.
+
+If you can afford depending on GCC, i.e. you don't want your front end
+to be completely independent, you can use data types and routines from
+a \file{gcc/libiberty/} library.
+
+\section{Summary}
+
+In this chapter, I covered overall structure of GCC, as well as some
+internal details that will be useful later.  Let's recap.
+
+\begin{enumerate}
+
+\item[$\bullet$] The GCC as a whole is composed of a driver and a
+  number of actual compilers, one for each language.  Driver knows
+  about all the compilers, and depending on its command line settings
+  it preprocesses the file, hands it over to one of the compilers, and
+  assembles and links its output.
+
+\item[$\bullet$] The compilers themselves have three layers each: a
+  front end, where the language specific logic is located, platform
+  independent middle end, and platform dependent back end.
+
+\item[$\bullet$] The language that is used to represent programs in
+  middle end, and that front end emits, is called GENERIC.  GENERIC is
+  C-like tree language.  Apart from predefined node types, front end
+  can register its own node types and use them at will.  Subset of
+  GENERIC, used for optimizations, is called GIMPLE, and the process
+  of lowering GENERIC to GIMPLE a gimplification.  You have to provide
+  gimplifying routines for your front end's own tree nodes.
+
+\item[$\bullet$] While it is possible to use GENERIC as an AST
+  representation, it is advisable to use rather as a target language,
+  and craft AST to suit your front end's needs.
+
+\end{enumerate}
+
+
+% ====================================================================
 
 \chapter[Hello World]{Hello, World!}
+\label{HalloWorld}
 
 What's Make-lang.in, config-lang.in, lang-specs.h, algol60.texi.
 
@@ -397,6 +587,7 @@ See this:
 \url{http://vmlinux.org/joachim/mirror/www.objsw.com/CrossGCC/FAQ-12.html}.
 
 \section{Runtime Libraries}
+\label{RuntimeLibraries}
 
 Languages usually need a support beyond mere syntactic and semantic
 actions.  This includes input and output routines, some cunning
