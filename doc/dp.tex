@@ -295,9 +295,9 @@ process of lowering is thus inevitably called \term{gimplification}.
 GIMPLE is a subset of GENERIC.  Nesting structures are still
 represented as containers in GIMPLE, but all expressions are broken
 down to three address code, using temporaries to store intermediate
-results.  There are actually two GIMPLE forms: high GIMPLE and low
+results\cite{GDS:2003:Merill}.  There are actually two GIMPLE forms: high GIMPLE and low
 GIMPLE.  In low GIMPLE containers are further transformed into
-\literal{goto}s and labels.
+\literal{goto}s and labels\cite{LDS:2006:Novillo}.
 
 Apart from pre-defined nodes, GCC provides a mechanism to define your
 own GENERIC node types.  Of course it wouldn't know how to gimplify
@@ -305,9 +305,6 @@ them, and a langhook is necessary for this purpose.  C and C++
 front ends actually don't use GENERIC for their AST representation, but
 extend it with their own node types, and then provide means of
 gimplification.
-
-(Citations from \cite{GDS:2003:Merill} and \cite{LDS:2006:Novillo}
-were used thorough this section.)
 
 \section{Fronted ASTs}
 
@@ -365,6 +362,7 @@ If you can afford depending on GCC, i.e. you don't want your front end
 to be completely independent, you can use data types and routines from
 a \file{gcc/libiberty/} library.
 
+
 \section{Summary}
 
 In this chapter, I covered overall structure of GCC, as well as some
@@ -402,6 +400,248 @@ internal details that will be useful later.  Let's recap.
 \chapter[Hello World]{Hello, World!}
 \label{HalloWorld}
 
+In this section, we will create minimal GCC frontend.  The criteria
+are very simple: the frontend has to be recognized and compiled by
+GCC, and when launched, it has to provide deterministic results.  Note
+that we don't require the results to depend in any way on the source
+file being compiled.  To cut the teeth, we will create a frontend,
+whose only purpose is producing the code equivalent to the following C
+code:
+
+\program{
+\ind\keyw{int} main (\keyw{void}) \{\\
+\ind\ind\keyw{return} 7;\\
+\ind\}}
+
+The return value of ``7'' is picked arbitrarily.  I used to have ``4''
+in its place, but found out that GCC uses 4 as a return value when it
+fails, and thus it's less clear when the GCC fails, and when it
+succeeds and the binary answers 4.
+
+The prerequisity here is that you already know how to build GCC for
+your system.  There is no chance experimenting with frontends if you
+never built GCC yourself.  I expect you will not do cross-compiling.
+This thesis covers cross-compilation issues, see section
+\ref{CrossCompilationIssues} for further info. \\ \NWY
+
+Besides reading this chapter, you can find inspiring some other
+minimal frontends.  I created a ``Hallo World'' frontend as part of
+work on \literal{gcc-algol}
+\footnote{\url{http://projects.almad.net/gcc-algol/browser/trunk/gcc/algol60?rev=58}}.
+Surprisingly enough, real ``GCC Hallo World''
+exists\footnote{\url{http://svn.gna.org/viewcvs/gsc/branches/hello-world/}},
+as was brought to my attention later.  The last option is looking at
+GCC's Treelang frontend; while it's not minimal frontend, it is
+minimal frontend that is potentially useful as a user tool.
+
+While I will describe how to setup the source base for yourself, the
+easiest approach is just to take other front end's files and suit them
+to your needs.
+
+In the sections that follow, I describe various files that compose the
+minimal GCC front end.  It's best to browse corresponding files
+alongside the commentary, to keep yourself at sync.
+
+
+\iffalse
+\section{GCC Computation Model}
+
+Before we proceed to concrete files, few words have to be written
+about the way GCC handles its state.
+
+GCC is an old system, started in 1987 (give or take).  The era of its
+origin is evident.  Langhooks are one example: they are just global
+functions, and there is no way to pass any custom data to them.  All
+variables used to be global in GNU C Compiler, there was no need for
+user callback data.  Nothing changed as far as GNU Compiler Collection
+is concerned.
+
+Integrating a program written by today's standards can be cumbersome,
+because a lot of cleanliness and separation has to go away.  In theory
+this could lead to some real problems, but because there is ever only
+one state of the compiler in memory, this should be very rare.
+
+An example that I have in mind right now is a family of callbacks
+\literal{global\_bindings\_p}, \literal{insert\_block},
+\literal{pushdecl} and friends.  E.g. \literal{global\_bindings\_p} is a
+nullary predicate.  In \Algol 60 code, in generic library, I pass
+around a state block when doing recursive descend through the AST.  It
+is pretty obvious to use that feature to pass aroung compilation state
+of the frontend.  And then there is a nullary callback that asks me
+whether I'm at the global binding level.  How am I supposed to know?
+Only by having the state block global, in which case I don't have to
+pass it around...
+
+Right now I still have the langhooks blinded out (see
+\ref{uberlang1.c}), and chances are I won't need them after all.  But
+the GCC documentation is pretty clear on under which circumstances are
+these hooks called, and no doubt I will need them eventually.  Be
+prepared to break few cathedrals before you dive into GCC, because
+it's muddy bazaar all the way \cite{1999:Raymond}.
+\fi
+
+\section{Agenda}
+
+You need the following.
+
+\begin{enumerate}
+\item To setup GCC source base and build process.
+\end{enumerate}
+
+\section{Setting Up Source Base}
+
+Each frontend lives in a subdirectory of its own.  Decide on the name
+of your fronted and create a subdirectory in \file{gcc/gcc/}.  For
+sake of demonstration, I will use the name \literal{uberlang}.
+
+\begin{verbatim}
+# cd gcc/gcc/
+# mkdir uberlang
+\end{verbatim}
+
+Then you will have to populate the frontend directory with source
+files.
+
+\section{lang-specs.h}
+
+\section{lang.opt}
+
+\section{uberlang1.c}
+\label{uberlang1.c}
+
+While it is possible to use other languages than C to write GCC
+frontend, most of GCC is written in C.  There are exceptions,
+e.g. Java frontend is written in C++, and Ada frontend is written in
+Ada.  I will give a glimpse of issues that arise from using non-C
+language, in section \ref{BootstrappingIssues}.  For now, I'll assume
+that you want to start up with simple C source base. \\ \NWY
+
+The file \file{uberlang1.c} will make up the compiler itself, or the
+front-end-specific part thereof.  It has to contain all the necessary
+langhooks, init functions, and data structures that the rest of the
+compiler expect from your front end.  Most of them don't have to be
+filled in with sensible code however, because they won't be called in
+the minimal frontend anyway.  The ones that contain sensible code will
+be covered in following text, the rest will be laid off until later.
+
+\subsection{Langhooks}
+
+The list of all various langhooks is long.  You can find it in file
+\file{gcc/gcc/langhooks.h} together with comments.  Default value of
+each langhook is in \file{gcc/gcc/langhooks-def.h}.  Both files have
+to be \literal{\#included} in \file{uberlang1.c}.  If you are not
+comfortable with value (i.e. name) of any given hook, the following
+mantra is used to redefine it:
+
+\program{
+\keyw{\#undef} LANG\_HOOKS\_INIT\\
+\keyw{\#define} LANG\_HOOKS\_INIT algol60\_init\\
+}
+
+Many hooks are predefined in GCC.  The file \file{gcc/gcc/langhooks.c}
+contains these definitions.  Any langhooks not defined there have to
+be provided by the frontend---even if that will be blind definition
+from the beginning:
+
+\program{
+\ind\keyw{void} insert\_block (\keyw{tree} block ATTRIBUTE\_UNUSED) \{\\
+\ind\ind{}gcc\_unreachable ();\\
+\ind\}}
+
+Function \literal{gcc\_unreachable} aborts the compiler if it is ever
+hit by a thread of execution.  If that happens, error message is
+printed out denoting the file and line where the offending
+\literal{gcc\_unreachable} appeared.
+
+The \literal{ATTRIBUTE\_UNUSED} cookie tells GCC that given variable
+may be unused in the function body.  GCC has a very pedantic flag
+settings during bootstrapping, and huge amounts of warnings are
+printed out for various legal, yet suspicious C constructs.  The
+\literal{ATTRIBUTE\_} cookies work as GCC pacifiers, so that you are
+actually able to spot any new warnings.
+
+Minimal frontend need the following blinded-out langhooks.  Notes on
+some of them are in chapter \ref{TargetingGCC}, but for most of them,
+the description in \file{gcc/gcc/langhooks.h} is sufficient.
+
+\program{
+\keyw{static} \keyw{int} global\_bindings\_p (\keyw{void});\\
+\keyw{static} \keyw{tree} pushdecl (\keyw{tree} decl);\\
+\keyw{static} \keyw{tree} builtin\_function (\=\keyw{const} \keyw{char} * name, \keyw{tree} type, \keyw{int} function\_code,\\
+					    \>\keyw{enum} built\_in\_class class, \keyw{const} \keyw{char} * library\_name, \keyw{tree} attrs);\\
+\keyw{static} \keyw{tree} algol60\_type\_for\_size (\keyw{unsigned} precision, \keyw{int} unsignedp);\\
+\keyw{static} \keyw{tree} algol60\_signed\_type (\keyw{tree} type\_node);\\
+\keyw{tree} convert (\keyw{tree} type, \keyw{tree} expr);\\
+\keyw{static} \keyw{bool} algol60\_mark\_addressable (\keyw{tree} exp);\\
+\keyw{static} \keyw{tree} algol60\_unsigned\_type (\keyw{tree} type\_node);\\
+\keyw{static} \keyw{tree} algol60\_signed\_or\_unsigned\_type (\keyw{int} unsignedp, \keyw{tree} type);\\
+\keyw{static} \keyw{tree} algol60\_type\_for\_mode (\keyw{enum} machine\_mode mode, \keyw{int} unsignedp);\\
+}
+
+All hooks with \literal{algol60\_} prefix require redefinition of the
+default value via \literal{\#undef} mantra.
+
+\subsection{Useful Langhooks}
+
+Before the actual parsing, the following calls are done into your
+front end \cite{LJ:2005:Tromey}:
+
+\begin{itemize}
+
+\item[$\bullet$] init\_options: the first call made to your front end,
+  before any option processing is done.
+
+\item[$\bullet$] handle\_option: called to handle a single command-line
+  option.
+
+\item[$\bullet$] post\_options: called after all command-line
+  processing has been done.  This lang hook also is a convenient place
+  to determine the name of the input file to parse.
+
+\item[$\bullet$] init: called after post\_options to initialize your
+  front end.
+
+\item[$\bullet$] finish: called after all compilation is done. You can
+  use this to clean up after your front end, if necessary.
+
+\item[$\bullet$] parse\_file: a lang hook that does all the parsing,
+  semantic analysis and code generation needed for the input file. It
+  does all the actual work of compilation.  This is where our
+  \literal{\keyw{return} 7;} code resides.
+
+\end{itemize}
+
+Most of GCC is self-initializing, but there are several functions that
+need to be called.  Quite possibly your frontend requires some
+initializations of its own, e.g. building its own tree nodes for
+language standard types.  Init hook is a convenient place to do so.
+
+During initialization you want to call the following functions:
+
+\begin{itemize}
+\item[$\bullet$] \literal{build\_common\_tree\_nodes}, which creates
+  nodes for all integer types.
+
+\item[$\bullet$] \literal{set\_sizetype}, which is used to set the
+  type of the internal equivalent of \literal{\keyw{size\_t}}; it is
+  simplest to set this always to \literal{long\_unsigned\_type\_node},
+  which was created in previous call.
+
+\item[$\bullet$] \literal{build\_common\_tree\_nodes\_2} uses size
+  type to create few more tree types.
+\end{itemize}
+
+
+\section{Make-lang.in}
+
+This file will end up as a fragment of toplevel \file{Makefile.in}.
+Eventually, \file{configure} will create \file{Makefile} from that
+file.
+
+As a typical \file{Makefile}, \file{Make-lang.in} describes how to
+build your frontend.  
+
+
 What's Make-lang.in, config-lang.in, lang-specs.h, algol60.texi.
 
 Compilation process: why language subdirectory, what happens with
@@ -414,10 +654,6 @@ real	162m16.769s
 user	116m27.430s
 sys	2m49.900s
 i.e. almost three hours
-
-
-
-
 
 \section{Other section}
 
@@ -435,9 +671,89 @@ where available.
 GCC uses garbage collector.  Describe GCC poisoning.  Probably go
 through some GC codes, if apropriate.
 
+\section{Versioning Issues}
+
+Now that you have the minimal front end ready, let's take on another
+issue: how to separate GCC versioning from versioning of your
+frontend.  I will describe the approach that I'm taking.  Toplevel
+\file{trunk/} directory (I'm using subversion, but of course, you are
+free to keep your stuff versioned to your likings) contains the
+following subdirectories:
+
+\begin{verbatim}
+trunk/doc/
+trunk/gcc/
+trunk/gcc/libga60/
+trunk/gcc/gcc/
+trunk/gcc/gcc/algol60/
+trunk/gcc/gcc/testsuite/
+trunk/gcc/gcc/testsuite/lib/
+trunk/gcc/gcc/testsuite/algol60.dg/
+\end{verbatim}
+
+More will be written about the \file{trunk/gcc/libga60/} and
+\file{trunk/gcc/gcc/testsuite/} in their respective sections,
+\ref{RuntimeLibraries} and \ref{TestSuite}. For now, you can skip
+their description, if you so wish. \\ \NWY
+
+The toplevel split to \file{trunk/doc/} and \file{trunk/gcc/} is here
+to keep my diploma thesis stuff separated from the GCC development
+part.  This may come in handy in your case, too, if you want to keep
+the GCC subtree clean, and store e.g. documentation, scripts, etc.
+separately.
+
+The subtree rooted at \file{trunk/gcc/} mimics GCC's distribution
+subtree (e.g. \file{gcc-4.2.0/}).  This is advantageous for two
+reasons.  First, you can just tar and zip the gcc subdirectory (no
+including toplevel \file{gcc/} itself, i.e. after unpacking, the two
+directories \file{gcc/} and \file{libga60/} will appear), and
+distribution package is ready.  User will just enter the GCC's
+distribution directory, upack your frontend here, do necessary
+patching (if necessary), and GCC tree is ready to build your frontend.
+Second, it keeps the things tidy.
+
+When the tree is in the right shape, I just symlink the files from GCC
+tree into my frontend tree.  This is only possible on systems that
+support symlinks, but with GCC being unixy compiler, it is reasonable
+requirement.  In several cases, symlinking works as intended even on
+directory level:
+
+\begin{verbatim}
+gcc/gcc/algol60
+  -> ../gcc-algol/trunk/gcc/gcc/algol60
+gcc/gcc/testsuite/algol60.dg
+  -> ../gcc-algol/trunk/gcc/gcc/testsuite/algol60.dg
+\end{verbatim}
+
+But for test suite, you will have to add two files into subdirectory
+\file{gcc/gcc/testsuite/lib/}, and you have to symlink those two files
+explicitly:
+
+\begin{verbatim}
+gcc/gcc/testsuite/lib/algol60-dg.exp
+  -> ../gcc-algol/trunk/gcc/gcc/testsuite/lib/algol60-dg.exp
+gcc/gcc/testsuite/lib/algol60.exp
+  -> ../gcc-algol/trunk/gcc/gcc/testsuite/lib/algol60.exp
+\end{verbatim}
+
+The directory that really causes trouble is \file{gcc/libga60/}, a
+runtime library subdirectory.  Build scripts will use the path in
+relative manner: \file{gcc/libga60/../}.  This doesn't work with
+symlinks, because the \file{../} component will point to the target
+directory's \file{../}, not back to \file{gcc/} as want it to.  For
+this reason I had to create \file{gcc/libga60/} as an ordinary
+directory, and symlink there all the files from frontend's
+\file{gcc/libga60/}.  You will have to either take care and symlink
+back by hand when someone adds new files into version system, or store
+all source files in subdirectory e.g. \file{gcc/libga60/src/}, symlink
+that, and only keep in \file{gcc/libga60/} the build machinery files
+that need to be there.
+
+
 %=====================================================================%
 
 \chapter{Targeting GCC}
+\label{TargetingGCC}
 
 This chapter should describe how to generate GCC intermediate language
 called GENERIC.  Also use hooks if possible.
@@ -736,6 +1052,7 @@ Fortran fronted is about to take.
 
 
 \section{Testsuite}
+\label{TestSuite}
 
 What's dejagnu testsuite, how to write tests, how to integrate them
 into GCC testsuite.  You need acurate error reporting to use the
@@ -784,6 +1101,25 @@ If the time permits, elaborate on how to use Open MP in frontend.
 Look into \cite{GDS:2006:Novillo}.
 
 %=====================================================================%
+
+
+\chapter{Advanced Topics}
+
+\section{Cross-compilation Issues}
+\label{CrossCompilationIssues}
+
+Elaborate on build-host-target trichotomy.  Assure ga60 is
+cross-compilation capable and describe what problems there were.
+
+\section{Bootstrapping Issues}
+\label{BootstrappingIssues}
+
+How to write a library and/or frontend in a language whose compiler is
+built as part of gcc, but not in the language itself.  How to write a
+library and/or frontend in a language itself.
+
+%=====================================================================%
+
 
 \chapter{Conclusions}
 

@@ -1,10 +1,10 @@
 all: RRA60.pdf PIOCA60.pdf dp.pdf
 
 dp.pdf : dp.tex dp.bib fitprj.cls Makefile
-	pdfcslatex dp.tex
+	pdflatex dp.tex
 	bibtex dp
-	pdfcslatex dp.tex
-	pdfcslatex dp.tex
+	pdflatex dp.tex
+	pdflatex dp.tex
 
 show-dp: dp.pdf
 	xpdf dp.pdf
