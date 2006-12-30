@@ -20,18 +20,26 @@
 \setyear{2007}
 \author{Bc. Petr Machata}
 \title{Construction of GNU Compiler Collection Front End}
+
+\newif\iffinal\finalfalse
+\newif\ifnfinal\iffinal\nfinalfalse\else\nfinaltrue\fi
+
+\iffinal
+\FITproject{DP}
+\else
 \FITproject{SP}
+\fi
 
 \def\Algol{{\sc Algol}\space}
 
 \edeclaration{ I hereby declare that this work has been created by me,
-  under the supervision of Milo¹ Eysselt, and under technical lead of
-  Luká¹ Szemla.  All information resources that I have used are
-  properly cited.  }
+  under the supervision of Ing. Milo¹ Eysselt, CSc., and under
+  technical lead of Ing. Luká¹ Szemla.  All information resources that
+  I have used are properly cited.  }
 
 \acknowledgements{ I owe thanks for patience and advices to the
-  thesis' technical adviser, Luká¹ Szemla, who was bombarded by my
-  status reports monthly; and Professor Jan van Katwijk of Delft
+  thesis' technical adviser, Ing. Luká¹ Szemla, who was bombarded by
+  my status reports monthly; and Professor Jan van Katwijk of Delft
   University of Technology, for advices regarding odds and ends of
   \Algol 60. }
 
@@ -83,16 +91,87 @@
 
 \chapter{Introduction}
 
-Describe what this thesis is about, summarize chapters, provide
-insight to how to read it.
+\ifnfinal \note{This thesis is work in progress.  You will see
+dangling references to the chapters that are in plan, but were not
+finished yet.  Sorry for any inconvenience.}  \fi
 
-In this work, I will refer to myself as ``me'', and a reader as
-``you''.
+The grok of GCC is comprised of a very vast array of assorted
+information bits.  There is no chance one person could achieve it in
+course of one academic year.  In fact, software products with a
+complexity similar to GCC usually surround themselves with a shroud of
+mystery, and recognizing the behavior as designed from mere
+coincidence or a bug becomes a difficult task.  Writing for GCC, as
+simple as it became, is still an adventure, in both senses of the
+word.
 
+In this work, albeit inevitably incomplete given what was just
+written, I strive to give the implementor a sort of kick start on
+writing new language support for GCC.  It is by no means a reference
+work, but it's useful ``how to'', that gives at least a glimpse of all
+what there is to writing GCC front ends.
+
+\iffalse
+Of course, language support neither starts, nor ends with GCC being
+capable of compilation from that language.  We live in a world of IDEs
+and smart editors, and a language without decent support e.g. in
+Eclipse, or at least with Emacs or Vim modes available, effectively
+halves its usefulness.  Programs written in new language need to be
+debugged, and unless the language is very C-like, a debugger has to be
+expanded.  And last, but probably most importantly: language needs
+runtime library, and it is convenient if that runtime library is built
+during GCC build, and linked in automatically.  This last point is
+covered in this thesis, the others are not.
+\else
+There is more to language support than compilation of code into
+assembly.  This thesis also contains several chapters on
+preprocessing, emitting debuginfo, supporting inline assembly, or
+integrating runtime library.
+\fi
+
+This work is only partially designed to be read sequentially.  It's
+more of a catalogized collection of how-to themes.
+
+The first two chapters (not including this) are basically sequential:
+some arguments for GCC are presented in chapter \ref{WhyGCCWhyNow},
+and an overview of GCC architecture is provided in chapter
+\ref{GCCArchitecture}.
+
+The chapter \ref{HalloWorld} is a tour through a minimal GCC front
+end.  Files are examined one at a time, and an explanation is provided
+on various constructs.  This chapter should be read before all the
+other chapters.
+
+The chapter \ref{TargetingGCC} describes GENERIC, a tree-based
+language that GCC uses to describe program structure.  You will want
+to read selected parts of this chapter, as you will implement various
+features of your language.
+
+The chapter \ref{GCCServices} collects various fetarues of GCC, that
+don't directly relate to the translation of the source language.
+These include command line options processing
+(\ref{CommandlineOptions}), emitting diagnostic messages
+(\ref{Diagnostics}), integration of language runtime library
+(\ref{RuntimeLibraries}), integration of test suite (\ref{TestSuite}),
+and emitting debug information (\ref{Debuginfo}).
+
+The chapter \ref{LanguageExtenstions} is again relevant to the
+language itself: it describes various GCC extensions that are of use
+for language compiled in GNU toolchain.  This includes sections on
+attributes (\ref{Attributes}), preprocessing (\ref{Preprocessing}),
+inline assembly (\ref{InlineAssembly}), and OpenMP (\ref{OpenMP}).
+
+The last chapter (\ref{AdvancedTopics}) covers few advanced topics:
+how to prepare your front end for crosscompilation
+(\ref{CrossCompilationIssues}) and how to write front end and/or
+runtime library in the compiled language itself
+(\ref{BootstrappingIssues}).
+
+Enjoy.
 
 % ====================================================================
 
 \chapter{Why GCC, Why Now}
+\label{WhyGCCWhyNow}
 
 When facing a~task of engineering a processor
 \footnote{In a general sense of a tool that allows direct or indirect
@@ -175,13 +254,14 @@ programming.
 
 \section{What's Ahead}
 
-I have written an \Algol 60 \cite{TR:ALGOL60} front end for
-GCC\footnote{\url{http://projects.almad.net/gcc-algol}} to get myself
-familiar with the platform.  I was expecting days\footnote{Or rather
-  nights. With lots of tea.} spent in GCC's internals, digging in code
-knee deep.  Much to my surprise, no such thing happened.  I had my
-share of cursing, but overall I was pleasantly surprised.  I doubt
-going via C would make the work significantly easier.
+I have written an \Algol 60 \cite{TR:ALGOL60} front end for GCC
+\footnote{\url{http://projects.almad.net/gcc-algol}}
+to get myself familiar with the platform.  I was expecting
+days\footnote{Or rather nights. With lots of tea.} spent in GCC's
+internals, digging in code knee deep.  Much to my surprise, no such
+thing happened.  I had my share of cursing, but overall I was
+pleasantly surprised.  I doubt going via C would make the work
+significantly easier.
 
 What's ahead is description of my experience with development of
 \Algol 60 front end.  It's a mix of things from GCC Internals
@@ -194,6 +274,7 @@ delivered as a continuous, and hopefully coherent text.
 % ====================================================================
 
 \chapter{GCC Architecture}
+\label{GCCArchitecture}
 
 GCC can translate from variety of source languages into variety of
 assemblers.  With one command, decorated with various flags, it's
@@ -477,7 +558,9 @@ This work is being written with development (as of Dec 2006) version
 of GCC in mind.  Given GCC Steering Commitee development
 plan\footnote{\url{http://gcc.gnu.org/develop.html}}, this target is
 expected to become official GCC-4.3 sometime arount the time
-final version of % @@@ remove in final thesis @@@
+\ifnfinal
+final version of
+\fi
 this work is commited.
 
 \subsection{Create Front End Directory}
@@ -1254,6 +1337,7 @@ processing:
 \end{enumerate}
 
 \section{Diagnostics}
+\label{Diagnostics}
 
 Employing GCC diagnostic messages.  Btw, you really want to do that,
 otherwise your buggy programs will be passed and a binary generated,
@@ -1423,6 +1507,7 @@ dejagnu GCC framework.  In fortran, they are doing transformations of
 error messages to format expected by the framework, describe that.
 
 \section{Debuginfo}
+\label{Debuginfo}
 
 How to add debuginfos to binaries that your frontend produces.  How to
 use gdb for your language.
@@ -1436,20 +1521,24 @@ This chapter describes various extensions that you might want to
 include to your language.  Not really GCC-only, but GCC supports them.
 
 \section{Attributes}
+\label{Attributes}
 
 Employing attributes.  How does frontend handle attributes, how does
 it define its own.
 
 \section{Preprocessing}
+\label{Preprocessing}
 
 Employing libcpp.  How to use preprocessor for your language.
 
 \section{Inline Assembly}
+\label{InlineAssembly}
 
 Employing assembly.  How to add GCC-compatible inline assembly into
 your language.
 
 \section{Open MP}
+\label{OpenMP}
 
 If the time permits, elaborate on how to use Open MP in frontend.
 Look into \cite{GDS:2006:Novillo}.
@@ -1458,6 +1547,7 @@ Look into \cite{GDS:2006:Novillo}.
 
 
 \chapter{Advanced Topics}
+\label{AdvancedTopics}
 
 \section{Cross-compilation Issues}
 \label{CrossCompilationIssues}
