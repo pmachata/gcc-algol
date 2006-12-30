@@ -70,7 +70,7 @@ for cross compilation.
 %ahilmorsxyz9};>
 %áèéìíïòóøùú¹ý»¾
 Vstupní bariéra pro vývoj uvnitø GCC se bìhem posledních let znatelnì
-sní¾ila.  Na konferencích, v~casopisech a~na webu se objevují èlánky
+sní¾ila.  Na konferencích, v~èasopisech a~na webu se objevují èlánky
 s~architektonickými pøehledy a~návody.  Vìci se nadále zjednodu¹ují
 pou¾itím oficiálního vnitøního jazyka GENERIC: pro komunikaci mezi
 pøední a~zadní èástí pøekladaèe ji¾ není nutné zabývat se obtí¾ným
@@ -1030,8 +1030,74 @@ serves as a fragment of \file{Makefile.in}, from which
 machinery does calls into front end-specific \file{Makefile}, and you
 have to implement certain targets.
 
-@@@ has to be written.
+This file has to contain many targets, exactly which ones is specified
+in \cite[section The Front End {\it language} Directory]{TR:GCCInt}.
+But like in case of C language hooks, most of these may be empty.  The
+only ones necessary to make whole thing tick are listed in figure
+\ref{Figure++MakeLangIn}.
 
+The compilation starts at the root component, named after your front
+end language.  It is then dispatched to build the two components that
+make up language support in GCC: language-specific driver, and the
+compiler proper.  The driver is called \file{gubl} in our case, like
+GCC Uberlang \footnote{A more customary meaning of this abbreviation
+would be GNU Uberlang.  But there are lots of restrictions for one's
+project to become part of GNU.}.  The compiler proper is called
+\file{uberlang1}, which is standard naming of compiler component in
+GCC.  The variables that this \file{Makefile} fragment uses, are
+inherited from parental \file{make} invocation.
+
+Note that the fragment actually doesn't present hooks, but Makefile
+rules.  Only the first rule in the list is actually a hook.  The first
+two rules, then, have not only the dependence list, but also a body.
+This doesn't hold for the other two rules, which only contain
+dependence list, and use mechanism of implicit rules to sort out the
+exact order of compilation.
+
+Because other hooks are empty, including \variable{uberlang.install-*}
+family, the minimal frontend won't be installable.  You will have to
+run it like this:
+
+\program{
+\# pwd\\
+/path/to/build/\\
+\# ./gcc/uberlang1 ./file.ubl \&$>$/dev/null \&\& cat ./file.s\\
+\ind\ind\=.file   1 "file.ubl"\\
+        \>.abicalls\\
+        \>.text\\
+{\it etc ...}\\
+}
+
+\begin{figure}
+\begin{verbatim}
+# General hook
+uberlang: gubl$(exeext) uberlang1$(exeext)
+.PHONY: uberlang
+
+# Compiler proper
+uberlang1$(exeext): uberlang/uberlang1.o $(BACKEND) $(LIBSDEPS)
+        $(CC) $(ALL_CFLAGS) $(LDFLAGS) -lm -o $@ \
+          uberlang/uberlang1.o $(BACKEND) $(LIBS) attribs.o
+
+# Language-specific driver
+gubl$(exeext): gcc.o version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
+        $(LIBDEPS) uberlang/spec.o
+        $(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ uberlang/spec.o \
+          gcc.o version.o prefix.o intl.o $(EXTRA_GCC_OBJS) $(LIBS)
+
+# Compiler front end
+uberlang/uberlang1.o: uberlang/uberlang1.c $(CONFIG_H) $(SYSTEM_H) \
+        coretypes.h $(TM_H) toplev.h $(GGC_H) $(CGRAPH_H) \
+        $(TREE_DUMP_H) $(TREE_GIMPLE_H) $(LANGHOOKS_DEF_H) langhooks.h \
+          tree.def gt-uberlang-uberlang1.h gtype-uberlang.h
+
+# Language-specific driver component
+uberlang/spec.o: algol60/spec.c $(CONFIG_H) $(SYSTEM_H) \
+        coretypes.h diagnostic.h $(TREE_H) flags.h toplev.h langhooks.h $(TM_H)
+\end{verbatim}
+\caption{Program listing of Make-lang.in essentials}
+\label{Figure++MakeLangIn}
+\end{figure}
 
 
 \section{Integration of Existing Parser}
@@ -1493,8 +1559,10 @@ possible to express various inter-library dependencies to define exact
 conditions when your library should be built, as well as whether the
 library should be installed, bootstrapped, or checked.
 
+\iffinal
 @@@TODO if there is time, revisit this section and write some more
 about what and how can be defined.@@@
+\fi
 
 \subsection{Linking the Binaries With Runtime Library}
 
@@ -1527,7 +1595,10 @@ You may or may not want to depend on system libraries, such as
 handling your own runtime library, except that you don't have to build
 them.
 
-@TODO:maybe move to numerical support chapter:
+\iffinal
+@@@TODO:maybe move to numerical support chapter:
+\fi
+
 Since version 4.3.0, GCC uses \literal{libgmp} to do its constant
 folding, which means that the library will be available at compiler
 runtime.  Very often that means the library will also be available at
@@ -1613,20 +1684,30 @@ library and/or frontend in a language itself.
 
 \chapter{Conclusions}
 
-Conclusions: ``short, concise statements of the inferences that you
-have made because of your work. It helps to organize these as short
-numbered paragraphs, ordered from most to least important.''
+\begin{enumerate}
 
-Summary of Contributions: ``The Summary of Contributions will be much
-sought and carefully read by the examiners.  Here you list the
-contributions of new knowledge that your thesis makes. Of course, the
-thesis itself must substantiate any claims made here. There is often
-some overlap with the Conclusions, but that's okay. Concise numbered
-paragraphs are again best. Organize from most to least important.''
+\item A minimal frontend and its integration into GCC build system is
+described in this work.  All files that the frontend is comprised of
+are thoroughly examined, and pitfalls mentioned.  Several tips are
+provided on connecting such minimal frontend with preexisting language
+parser, and on versioning GCC component apart from GCC itself.
 
-Future Research: How feasible would be to have a frontend, that just
-hands all the calls to dynamically loaded external parser?  This would
-allow for out-of-tree builds, wouldn't it?
+%more items to come in final thesis
+
+\end{enumerate}
+
+\section{The Summary of Contributions}
+
+This thesis is synthetic in nature.  Information were taken from
+various sources, be it other work of documentation, spoken word, a
+question over an email, or source code.  This very synthesis is sole
+contribution of the author: no other work exists, that would provide
+the detailed and continuous explanation on the topic.
+
+\section{Future Research}
+
+\NWY
+
 
 \bibliographystyle{plain}
 \bibliography{dp}
