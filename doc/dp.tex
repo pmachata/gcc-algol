@@ -44,11 +44,48 @@
   \Algol 60. }
 
 
-\fitabstract{The Abstract}
+\fitabstract{
+The entry barrier to the development for GCC got considerably lower
+during the last years.  Articles with various architectural overviews
+and how-to documents pop up in magazines, websites, and conferences.
+With official intermediate language, GENERIC, used for communication
+between front end and the rest of the compiler, things are yet easier:
+it's no more necessary to bear the tedium of RTL when one writes new
+front end.
+
+Yet there is a complexity inherent in handling a source base the size
+of GCC.  There are files to be written, peculiar options to be set up,
+and this all with relatively thin documentation.
+
+This work is written to help with this last point.  An example front
+end is described, with everything from the source base setup, through
+various GENERIC constructs, up to the issues of employing in-line
+assembly, using GCC native preprocessor, or preparing the front end
+for cross compilation.
+}
 
 \keywords{GCC, GNU Compiler Collection, frontend, front end, Algol 60, compiler}
 
-\fitabstractCZ{Abstrakt}
+\fitabstractCZ{
+%ahilmorsxyz9};>
+%áèéìíïòóøùú¹ý»¾
+Vstupní bariéra pro vývoj uvnitø GCC se bìhem posledních let znatelnì
+sní¾ila.  Na konferencích, v~casopisech a~na webu se objevují èlánky
+s~architektonickými pøehledy a~návody.  Vìci se nadále zjednodu¹ují
+pou¾itím oficiálního vnitøního jazyka GENERIC: pro komunikaci mezi
+pøední a~zadní èástí pøekladaèe ji¾ není nutné zabývat se obtí¾ným
+a~nepøehledným RTL.
+
+Pøesto je práce se souborem zdrojových kódù velikosti GCC nutnì
+slo¾itá.  Je tøeba napsat urèité soubory a provést urèitá nastavení,
+oboje jen s pomìrnì malým mno¾stvím dokumentace.
+
+Cílem této práce je pomoci s posledním zmínìným bodem.  Práce popisuje
+ukázkovou pøední èást: v¹e od vytvoøení zdrojových souborù, pøes rùzné
+konstrukce jazyka GENERIC, a¾ k problémùm se zapojením assembleru,
+pou¾ívání nativního preprocesoru, nebo pøípravì pøední èásti pro
+kroskompilaci.
+}
 
 \keywordsCZ{GCC, GNU Compiler Collection, pøední èást, Algol 60, kompilátor}
 
@@ -1156,6 +1193,7 @@ that need to be there.
 
 %=====================================================================%
 
+\iffinal
 \chapter{Targeting GCC}
 \label{TargetingGCC}
 
@@ -1245,6 +1283,7 @@ What are custom GENERIC codes, how to declare them, how to handle
 them, what's gimplification, how to gimplify them.
 
 Look into \cite{GDS:2005:Dvorak}.  Maybe find better source.
+\fi
 
 %=====================================================================%
 
@@ -1336,6 +1375,7 @@ processing:
   convenient place to determine the name of the input file to parse.
 \end{enumerate}
 
+\iffinal
 \section{Diagnostics}
 \label{Diagnostics}
 
@@ -1350,6 +1390,7 @@ before pp\_base\_format.  Describe that.
 
 See this:
 \url{http://vmlinux.org/joachim/mirror/www.objsw.com/CrossGCC/FAQ-12.html}.
+\fi
 
 \section{Runtime Libraries}
 \label{RuntimeLibraries}
@@ -1497,7 +1538,7 @@ library many numerical algorithms that would otherwise have to be
 handrolled or cut'n'pasted.  As far as I know, this is the approach
 Fortran fronted is about to take.
 
-
+\iffinal
 \section{Testsuite}
 \label{TestSuite}
 
@@ -1511,9 +1552,11 @@ error messages to format expected by the framework, describe that.
 
 How to add debuginfos to binaries that your frontend produces.  How to
 use gdb for your language.
+\fi
 
 %=====================================================================%
 
+\iffinal
 \chapter{GCC-Specific Language Extensions}
 \label{LanguageExtenstions}
 
@@ -1542,10 +1585,12 @@ your language.
 
 If the time permits, elaborate on how to use Open MP in frontend.
 Look into \cite{GDS:2006:Novillo}.
+\fi
 
 %=====================================================================%
 
 
+\iffinal
 \chapter{Advanced Topics}
 \label{AdvancedTopics}
 
@@ -1561,6 +1606,7 @@ cross-compilation capable and describe what problems there were.
 How to write a library and/or frontend in a language whose compiler is
 built as part of gcc, but not in the language itself.  How to write a
 library and/or frontend in a language itself.
+\fi
 
 %=====================================================================%
 
@@ -1585,6 +1631,7 @@ allow for out-of-tree builds, wouldn't it?
 \bibliographystyle{plain}
 \bibliography{dp}
 
+\iffinal
 \chapter*{Appendix: Frontend-to-Middleend Interface}
 
 Describe all data structures that frontend touches.
@@ -1596,13 +1643,13 @@ document the interface of front ends to GCC"
 Installation, supported GCCs, usual stuff.
 
 
-
 \chapter{Notes}
 
 Functions need a return statements.  Look how it's done for noreturn
 functions.
 
 COND\_EXPR breaks when other value than 0 or 1 is used as condition.
+\fi
 
 
 \end{document}
