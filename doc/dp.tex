@@ -604,7 +604,7 @@ this work is commited.
 
 Each front end lives in a subdirectory of its own.  Decide on the name
 of your fronted and create a subdirectory in \file{gcc/gcc/}.  For
-sake of demonstration, I will use the name \literal{uberlang}.
+sake of demonstration, I will use the hypothetical language Überlang.
 
 \begin{verbatim}
 # cd gcc/gcc/
@@ -937,7 +937,7 @@ Meaning of other functions can be more or less deduced from their
 name, and the details are not important just now.
 
 
-\section{Language Specific Components of GCC Proper}
+\section{Language Specific Components of the Driver}
 \label{LanguageSpecificComponentsofGCCProper}
 
 \paragraph{The \file{lang-specs.h} file}
@@ -992,6 +992,10 @@ concert with \function{lang\_specific\_pre\_link}, and keeps track of
 the number of extra output files that
 \function{lang\_specific\_pre\_link} may generate.
 
+Note that this special processing is only done, if you run the
+compilation through the language-specific driver, e.g. \file{g++} for
+C++ or \file{gubl} for Überlang.
+
 
 \section{Build System Integration}
 \label{BuildSystemIntegration}
@@ -1011,8 +1015,10 @@ gtfiles={\it{}"\$(srcdir)/uberlang/uberlang1.c"}\\
 The variable \variable{language} defines the name of the front end as
 recognized by the build system.  This is really a name of the
 language, it doesn't have to match name of the front end subdirectory.
-Users will call this your language on \file{configure} command line
-when they'll wish to include it in GCC build.
+However the name will be used in makefile targets, and users will call
+this your language on \file{configure} command line when they'll wish
+to include it in GCC build, For this reason the name should be 7-bit
+ASCII clean.
 
 Variable \variable{compilers} contains list of all compilers created
 during the build.

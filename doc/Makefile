@@ -1,13 +1,22 @@
-all: RRA60.pdf PIOCA60.pdf dp.pdf
+FILES = RRA60.pdf PIOCA60.pdf dp.pdf demo-1.pdf
 
-dp.pdf : dp.tex dp.bib fitprj.cls Makefile
-	pdflatex dp.tex
-	bibtex dp
-	pdflatex dp.tex
-	pdflatex dp.tex
+all: $(FILES)
 
-show-dp: dp.pdf
-	xpdf dp.pdf
+%.pdf: %.tex
+	pdflatex $<
+	-bibtex $(<:.tex=) && pdflatex $<
+	pdflatex $<
+
+dp.pdf: dp.tex dp.bib fitprj.cls vut_fit.pdf Makefile
+
+demo-1.pdf: demo-1.tex Makefile
+
+RRA60.pdf: RRA60.tex Makefile
+
+PIOCA60.pdf: PIOCA60.tex Makefile
+
+show-%: %.pdf
+	xpdf $<
 
 clean:
-	-rm -f dp.aux  dp.bbl  dp.blg  dp.log  dp.out  dp.pdf  dp.toc
+	-rm -f *.aux  *.bbl  *.blg  *.log  *.out *.toc *.snm $(FILES)

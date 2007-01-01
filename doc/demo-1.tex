@@ -1,0 +1,58 @@
+\documentclass{beamer}
+\usetheme{default}
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\title[Construction of GNU Compiler Collection Front End]{Construction of GNU Compiler Collection\\Front End}
+
+\author[Petr Machata]{Petr Machata \\ \texttt{xmacha31@stud.fit.vutbr.cz}}
+\date{2007-01-03}
+
+\def\Algol{{\sc Algol}\space}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\frame
+{
+  \frametitle{About My Project}
+
+  \begin{itemize}
+  \item The goal: describe how to write GCC front ends
+  \item \Algol 60 for GCC
+  \item General usefulness: English, Open Source
+  \item Exploit GCC: inline assembly, attributes, ...
+  \end{itemize}
+}
+
+\frame
+{
+  \frametitle{GCC Architecture}
+
+  \begin{itemize}
+  \item Driver vs. Proper; lang-specific driver
+  \item Front end, Middle end, Back end; hooks
+  \item GENERIC, GIMPLE; C expressiveness; AST
+  \item Runtime library, testsuite, preprocessor
+  \item Garbage collector
+  \end{itemize}
+}
+
+\frame
+{
+  \frametitle{Summay of a Work}
+
+  \begin{itemize}
+  \item {\tt ga60} compiles simple programs
+  \item Implement functions
+  \item Cover bootstrapping; both library and frontend
+  \item Cover crosscompilation
+  \end{itemize}
+}
+
+\end{document}
+
+% Local Variables:
+% compile-command: "make show-demo-1"
+% End:
