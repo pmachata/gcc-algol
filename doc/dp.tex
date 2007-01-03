@@ -73,7 +73,7 @@ Vstupní bariéra pro vývoj uvnitø GCC se bìhem posledních let znatelnì
 sní¾ila.  Na konferencích, v~èasopisech a~na webu se objevují èlánky
 s~architektonickými pøehledy a~návody.  Vìci se nadále zjednodu¹ují
 pou¾itím oficiálního vnitøního jazyka GENERIC: pro komunikaci mezi
-pøední a~zadní èástí pøekladaèe ji¾ není nutné zabývat se obtí¾ným
+pøední èástí a~zbytkem pøekladaèe ji¾ není nutné zabývat se obtí¾ným
 a~nepøehledným RTL.
 
 Pøesto je práce se souborem zdrojových kódù velikosti GCC nutnì
@@ -325,7 +325,7 @@ overall GCC architecture.
 
 On the outermost level, GCC is divided into a \term{compilation
   driver}, and a \term{compiler proper}.  Besides this, GCC uses
-several host tool chain components, an assembler and linker.
+several host tool chain components, an assembler and a linker.
 
 Compilation driver is a user-interfacing application.  It knows about
 all languages that GCC supports.  Given a source file, it can guess
@@ -489,7 +489,7 @@ for its memory management.  The objects with indeterminable lifetime,
 which includes trees, are not managed explicitely, but instead
 garbage-collected.  The collector used is of mark \& sweep kind.
 Pointers (variables, fields, ...) that should be collected are
-explicitly marked, the marks are gathered during the build, and
+explicitly tagged, the tags are gathered during the build, and
 marking and scanning routines are generated.
 
 The garbage collector data are also used for implementation of
@@ -528,8 +528,8 @@ internal details that will be useful later.  Let's recap.
   and craft the AST to suit your front end's needs.
 
 \item GCC uses garbage collector.  Garbage collected
-  structures are marked, and memory scanners are generated based on
-  the marks during the build process.
+  structures are tagged, and memory scanners are generated based on
+  the tags during the build process.
 
 \end{itemize}
 
@@ -657,9 +657,9 @@ identifier definition:
 \ind{}\ind{}\keyw{struct} tree\_identifier common;\\
 \ind{}\};}
 
-This example shows also the \function{GTY(())} mark, necessary for
+This example shows also the \function{GTY(())} tag, necessary for
 proper garbage collection scanners to be generated.  Each structure
-has to have such a mark.
+has to have such a tag.
 
 As the last thing regarding the custom data, you have to provide
 definitions of \variable{tree\_code\_type},
@@ -682,7 +682,7 @@ preprocessing, with records neatly defined in columns of
 each time with different definition of \function{DEFTREECODE}, you
 fill the three arrays.
 
-The last member of array is marked with the class
+The last member of array has the class of
 \variable{tcc\_exceptional}, which serves here as a sentinel.  The
 name of the last node can be arbitrary, e.g. \literal{\it "@@dummy"},
 and the length will be \literal{0}.
@@ -1017,14 +1017,14 @@ recognized by the build system.  This is really a name of the
 language, it doesn't have to match name of the front end subdirectory.
 However the name will be used in makefile targets, and users will call
 this your language on \file{configure} command line when they'll wish
-to include it in GCC build, For this reason the name should be 7-bit
+to include it in GCC build. For this reason the name should be 7-bit
 ASCII clean.
 
 Variable \variable{compilers} contains list of all compilers created
 during the build.
 
 Very important variable \variable{gtfiles} contains the list of files
-that should be scanned for \function{GTY(())} marks.  Garbage
+that should be scanned for \function{GTY(())} tags.  Garbage
 collection scanners are built from these.
 
 More is written about this file, and which variables are recognized,
@@ -1046,8 +1046,8 @@ The compilation starts at the root component, named after your front
 end language.  It is then dispatched to build the two components that
 make up language support in GCC: language-specific driver, and the
 compiler proper.  The driver is called \file{gubl} in our case, like
-GCC Uberlang \footnote{A more customary meaning of this abbreviation
-would be GNU Uberlang.  But there are lots of restrictions for one's
+GCC Überlang \footnote{A more customary meaning of this abbreviation
+would be GNU Überlang.  But there are lots of restrictions for one's
 project to become part of GNU.}.  The compiler proper is called
 \file{uberlang1}, which is standard naming of compiler component in
 GCC.  The variables that this \file{Makefile} fragment uses, are
@@ -1130,7 +1130,7 @@ from one recursive make instance to the other.
 
 You may want to take advantage of certain GCC's services.  E.g. error
 reporting, integrated testsuite, building runtime library as part of
-overall build; or you may with to extend your language with various
+overall build; or you may wish to extend your language with various
 GCC-isms
 \footnote{Yes, I know this term is pejorative.  But this doesn't
 decrease usefullness of certain GCC-specific constructs.}, such as
@@ -1202,9 +1202,9 @@ directory level:
 
 \begin{verbatim}
 gcc/gcc/algol60
-  -> ../gcc-algol/trunk/gcc/gcc/algol60
+  -> /a/path/to/gcc-algol/trunk/gcc/gcc/algol60
 gcc/gcc/testsuite/algol60.dg
-  -> ../gcc-algol/trunk/gcc/gcc/testsuite/algol60.dg
+  -> /a/path/to/gcc-algol/trunk/gcc/gcc/testsuite/algol60.dg
 \end{verbatim}
 
 But for test suite, you will have to add two files into subdirectory
@@ -1213,9 +1213,9 @@ explicitly:
 
 \begin{verbatim}
 gcc/gcc/testsuite/lib/algol60-dg.exp
-  -> ../gcc-algol/trunk/gcc/gcc/testsuite/lib/algol60-dg.exp
+  -> /a/path/to/gcc-algol/trunk/gcc/gcc/testsuite/lib/algol60-dg.exp
 gcc/gcc/testsuite/lib/algol60.exp
-  -> ../gcc-algol/trunk/gcc/gcc/testsuite/lib/algol60.exp
+  -> /a/path/to/gcc-algol/trunk/gcc/gcc/testsuite/lib/algol60.exp
 \end{verbatim}
 
 The directory that really causes trouble is \file{gcc/libga60/}, a
@@ -1441,6 +1441,8 @@ processing:
   If it answers \literal{false}, default missing-argument complaint
   should be used.  \literal{true} means that you took care of the
   error message yourself.
+  This hook doesn't have to be defined, it's bound to
+  \literal{false}-returning empty function by default.
 
 \item \function{LANG\_HOOKS\_POST\_OPTIONS} is called after all
   command-line processing has been done.  This lang hook also is a
