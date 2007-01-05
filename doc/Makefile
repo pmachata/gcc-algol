@@ -7,16 +7,16 @@ all: $(FILES)
 	-bibtex $(<:.tex=) && pdflatex $<
 	pdflatex $<
 
-dp.pdf: dp.tex dp.bib fitprj.cls vut_fit.pdf Makefile
+dp.pdf: dp.tex dp.bib fitprj.cls vut_fit.pdf
 
-demo-1.pdf: demo-1.tex Makefile
+demo-1.pdf: demo-1.tex demo-gccarch.png
 
-RRA60.pdf: RRA60.tex Makefile
+RRA60.pdf: RRA60.tex
 
-PIOCA60.pdf: PIOCA60.tex Makefile
+PIOCA60.pdf: PIOCA60.tex
 
 show-%: %.pdf
 	xpdf $<
 
 clean:
-	-rm -f *.aux  *.bbl  *.blg  *.log  *.out *.toc *.snm $(FILES)
+	-rm -f *.aux  *.bbl  *.blg  *.log  *.out *.toc *.snm *.nav *.brf *~ $(FILES)
