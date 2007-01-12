@@ -258,8 +258,11 @@ desig_expr_resolve_symbols (desig_expr_t * self, container_t * context, logger_t
 
     case dek_switch:
       {
-	// @@@TODO
-	assert (!"NYI!");
+	self->eswitch.sym
+	  = container_find_name_rec_add_undefined (context, self->elbl.lbl,
+						   type_switch_any (),
+						   log, self->cursor);
+	expr_resolve_symbols (self->eswitch.index, context, log);
 	return;
       }
     }

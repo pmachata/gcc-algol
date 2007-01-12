@@ -6,6 +6,7 @@
 #include "type.h"
 #include "estring.h"
 #include "expression.h"
+#include "desig-expr.h"
 #include "statement.h"
 #include "logger.h"
 #include "slist.h"
@@ -34,6 +35,13 @@ typedef struct struct_t_proc_t
 }
 t_proc_t;
 
+typedef struct struct_t_switch_t
+{
+  /// Typed slist of designational expressions.
+  slist_t * switchlist;
+}
+t_switch_t;
+
 typedef enum enum_type_kind_t
 {
   tk_unknown,
@@ -44,6 +52,7 @@ typedef enum enum_type_kind_t
   tk_string,
   tk_bool,
   tk_label,
+  tk_switch,
   tk_array,
   tk_own,
   tk_proc
@@ -58,6 +67,7 @@ struct struct_type_t
     t_array_t t_array;
     t_own_t t_own;
     t_proc_t t_proc;
+    t_switch_t t_switch;
   };
 };
 
@@ -148,6 +158,17 @@ new_t_label (void)
   if (cache == NULL)
     cache = private_new_type (tk_label);
   return cache;
+}
+
+type_t *
+new_t_switch (slist_t * switchlist)
+{
+  assert (switchlist != NULL);
+
+  type_t * ret = private_new_type (tk_switch);
+  slist_set_type (switchlist, adapt_test, desig_expr);
+  ret->t_switch.switchlist = switchlist;
+  return ret;
 }
 
 type_t *
@@ -264,7 +285,7 @@ types_same (type_t const * lhs, type_t const * rhs)
       if (lhs->kind != rhs->kind)
 	return 0;
       // From now on, we know that lhs->kind == rhs->kind.  Further tests
-      // only check lhs->kind.
+      // only dispatch on lhs->kind.
 
       switch (lhs->kind)
 	{
@@ -276,6 +297,7 @@ types_same (type_t const * lhs, type_t const * rhs)
 	case tk_string:
 	case tk_bool:
 	case tk_label:
+	case tk_switch:
 	  return 1;
 
 	case tk_array:
@@ -358,6 +380,7 @@ expr_primitive_for_type (type_t const * self)
     case tk_any:
     case tk_void:
     case tk_label:
+    case tk_switch:
     case tk_array:
     case tk_own:
     case tk_proc:
@@ -467,6 +490,21 @@ private_array_resolve_symbols (type_t * tself, container_t * context, logger_t *
   delete_estring (tmp);
 }
 
+static void
+private_switch_resolve_symbols (type_t * tself, container_t * context, logger_t * log)
+{
+  slist_t * switchlist = tself->t_switch.switchlist;
+  slist_it_t * it = slist_iter (switchlist);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      desig_expr_t * de = slist_it_get (it);
+      // 5.3.5 Influence of Scopes: states that variables are bound at
+      // declaration site, not at use site.  We got lucky this time.
+      desig_expr_resolve_symbols (de, context, log);
+    }
+  delete_slist_it (it);
+}
+
 void
 type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
 {
@@ -485,6 +523,10 @@ type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
     case tk_bool:
     case tk_label:
       // nothing to do
+      return;
+
+    case tk_switch:
+      private_switch_resolve_symbols (self, context, log);
       return;
 
     case tk_array:
@@ -545,6 +587,28 @@ private_type_to_str (type_t const * self, estring_t * buf, int canon)
     case tk_void:       case tk_real:   case tk_string:
     case tk_bool:       case tk_label:
       assert (!"Should already be covered!");
+
+    case tk_switch:
+      {
+	estring_t * tmp = NULL;
+	estr_append_cstr (buf, "'switch'");
+	slist_t * switchlist = self->t_switch.switchlist;
+	if (!slist_empty (switchlist))
+	  {
+	    estr_push (buf, ' ');
+	    slist_it_t * it = slist_iter (switchlist);
+	    for (; slist_it_has (it); )
+	      {
+		desig_expr_t * de = slist_it_get (it);
+		tmp = desig_expr_to_str (de, tmp);
+		estr_append (buf, tmp);
+		slist_it_next (it);
+		if (slist_it_has (it))
+		  estr_append_cstr (buf, ", ");
+	      }
+	    delete_slist_it (it);
+	  }
+      }
 
     case tk_array:
       {
@@ -678,6 +742,15 @@ MEMOIZEPROC2(real, real, int)
 MEMOIZEPROC2(real, int, real)
 MEMOIZEPROC2(real, real, real)
 
+type_t *
+type_switch_any (void)
+{
+  static type_t * inst = NULL;
+  if (!inst)
+    inst = new_t_switch (new_slist ());
+  return inst;
+}
+
 #undef MEMOIZE
 #undef MEMOIZE2
 #undef MEMOIZEPROC1
@@ -698,6 +771,7 @@ void * type_real_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATT
 void * type_string_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * type_bool_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * type_label_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
+void * type_switch_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * type_array_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 void * type_proc_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 
@@ -713,6 +787,7 @@ void * symbol_decl_for_real (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIB
 void * symbol_decl_for_string (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
 void * symbol_decl_for_bool (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
 void * symbol_decl_for_label (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
+void * symbol_decl_for_switch (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
 void * symbol_decl_for_array (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
 void * symbol_decl_for_proc (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
 #endif
@@ -743,6 +818,8 @@ type_build_generic (type_t * self, void * data)
       return type_bool_build_generic (self, data);
     case tk_label:
       return type_label_build_generic (self, data);
+    case tk_switch:
+      return type_switch_build_generic (self, data);
     case tk_array:
       return type_array_build_generic (self, data);
     case tk_proc:
@@ -777,6 +854,8 @@ symbol_decl_for_type (type_t * t, symbol_t * sym, void * data)
       return symbol_decl_for_bool (sym, data);
     case tk_label:
       return symbol_decl_for_label (sym, data);
+    case tk_switch:
+      return symbol_decl_for_switch (sym, data);
     case tk_array:
       return symbol_decl_for_array (sym, data);
     case tk_proc:

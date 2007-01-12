@@ -1068,6 +1068,48 @@ symbol_decl_for_label (symbol_t * sym, void * data)
 }
 
 void *
+symbol_decl_for_switch (symbol_t * sym, void * data)
+{
+  // 'begin' 'comment' variable `x' comes from outer scope;
+  //   'integer' y;
+  //   'switch' r := a, b, c
+  //   'switch' s := d, r[x], c
+  //
+  //   y := x + 1;
+  //   'goto' s[y];
+  //
+  //   a: puts (`a');
+  //   b: puts (`b');
+  //   c: puts (`c');
+  //   d: puts (`d');
+  // 'end';
+  //
+  // Is translated like this:
+  //
+  // { /*variable `x' comes from outer scope*/
+  //   int y;
+  //   void * .sw.r[] = {&&a, &&b, &&c};
+  //   void * .sw.s[] = {&&d, &&.sw.s.2, &&c};
+  //   goto .stmt1;
+  //
+  //   .sw.s.2:
+  //   goto *.sw.r[x];
+  //
+  //   .stmt1:
+  //   y = x + 1;
+  //   goto *.sw.s[y];
+  //
+  //   a: puts ("a");
+  //   b: puts ("b");
+  //   c: puts ("c");
+  //   d: puts ("d");
+  // }
+
+  // @@@for now...
+  return private_decl_for_ordinary_symbol (sym, data);
+}
+
+void *
 symbol_decl_for_array (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
@@ -1176,6 +1218,14 @@ type_label_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			  void * data ATTRIBUTE_UNUSED)
 {
   gcc_unreachable ();
+}
+
+void *
+type_switch_build_generic (type_t * self ATTRIBUTE_UNUSED,
+			   void * data ATTRIBUTE_UNUSED)
+{
+  // @@@for now...
+  return build_pointer_type (void_type_node);
 }
 
 void *

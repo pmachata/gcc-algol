@@ -143,7 +143,7 @@ algol60/type.o: algol60/type.c algol60/type.h algol60/type.i\
 		algol60/symbol.i\
 		algol60/estring.h algol60/expression.h algol60/statement.h\
 		algol60/logger.h algol60/slist.h algol60/boundspair.h\
-		algol60/symbol.h\
+		algol60/symbol.h algol60/desig-expr.h\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/statement.o: algol60/statement.c algol60/statement.h algol60/statement.i\

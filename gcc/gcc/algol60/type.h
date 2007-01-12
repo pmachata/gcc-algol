@@ -25,6 +25,7 @@ type_t * type_real (void); ///< Memoized type.
 type_t * type_string (void); ///< Memoized type.
 type_t * type_bool (void); ///< Memoized type.
 type_t * type_label (void); ///< Memoized type.
+type_t * type_switch_any (void); ///< Memoized type for matching any switch.
 type_t * type_array_any (void); ///< Memoized type.
 type_t * type_proc_void_int (void); ///< Memoized type.
 type_t * type_proc_int_int (void); ///< Memoized type.
@@ -68,6 +69,16 @@ type_t  * new_t_bool (void)
 /// Create `label` type.
 type_t  * new_t_label (void)
   ATTRIBUTE_MALLOC;
+
+/// Create `switch` type.  The `switchlist` is a list of designational
+/// expressions of this given switch type.  It's not taken into
+/// account for types_same and types_match relations, it is merely
+/// additional information.  The slist will be imposed a type of
+/// `desig_expr` upon this call.  `switchlist` will NOT be cloned for
+/// purposes of storage inside t_switch privates.
+type_t  * new_t_switch (slist_t * switchlist)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1);
 
 /// Create `array of host` type.
 type_t  * new_t_array (type_t * host)
@@ -128,6 +139,8 @@ estring_t * type_to_str_canon (type_t const * self, estring_t * buf)
   ATTRIBUTE_NONNULL (1);
 
 /// Answers 1 or 0, depending on whether the two types are the same.
+/// Array bounds are not taken into account.
+/// Switchlist of switch type is not taken into account.
 int types_same (type_t const * lhs, type_t const * rhs)
   ATTRIBUTE_NONNULL (1)
   ATTRIBUTE_NONNULL (2);

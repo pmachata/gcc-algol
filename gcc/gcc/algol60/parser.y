@@ -66,6 +66,12 @@ static void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
 static void private_add_labels_to_symtab (parser_rep_t * parser, container_t * cont,
 					  slist_t * slist, statement_t * target);
 
+/// Create a new symbol called `lbl`, assign given type `qt`, and
+/// place the symbol into symbol table.  If there already is a symbol
+/// of such label, output an error message and give up.
+static void private_setup_and_add_symbol (parser_rep_t * parser, label_t * lbl,
+					  type_t * qt);
+
 static void private_open_block (parser_rep_t * parser, container_t * cont);
 static container_t * private_close_block (parser_rep_t * parser);
 %}
@@ -193,6 +199,7 @@ static container_t * private_close_block (parser_rep_t * parser);
 %type <type> OptIntrinsicType
 %type <type> IntrinsicType
 %type <lst> IdentifierList
+%type <lst> SwitchList
 %type <lst> OptBoundsPairList
 %type <lst> BoundsPairList
 %type <bnds> BoundsPair
@@ -382,18 +389,16 @@ BlockDeclarations:
 	  if (type_is_own ($1))
 	    qt = new_t_own (qt);
 
-	  // Setup symbol and add to table.
-	  symbol_t * sym = new_symbol (lbl);
-	  symbol_set_type (sym, qt);
-	  int conflict = container_add_symbol (parser->block, sym, sek_ordinary);
-	  if (conflict)
-	    {
-	      parser->tmp = label_to_str (symbol_label (sym), parser->tmp);
-	      log_printfc (parser->log, ll_error, label_cursor (lbl),
-			  "duplicate identifier `%s'.", estr_cstr (parser->tmp));
-	    }
+	  private_setup_and_add_symbol (parser, lbl, qt);
 	}
       delete_slist_it (it);
+    }
+  |
+  KWSWITCH Identifier SEPASSIGN SwitchList
+    {
+      log_printf (parser->log, ll_debug, "BlockDeclarations -> KWSWITCH Identifier SEPASSIGN SwitchList");
+      type_t * t = new_t_switch ($4);
+      private_setup_and_add_symbol (parser, $2, t);
     }
 
 Type:
@@ -505,6 +510,22 @@ IdentifierList:
 	}
 
       slist_pushfront ($1, $3);
+      $$ = $1;
+      @$ = @1;
+    }
+
+SwitchList:
+  DesignationalExpression
+    {
+      log_printf (parser->log, ll_debug, "SwitchList -> DesignationalExpression");
+      $$ = new_slist_from (1, $1);
+      @$ = @1;
+    }
+  |
+  SwitchList SEPCOMMA DesignationalExpression
+    {
+      log_printf (parser->log, ll_debug, "SwitchList -> SwitchList SEPCOMMA DesignationalExpression");
+      slist_pushback ($1, $3);
       $$ = $1;
       @$ = @1;
     }
@@ -1174,6 +1195,21 @@ private_add_labels_to_symtab (parser_rep_t * parser,
 	}
     }
   delete_slist_it (it);
+}
+
+static void
+private_setup_and_add_symbol (parser_rep_t * parser, label_t * lbl, type_t * qt)
+{
+  // Setup symbol and add to table.
+  symbol_t * sym = new_symbol (lbl);
+  symbol_set_type (sym, qt);
+  int conflict = container_add_symbol (parser->block, sym, sek_ordinary);
+  if (conflict)
+    {
+      parser->tmp = label_to_str (symbol_label (sym), parser->tmp);
+      log_printfc (parser->log, ll_error, label_cursor (lbl),
+		  "duplicate identifier `%s'.", estr_cstr (parser->tmp));
+    }
 }
 
 static void
