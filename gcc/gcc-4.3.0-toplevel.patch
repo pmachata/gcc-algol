@@ -5,13 +5,13 @@ Index: configure
 ===================================================================
 --- configure	(revision 118066)
 +++ configure	(working copy)
-@@ -916,4 +916,5 @@
+@@ -916,2 +916,3 @@
  target_libraries="target-libiberty \
 +		target-libga60 \
+ 		target-libgloss \
 Index: Makefile.def
 ===================================================================
 --- Makefile.def	(revision 118066)
 +++ Makefile.def	(working copy)
-@@ -115,1 +115,2 @@
- target_modules = { module= libgfortran; };
+@@ -100,0 +100,1 @@
 +target_modules = { module= libga60; };
