@@ -9,7 +9,7 @@ all: $(FILES)
 
 dp.pdf: dp.tex dp.bib fitprj.cls vut_fit.pdf
 
-demo-1.pdf: demo-1.tex demo-gccarch.png
+demo-1.pdf: demo-1.tex demo-gccarch.pdf
 
 RRA60.pdf: RRA60.tex
 
