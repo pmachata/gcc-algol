@@ -15,7 +15,6 @@
 #include "slist.i"
 #include "boundspair.i"
 #include "symbol.i"
-#include "ast-visitor.i"
 #include "visitor.i"
 #include "pd.h"
 

@@ -75,7 +75,7 @@ global_bindings_p (void)
 void
 insert_block (tree block ATTRIBUTE_UNUSED)
 {
-  fprintf (stderr, "insert_block\n");
+  gcc_unreachable ();
   /*
   TREE_USED (block) = 1;
   current_binding_level->blocks
