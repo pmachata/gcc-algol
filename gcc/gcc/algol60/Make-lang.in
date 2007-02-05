@@ -27,10 +27,10 @@ ALGOL60_EXES = ga60
 AL60L_OBJS = algol60/lexer-tab.o algol60/parser-tab.o \
 		algol60/util.o algol60/slist.o algol60/cursor.o \
 		algol60/logger.o algol60/estring.o \
+		algol60/meta.o algol60/visitor-impl.o \
 		algol60/boundspair.o algol60/label.o \
 		algol60/symbol.o algol60/type.o \
-		algol60/for-elmt.o \
-		algol60/desig-expr.o \
+		algol60/for-elmt.o algol60/desig-expr.o \
 		algol60/statement.o algol60/expression.o
 
 .PHONY: algol60
@@ -89,6 +89,9 @@ algol60/al60l-bind.o: algol60/al60l-bind.c algol60/al60l-bind.h \
 		algol60/slist.h algol60/estring.h algol60/boundspair.h\
 		algol60/label.h algol60/symbol.h algol60/type.h algol60/statement.h\
 		algol60/expression.h algol60/for-elmt.h algol60/for-elmt.i\
+		algol60/statement.i algol60/expression.i algol60/desig-expr.i\
+		algol60/type.i algol60/symbol.i\
+		algol60/visitor.h\
 		algol60/util.h algol60/meta.h $(ALGOL60_GTFILES) gtype-algol60.h algol60/gcc-stuff
 
 # AL60L side
@@ -114,6 +117,12 @@ algol60/logger.o: algol60/logger.c algol60/logger.h algol60/logger.i\
 algol60/estring.o: algol60/estring.c algol60/estring.h algol60/estring.i\
 		algol60/pd.h algol60/gcc-stuff
 
+algol60/meta.o: algol60/meta.c algol60/meta.h algol60/gcc-stuff
+
+algol60/visitor-impl.o: algol60/visitor-impl.c algol60/visitor-impl.h\
+		algol60/visitor.h\
+		algol60/meta.h algol60/pd.h algol60/gcc-stuff
+
 algol60/boundspair.o: algol60/boundspair.c algol60/boundspair.h algol60/boundspair.i\
 		algol60/expression.i\
 		algol60/expression.h\
@@ -135,6 +144,7 @@ algol60/symbol.o: algol60/symbol.c algol60/symbol.h algol60/symbol.i\
 		algol60/cursor.i\
 		algol60/label.h algol60/type.h algol60/statement.h algol60/estring.h\
 		algol60/cursor.h\
+		algol60/visitor.i algol60/visitor.h algol60/visitor-impl.h\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/type.o: algol60/type.c algol60/type.h algol60/type.i\
@@ -144,6 +154,7 @@ algol60/type.o: algol60/type.c algol60/type.h algol60/type.i\
 		algol60/estring.h algol60/expression.h algol60/statement.h\
 		algol60/logger.h algol60/slist.h algol60/boundspair.h\
 		algol60/symbol.h algol60/desig-expr.h\
+		algol60/visitor-impl.h algol60/visitor.h algol60/visitor.i\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/statement.o: algol60/statement.c algol60/statement.h algol60/statement.i\
@@ -153,6 +164,7 @@ algol60/statement.o: algol60/statement.c algol60/statement.h algol60/statement.i
 		algol60/cursor.h algol60/slist.h algol60/expression.h\
 		algol60/logger.h algol60/symbol.h algol60/label.h algol60/type.h\
 		algol60/estring.h algol60/boundspair.h algol60/for-elmt.h\
+		algol60/visitor-impl.h algol60/visitor.h algol60/visitor.i\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/expression.o: algol60/expression.c algol60/expression.h algol60/expression.i\
@@ -164,6 +176,7 @@ algol60/expression.o: algol60/expression.c algol60/expression.h algol60/expressi
 		algol60/statement.h algol60/label.h\
 		algol60/slist.h algol60/type.h algol60/symbol.h\
 		algol60/desig-expr.h\
+		algol60/visitor-impl.h algol60/visitor.h algol60/visitor.i\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/desig-expr.o: algol60/desig-expr.c algol60/desig-expr.h algol60/desig-expr.i\
@@ -172,6 +185,7 @@ algol60/desig-expr.o: algol60/desig-expr.c algol60/desig-expr.h algol60/desig-ex
 		algol60/symbol.i\
 		algol60/expression.h algol60/logger.h algol60/estring.h\
 		algol60/statement.h algol60/symbol.h algol60/type.h\
+		algol60/visitor-impl.h algol60/visitor.h algol60/visitor.i\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/parser-tab.o: algol60/parser-tab.c algol60/gcc-stuff\

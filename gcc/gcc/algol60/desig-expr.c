@@ -6,6 +6,7 @@
 #include "logger.h"
 #include "type.h"
 #include "statement.h"
+#include "visitor-impl.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -45,8 +46,8 @@ desig_expr_kind_t;
 
 struct struct_desig_expr_t
 {
-  char const * signature;
-  desig_expr_kind_t kind;
+  visitable_t base;
+
   cursor_t * cursor;
   union {
     desig_expr_label_rep_t elbl;
@@ -59,8 +60,10 @@ static desig_expr_t *
 private_new_desig_expr (desig_expr_kind_t kind, cursor_t * location)
 {
   desig_expr_t * ret = malloc (sizeof (desig_expr_t));
-  ret->signature = private_desig_expr_signature;
-  ret->kind = kind;
+#ifndef NDEBUG
+  ret->base.signature = private_desig_expr_signature;
+#endif
+  ret->base.kind = kind;
   ret->cursor = location;
   return ret;
 }
@@ -108,9 +111,9 @@ clone_desig_expr (desig_expr_t const * self)
 {
   assert (self != NULL);
 
-  desig_expr_t * ret = private_new_desig_expr (self->kind, self->cursor);
+  desig_expr_t * ret = private_new_desig_expr (self->base.kind, self->cursor);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case dek_label:
       ret->elbl.lbl = self->elbl.lbl;
@@ -134,9 +137,12 @@ clone_desig_expr (desig_expr_t const * self)
 }
 
 desig_expr_t *
-desig_expr (void * ptr)
+a60_as_desig_expr (void * obj)
 {
-  A60_CHECKED_CONVERSION (desig_expr, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_desig_expr_signature);
+#endif
+  return (desig_expr_t *)obj;
 }
 
 static void
@@ -144,7 +150,7 @@ private_desig_expr_dump (desig_expr_t const * self, estring_t * buf)
 {
   assert (self != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case dek_label:
       {
@@ -164,17 +170,17 @@ private_desig_expr_dump (desig_expr_t const * self, estring_t * buf)
 	estr_append (buf, tmp);
 
 	estr_append_cstr (buf, " 'then' ");
-	if (self->econd.exp_t->kind != dek_label)
+	if (self->econd.exp_t->base.kind != dek_label)
 	  estr_push (buf, '(');
 	private_desig_expr_dump (self->econd.exp_t, buf);
-	if (self->econd.exp_t->kind != dek_label)
+	if (self->econd.exp_t->base.kind != dek_label)
 	  estr_push (buf, ')');
 
 	estr_append_cstr (buf, " 'else' ");
-	if (self->econd.exp_f->kind != dek_label)
+	if (self->econd.exp_f->base.kind != dek_label)
 	  estr_push (buf, '(');
 	private_desig_expr_dump (self->econd.exp_t, buf);
-	if (self->econd.exp_f->kind != dek_label)
+	if (self->econd.exp_f->base.kind != dek_label)
 	  estr_push (buf, ')');
 
 	delete_estring (tmp);
@@ -222,7 +228,7 @@ desig_expr_resolve_symbols (desig_expr_t * self, container_t * context, logger_t
   assert (self != NULL);
   assert (log != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case dek_label:
       {
@@ -281,7 +287,7 @@ expression_t *
 desig_expr_if_cond (desig_expr_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == dek_cond);
+  assert (self->base.kind == dek_cond);
   return self->econd.cond;
 }
 
@@ -289,7 +295,7 @@ desig_expr_t *
 desig_expr_if_trueb (desig_expr_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == dek_cond);
+  assert (self->base.kind == dek_cond);
   return self->econd.exp_t;
 }
 
@@ -297,7 +303,7 @@ desig_expr_t *
 desig_expr_if_falseb (desig_expr_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == dek_cond);
+  assert (self->base.kind == dek_cond);
   return self->econd.exp_f;
 }
 
@@ -306,11 +312,11 @@ desig_expr_symbol (desig_expr_t const * self)
 {
   assert (self != NULL);
 
-  if (self->kind == dek_label)
+  if (self->base.kind == dek_label)
     return self->elbl.sym;
   else
     {
-      assert (self->kind == dek_switch);
+      assert (self->base.kind == dek_switch);
       return self->eswitch.sym;
     }
 }
@@ -319,35 +325,27 @@ expression_t *
 desig_expr_switch_index (desig_expr_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == dek_switch);
+  assert (self->base.kind == dek_switch);
   return self->eswitch.index;
 }
 
-#ifndef IN_GCC
-static void ATTRIBUTE_NORETURN
-no_glue_built (void)
+visitor_t *
+new_visitor_desig_expr (
+    callback_t desig_expr_label,
+    callback_t desig_expr_if,
+    callback_t desig_expr_switch
+)
 {
-  fprintf (stderr, "Dummy expr_*_build_generic called.\n");
-  abort ();
+  return a60_build_generic_visitor (
+      A60_IFDEBUG (&private_desig_expr_signature, NULL), 3,
+      desig_expr_label,
+      desig_expr_if,
+      desig_expr_switch
+  );
 }
-void * desig_expr_label_build_generic (desig_expr_t * self, void * data) { no_glue_built (); }
-void * desig_expr_if_build_generic (desig_expr_t * self, void * data) { no_glue_built (); }
-void * desig_expr_switch_build_generic (desig_expr_t * self, void * data) { no_glue_built (); }
-#endif
 
-
-void *
-desig_expr_build_generic (desig_expr_t * self, void * data)
+callback_t
+a60_desig_expr_callback (void *(*cb)(desig_expr_t *, void *))
 {
-  assert (self != NULL);
-  switch (self->kind)
-    {
-    case dek_label:
-      return desig_expr_label_build_generic (self, data);
-    case dek_cond:
-      return desig_expr_if_build_generic (self, data);
-    case dek_switch:
-      return desig_expr_switch_build_generic (self, data);
-    };
-  assert (!"Should never get there!");
+  return (callback_t)cb;
 }

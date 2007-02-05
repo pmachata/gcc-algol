@@ -1,11 +1,15 @@
 #ifndef AL60L_GCC_BIND_H
 #define AL60L_GCC_BIND_H
 
+#include "statement.i"
+#include "expression.i"
+#include "desig-expr.i"
+#include "type.i"
+#include "symbol.i"
+
 /// \file
 /// Al60l binder contains the glue between Al60l parsing library and
 /// GCC.  The code that does AST-to-GENERIC translation is here.
-/// al60l-bind.c implements the callback methods dispatched by
-/// stmt_build_generic and friends.
 
 /// \note
 /// The GCC framework necessary to setup types isn't included here.
@@ -69,5 +73,31 @@ tree bind_state_enclosing_resultdecl (al60l_bind_state_t const* state)
 /// is implemented (during function support I expect).
 void bind_state_pop_function (al60l_bind_state_t * state)
   ATTRIBUTE_NONNULL(1);
+
+/// Build GENERIC from statement.
+tree stmt_build_generic (statement_t * statement, al60l_bind_state_t * state)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Build GENERIC from expression.
+tree expr_build_generic (expression_t * expression, al60l_bind_state_t * state)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Build GENERIC from designational expression.
+tree desig_expr_build_generic (desig_expr_t * desig_expr, al60l_bind_state_t * state)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Build GENERIC from type.
+tree type_build_generic (type_t * type, al60l_bind_state_t * state)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Return GENERIC decl for given symbol depending on symbol's type.
+tree symbol_decl_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t * state)
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3);
 
 #endif//AL60L_GCC_BIND_H

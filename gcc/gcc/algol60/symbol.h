@@ -15,6 +15,7 @@
 #include "type.i"
 #include "statement.i"
 #include "estring.i"
+#include "visitor.i"
 #include "pd.h"
 
 /// Create new symbol given its name.
@@ -36,8 +37,8 @@ symbol_t * clone_symbol_with_name (symbol_t const * self, label_t const * name)
 /// Destroy the symbol.  `self' can be NULL.
 void delete_symbol (symbol_t * self);
 
-/// Convert void* to symbol, if it is symbol, or return NULL.
-symbol_t * symbol (void * ptr)
+/// Convert void* to symbol, if it is symbol, or abort.
+symbol_t * a60_as_symbol (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Get symbol's label.
@@ -83,5 +84,9 @@ void symbol_set_extra (symbol_t * self, void * extra)
 /// Get symbol's extra.
 void * symbol_extra (symbol_t const * self)
   ATTRIBUTE_NONNULL(1);
+
+/// For conversion of function prototype to callback.
+callback_t a60_symbol_callback (void *(*cb)(symbol_t *, void *))
+  ATTRIBUTE_NONNULL (1);
 
 #endif//_AL60L_SYMBOL_H_

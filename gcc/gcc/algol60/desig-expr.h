@@ -18,6 +18,7 @@
 #include "estring.i"
 #include "statement.i"
 #include "symbol.i"
+#include "visitor.i"
 #include "pd.h"
 
 /// Create a designational expression representing simple label.
@@ -45,8 +46,8 @@ desig_expr_t * clone_desig_expr (desig_expr_t const * self)
   ATTRIBUTE_MALLOC;
 
 /// Convert void* to designational expression, if it is designational
-/// expression, or return NULL.
-desig_expr_t * desig_expr (void * ptr)
+/// expression, or abort.
+desig_expr_t * a60_as_desig_expr (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Dump the designational expression to string.  Returns 'buf', or
@@ -91,23 +92,22 @@ symbol_t * desig_expr_symbol (desig_expr_t const * self)
 expression_t * desig_expr_switch_index (desig_expr_t const * self)
   ATTRIBUTE_NONNULL(1);
 
-/// Return GENERIC for given designational expression.
-/// Calls specific building function depending on the kind of
-/// expression in hand.  `data` is passed verbatim into callbacks.
-void * desig_expr_build_generic (desig_expr_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
+/// Construct Designation Expression visitor.  Arguments are the
+/// functions that should be called when the dispatched object's kind
+/// matches its respective argument.
+visitor_t * new_visitor_desig_expr (
+    callback_t desig_expr_label,
+    callback_t desig_expr_if,
+    callback_t desig_expr_switch
+)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+;
 
-// Callbacks for desig_expr_build_generic follow... when IN_GCC is NOT
-// defined, those have dummy definitions in desig-expr.c.  Otherwise
-// you have to roll your own.
-
-void * desig_expr_label_build_generic (desig_expr_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * desig_expr_if_build_generic (desig_expr_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * desig_expr_switch_build_generic (desig_expr_t * self, void * data)
+/// For conversion of function prototype to callback.
+callback_t a60_desig_expr_callback (void *(*cb)(desig_expr_t *, void *))
   ATTRIBUTE_NONNULL (1);
 
 #endif//_AL60L_DESIG_EXPR_H_

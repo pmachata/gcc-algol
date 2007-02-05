@@ -15,6 +15,8 @@
 #include "slist.i"
 #include "boundspair.i"
 #include "symbol.i"
+#include "ast-visitor.i"
+#include "visitor.i"
 #include "pd.h"
 
 type_t * type_unknown (void); ///< Memoized type.
@@ -98,8 +100,8 @@ type_t  * new_t_proc (type_t * rettype, slist_t * argtypes)
   ATTRIBUTE_NONNULL (1)
   ATTRIBUTE_NONNULL (2);
 
-/// Convert void* to type, if it is type, or return NULL.
-type_t * type (void * ptr)
+/// Convert void* to type, if it is type, or abort.
+type_t * a60_as_type (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Set array bounds.  Depending on internal implementation this may
@@ -212,50 +214,41 @@ type_t * type_host (type_t const * self)
 void type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
   ATTRIBUTE_NONNULL (1);
 
-/// Return GENERIC for given type.
-/// Calls specific building function depending on the kind of
-/// type in hand.  `data` is passed verbatim into callbacks.
-void * type_build_generic (type_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-// Callbacks for type_build_generic follow... when IN_GCC is NOT
-// defined, those have dummy definitions in type.c.  Otherwise
-// you have to roll your own.
-
-void * type_unknown_build_generic (type_t * self, void * data);
-void * type_any_build_generic (type_t * self, void * data);
-void * type_own_build_generic (type_t * self, void * data);
-void * type_void_build_generic (type_t * self, void * data);
-void * type_int_build_generic (type_t * self, void * data);
-void * type_real_build_generic (type_t * self, void * data);
-void * type_string_build_generic (type_t * self, void * data);
-void * type_bool_build_generic (type_t * self, void * data);
-void * type_label_build_generic (type_t * self, void * data);
-void * type_array_build_generic (type_t * self, void * data);
-void * type_proc_build_generic (type_t * self, void * data);
-
-/// Return GENERIC decl for given symbol.
-/// Calls specific building function depending on the kind of
-/// type in hand.  `data` is passed verbatim into callbacks.
-void * symbol_decl_for_type (type_t * self, symbol_t * symbol, void * data)
+/// Construct Type visitor.  Arguments are the functions that should
+/// be called when the dispatched object's kind matches its respective
+/// argument.
+visitor_t * new_visitor_type (
+    callback_t type_unknown,
+    callback_t type_any,
+    callback_t type_own,
+    callback_t type_void,
+    callback_t type_int,
+    callback_t type_real,
+    callback_t type_string,
+    callback_t type_bool,
+    callback_t type_label,
+    callback_t type_switch,
+    callback_t type_array,
+    callback_t type_proc
+)
+  ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL (1)
-  ATTRIBUTE_NONNULL (2);
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+  ATTRIBUTE_NONNULL (4)
+  ATTRIBUTE_NONNULL (5)
+  ATTRIBUTE_NONNULL (6)
+  ATTRIBUTE_NONNULL (7)
+  ATTRIBUTE_NONNULL (8)
+  ATTRIBUTE_NONNULL (9)
+  ATTRIBUTE_NONNULL (10)
+  ATTRIBUTE_NONNULL (11)
+  ATTRIBUTE_NONNULL (12)
+;
 
-// Callbacks for symbol_decl_for_type follow... when IN_GCC is NOT
-// defined, those have dummy definitions in type.c.  Otherwise
-// you have to roll your own.
-
-void * symbol_decl_for_unknown (symbol_t * sym, void * data);
-void * symbol_decl_for_any (symbol_t * sym, void * data);
-void * symbol_decl_for_own (symbol_t * sym, void * data);
-void * symbol_decl_for_int (symbol_t * sym, void * data);
-void * symbol_decl_for_void (symbol_t * sym, void * data);
-void * symbol_decl_for_real (symbol_t * sym, void * data);
-void * symbol_decl_for_string (symbol_t * sym, void * data);
-void * symbol_decl_for_bool (symbol_t * sym, void * data);
-void * symbol_decl_for_label (symbol_t * sym, void * data);
-void * symbol_decl_for_array (symbol_t * sym, void * data);
-void * symbol_decl_for_proc (symbol_t * sym, void * data);
+/// For conversion of function prototype to callback.
+callback_t a60_type_callback (void *(*cb)(type_t *, void *))
+  ATTRIBUTE_NONNULL (1);
 
 
 #endif//_AL60L_TYPE_H_

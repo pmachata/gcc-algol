@@ -22,6 +22,7 @@
 #include "label.i"
 #include "type.i"
 #include "estring.i"
+#include "visitor.i"
 #include "pd.h"
 
 /// Create new dummy statement.
@@ -84,22 +85,12 @@ container_t * clone_container (container_t const * self)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1);
 
-/// Convert void* to statement, if it is statement, or return NULL.
-statement_t * statement (void * ptr)
+/// Convert void* to statement, if it is statement, or abort.
+statement_t * a60_as_statement (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
-/// Convert void* to container, if it is container, or return NULL.
-container_t * container (void * ptr)
-  ATTRIBUTE_NONNULL(1);
-
-/// Like function `statement', but with typed argument for explicit
-/// container->statement upcast.
-statement_t * as_statement (container_t * container)
-  ATTRIBUTE_NONNULL(1);
-
-/// Like function `container', but with typed argument for explicit
-/// statement->container downcast.
-container_t * as_container (statement_t * statement)
+/// Convert void* to container, if it is container, or abort.
+container_t * a60_as_container (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Rewrite the tree into string in its original shape (as close as
@@ -255,41 +246,36 @@ symbol_t * container_find_name_rec_add_undefined (container_t * self, label_t co
 void stmt_toplev_define_internals (container_t * self)
   ATTRIBUTE_NONNULL(1);
 
-/// Return GENERIC for given statement and all its substatements.
-/// Calls specific building function depending on the type of
-/// statement in hand.  `data` is passed verbatim into callbacks.
-void * stmt_build_generic (statement_t * self, void * data)
+/// Construct Statement visitor.  Arguments are the functions that
+/// should be called when the dispatched object's kind matches its
+/// respective argument.
+visitor_t * new_visitor_stmt (
+    callback_t stmt_dummy,
+    callback_t stmt_assign,
+    callback_t stmt_call,
+    callback_t stmt_cond,
+    callback_t stmt_for,
+    callback_t stmt_goto,
+    callback_t stmt_block,
+    callback_t stmt_toplev
+)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+  ATTRIBUTE_NONNULL (4)
+  ATTRIBUTE_NONNULL (5)
+  ATTRIBUTE_NONNULL (6)
+  ATTRIBUTE_NONNULL (7)
+  ATTRIBUTE_NONNULL (8)
+;
+
+/// For conversion of function prototype to callback.
+callback_t a60_stmt_callback (void *(*cb)(statement_t *, void *))
   ATTRIBUTE_NONNULL (1);
 
-// Callbacks for stmt_build_generic follow... when IN_GCC is NOT
-// defined, those have dummy definitions in statement.c.  Otherwise
-// you have to roll your own.
-
-void * stmt_dummy_build_generic (statement_t * self, void * data)
+/// For conversion of function prototype to callback.
+callback_t a60_cont_callback (void *(*cb)(container_t *, void *))
   ATTRIBUTE_NONNULL (1);
-
-void * stmt_assign_build_generic (statement_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * stmt_call_build_generic (statement_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * stmt_cond_build_generic (statement_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * stmt_for_build_generic (statement_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * stmt_goto_build_generic (statement_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * stmt_container_build_generic (container_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-/// Special function, not callback.  Returns GENERIC for given builtin
-/// declaration.  Just like callbacks, it has implicit dummy
-/// definition when IN_GCC isn't defined, otherwise has to be defined
-/// explicitly.
-void * builtin_decl_get_generic (symbol_t * sym);
 
 #endif//_AL60L_STATEMENT_H_

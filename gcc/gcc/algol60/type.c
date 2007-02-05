@@ -13,6 +13,7 @@
 #include "boundspair.h"
 #include "symbol.h"
 #include "cursor.h"
+#include "visitor-impl.h"
 
 
 typedef struct struct_t_array_t
@@ -46,23 +47,23 @@ typedef enum enum_type_kind_t
 {
   tk_unknown,
   tk_any,
-  tk_int,
+  tk_own,
   tk_void,
+  tk_int,
   tk_real,
   tk_string,
   tk_bool,
   tk_label,
   tk_switch,
   tk_array,
-  tk_own,
   tk_proc
 }
 type_kind_t;
 
 struct struct_type_t
 {
-  char const * signature;
-  type_kind_t kind;
+  visitable_t base;
+
   union {
     t_array_t t_array;
     t_own_t t_own;
@@ -82,8 +83,10 @@ static type_t *
 private_new_type (type_kind_t kind)
 {
   type_t * ret = calloc (1, sizeof (type_t));
-  ret->signature = private_type_signature;
-  ret->kind = kind;
+#ifndef NDEBUG
+  ret->base.signature = private_type_signature;
+#endif
+  ret->base.kind = kind;
   return ret;
 }
 
@@ -166,7 +169,7 @@ new_t_switch (slist_t * switchlist)
   assert (switchlist != NULL);
 
   type_t * ret = private_new_type (tk_switch);
-  slist_set_type (switchlist, adapt_test, desig_expr);
+  slist_set_type (switchlist, adapt_test, a60_as_desig_expr);
   ret->t_switch.switchlist = switchlist;
   return ret;
 }
@@ -184,7 +187,7 @@ type_t *
 new_t_own (type_t * host)
 {
   assert (host != NULL);
-  assert (host->kind != tk_own);
+  assert (host->base.kind != tk_own);
 
   type_t * ret = private_new_type (tk_own);
   ret->t_own.host = host;
@@ -199,22 +202,25 @@ new_t_proc (type_t * rettype, slist_t * argtypes)
 
   type_t * ret = private_new_type (tk_proc);
   ret->t_proc.ret_type = rettype;
-  slist_set_type (argtypes, adapt_test, type);
+  slist_set_type (argtypes, adapt_test, a60_as_type);
   ret->t_proc.arg_types = argtypes;
   return ret;
 }
 
 type_t *
-type (void * ptr)
+a60_as_type (void * obj)
 {
-  A60_CHECKED_CONVERSION (type, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_type_signature);
+#endif
+  return (type_t *)obj;
 }
 
 type_t *
 t_array_set_bounds (type_t * self, boundspair_t * boundspair)
 {
   assert (self != NULL);
-  assert (self->kind == tk_array);
+  assert (self->base.kind == tk_array);
   self->t_array.bounds = boundspair;
   return self;
 }
@@ -223,7 +229,7 @@ boundspair_t *
 t_array_bounds (type_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == tk_array);
+  assert (self->base.kind == tk_array);
   return self->t_array.bounds;
 }
 
@@ -231,7 +237,7 @@ type_t *
 t_proc_return_type (type_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == tk_proc);
+  assert (self->base.kind == tk_proc);
   return self->t_proc.ret_type;
 }
 
@@ -239,7 +245,7 @@ slist_t *
 t_proc_arg_types (type_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == tk_proc);
+  assert (self->base.kind == tk_proc);
   return self->t_proc.arg_types;
 }
 
@@ -282,12 +288,12 @@ types_same (type_t const * lhs, type_t const * rhs)
 
   while (1)
     {
-      if (lhs->kind != rhs->kind)
+      if (lhs->base.kind != rhs->base.kind)
 	return 0;
-      // From now on, we know that lhs->kind == rhs->kind.  Further tests
-      // only dispatch on lhs->kind.
+      // From now on, we know that lhs->base.kind == rhs->base.kind.  Further tests
+      // only dispatch on lhs->base.kind.
 
-      switch (lhs->kind)
+      switch (lhs->base.kind)
 	{
 	case tk_unknown:
 	case tk_any:
@@ -324,28 +330,28 @@ types_match (type_t const * lhs, type_t const * rhs)
 
   while (1)
     {
-      if (lhs->kind == tk_any
-	  || rhs->kind == tk_any)
+      if (lhs->base.kind == tk_any
+	  || rhs->base.kind == tk_any)
 	{
 	  return 1;
 	}
-      else if (lhs->kind == tk_unknown
-	       || rhs->kind == tk_unknown)
+      else if (lhs->base.kind == tk_unknown
+	       || rhs->base.kind == tk_unknown)
 	{
 	  return 0;
 	}
-      else if (lhs->kind == tk_own)
+      else if (lhs->base.kind == tk_own)
 	lhs = lhs->t_own.host;
-      else if (rhs->kind == tk_own)
+      else if (rhs->base.kind == tk_own)
 	rhs = rhs->t_own.host;
-      else if (lhs->kind == tk_array
-	       && rhs->kind == tk_array)
+      else if (lhs->base.kind == tk_array
+	       && rhs->base.kind == tk_array)
 	{
 	  lhs = lhs->t_array.host;
 	  rhs = rhs->t_array.host;
 	}
-      else if (lhs->kind == tk_proc
-	       && rhs->kind == tk_proc)
+      else if (lhs->base.kind == tk_proc
+	       && rhs->base.kind == tk_proc)
 	{
 	  return private_proc_types_check (&lhs->t_proc, &rhs->t_proc, types_match);
 	}
@@ -361,11 +367,11 @@ expr_primitive_for_type (type_t const * self)
 {
   assert (self != NULL);
 
-  if (self->kind == tk_own)
+  if (self->base.kind == tk_own)
     self = self->t_own.host;
-  assert (self->kind != tk_own);
+  assert (self->base.kind != tk_own);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case tk_int:
       return new_expr_int (new_cursor ("", 0), 0);
@@ -397,14 +403,14 @@ is_metatype (type_t const * self)
 
   while (1)
     {
-      if (self->kind == tk_unknown
-	  || self->kind == tk_any)
+      if (self->base.kind == tk_unknown
+	  || self->base.kind == tk_any)
 	return 1;
-      else if (self->kind == tk_array)
+      else if (self->base.kind == tk_array)
 	self = self->t_array.host;
-      else if (self->kind == tk_own)
+      else if (self->base.kind == tk_own)
 	self = self->t_own.host;
-      else if (self->kind == tk_proc)
+      else if (self->base.kind == tk_proc)
 	{
 	  if (is_metatype (self->t_proc.ret_type))
 	    return 1;
@@ -412,7 +418,7 @@ is_metatype (type_t const * self)
 	  slist_it_t * it = slist_iter (self->t_proc.arg_types);
 	  int ret = 0;
 	  for (; slist_it_has (it); slist_it_next (it))
-	    if (is_metatype (type (slist_it_get (it))))
+	    if (is_metatype (a60_as_type (slist_it_get (it))))
 	      {
 		ret = 1;
 		break;
@@ -429,23 +435,23 @@ int
 type_is_own (type_t const * self)
 {
   assert (self != NULL);
-  return self->kind == tk_own;
+  return self->base.kind == tk_own;
 }
 
 int
 type_is_array (type_t const * self)
 {
   assert (self != NULL);
-  return self->kind == tk_array;
+  return self->base.kind == tk_array;
 }
 
 type_t *
 type_host (type_t const * self)
 {
   assert (self != NULL);
-  if (self->kind == tk_own)
+  if (self->base.kind == tk_own)
     return self->t_own.host;
-  else if (self->kind == tk_array)
+  else if (self->base.kind == tk_array)
     return self->t_array.host;
   else
     return NULL;
@@ -510,7 +516,7 @@ type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
 {
   assert (self != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case tk_unknown:
     case tk_any:
@@ -550,14 +556,14 @@ int
 type_is_unknown (type_t const * self)
 {
   assert (self != NULL);
-  return self->kind == tk_unknown;
+  return self->base.kind == tk_unknown;
 }
 
 int
 type_is_proc (type_t const * self)
 {
   assert (self != NULL);
-  return self->kind == tk_proc;
+  return self->base.kind == tk_proc;
 }
 
 static void
@@ -574,14 +580,14 @@ private_type_to_str (type_t const * self, estring_t * buf, int canon)
     [tk_label] = "<label>"
   };
 
-  if ((self->kind < sizeof (typestrs) / sizeof (*typestrs))
-      && typestrs[self->kind])
+  if ((self->base.kind < sizeof (typestrs) / sizeof (*typestrs))
+      && typestrs[self->base.kind])
     {
-      estr_assign_cstr (buf, typestrs[self->kind]);
+      estr_assign_cstr (buf, typestrs[self->base.kind]);
       return;
     }
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case tk_unknown:    case tk_any:    case tk_int:
     case tk_void:       case tk_real:   case tk_string:
@@ -614,7 +620,7 @@ private_type_to_str (type_t const * self, estring_t * buf, int canon)
       {
 	type_t * host = self->t_array.host;
 	private_type_to_str (host, buf, canon);
-	if (!canon || host->kind != tk_array)
+	if (!canon || host->base.kind != tk_array)
 	  estr_append_cstr (buf, " 'array'");
 	return;
       }
@@ -684,11 +690,11 @@ type_get_root (type_t * self)
 
   while (1)
     {
-      if (self->kind == tk_array)
+      if (self->base.kind == tk_array)
 	self = self->t_array.host;
-      else if (self->kind == tk_own)
+      else if (self->base.kind == tk_own)
 	self = self->t_own.host;
-      else if (self->kind == tk_any || self->kind == tk_unknown)
+      else if (self->base.kind == tk_any || self->base.kind == tk_unknown)
 	assert (!"Should never get there!");
       else
 	break;
@@ -756,110 +762,41 @@ type_switch_any (void)
 #undef MEMOIZEPROC1
 #undef MEMOIZEPROC2
 
-
-#ifndef IN_GCC
-static void ATTRIBUTE_NORETURN
-no_glue_built (void)
+visitor_t *
+new_visitor_type (
+    callback_t type_unknown,
+    callback_t type_any,
+    callback_t type_own,
+    callback_t type_void,
+    callback_t type_int,
+    callback_t type_real,
+    callback_t type_string,
+    callback_t type_bool,
+    callback_t type_label,
+    callback_t type_switch,
+    callback_t type_array,
+    callback_t type_proc
+)
 {
-  fprintf (stderr, "Dummy type_*_build_generic called.\n");
-  abort ();
-}
-void * type_own_build_generic (type_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_void_build_generic (type_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_int_build_generic (type_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_real_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_string_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_bool_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_label_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_switch_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_array_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * type_proc_build_generic (type_t * self ATTRIBUTE_UNUSED , void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-
-no_glue_built2 (void)
-{
-  fprintf (stderr, "Dummy symbol_decl_for_* called.\n");
-  abort ();
-}
-void * symbol_decl_for_own (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_int (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_void (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_real (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_string (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_bool (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_label (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_switch (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_array (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-void * symbol_decl_for_proc (symbol_t * sym ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built2 (); }
-#endif
-
-
-void *
-type_build_generic (type_t * self, void * data)
-{
-  assert (self != NULL);
-
-  switch (self->kind)
-    {
-    case tk_unknown:
-      return type_unknown_build_generic (self, data);
-    case tk_any:
-      return type_any_build_generic (self, data);
-    case tk_own:
-      return type_own_build_generic (self, data);
-    case tk_int:
-      return type_int_build_generic (self, data);
-    case tk_void:
-      return type_void_build_generic (self, data);
-    case tk_real:
-      return type_real_build_generic (self, data);
-    case tk_string:
-      return type_string_build_generic (self, data);
-    case tk_bool:
-      return type_bool_build_generic (self, data);
-    case tk_label:
-      return type_label_build_generic (self, data);
-    case tk_switch:
-      return type_switch_build_generic (self, data);
-    case tk_array:
-      return type_array_build_generic (self, data);
-    case tk_proc:
-      return type_proc_build_generic (self, data);
-    };
-  assert (!"Should never get there!");
+  return a60_build_generic_visitor (
+      A60_IFDEBUG (&private_type_signature, NULL), 12,
+      type_unknown,
+      type_any,
+      type_own,
+      type_void,
+      type_int,
+      type_real,
+      type_string,
+      type_bool,
+      type_label,
+      type_switch,
+      type_array,
+      type_proc
+  );
 }
 
-void *
-symbol_decl_for_type (type_t * t, symbol_t * sym, void * data)
+callback_t
+a60_type_callback (void *(*cb)(type_t *, void *))
 {
-  assert (t != NULL);
-  assert (sym != NULL);
-
-  switch (t->kind)
-    {
-    case tk_unknown:
-      return symbol_decl_for_unknown (sym, data);
-    case tk_any:
-      return symbol_decl_for_any (sym, data);
-    case tk_own:
-      return symbol_decl_for_own (sym, data);
-    case tk_int:
-      return symbol_decl_for_int (sym, data);
-    case tk_void:
-      return symbol_decl_for_void (sym, data);
-    case tk_real:
-      return symbol_decl_for_real (sym, data);
-    case tk_string:
-      return symbol_decl_for_string (sym, data);
-    case tk_bool:
-      return symbol_decl_for_bool (sym, data);
-    case tk_label:
-      return symbol_decl_for_label (sym, data);
-    case tk_switch:
-      return symbol_decl_for_switch (sym, data);
-    case tk_array:
-      return symbol_decl_for_array (sym, data);
-    case tk_proc:
-      return symbol_decl_for_proc (sym, data);
-    };
-  assert (!"Should never get there!");
+  return (callback_t)cb;
 }

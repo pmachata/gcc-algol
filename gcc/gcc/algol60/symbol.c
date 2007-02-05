@@ -7,12 +7,14 @@
 #include "type.h"
 #include "statement.h"
 #include "estring.h"
+#include "visitor.h"
+#include "visitor-impl.h"
 
 static char const * private_symbol_signature = "symbol";
 
 struct struct_symbol_t
 {
-  char const * signature;
+  visitable_t base;
   label_t const * label;
   statement_t * stmt;
   type_t * type;
@@ -24,7 +26,9 @@ static symbol_t *
 private_alloc_symbol (label_t const * label)
 {
   symbol_t * ret = malloc (sizeof (symbol_t));
-  ret->signature = private_symbol_signature;
+#ifndef NDEBUG
+  ret->base.signature = private_symbol_signature;
+#endif
   ret->label = label;
   return ret;
 }
@@ -69,9 +73,12 @@ delete_symbol (symbol_t * self)
 }
 
 symbol_t *
-symbol (void * ptr)
+a60_as_symbol (void * obj)
 {
-  A60_CHECKED_CONVERSION (symbol, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_symbol_signature);
+#endif
+  return (symbol_t *)obj;
 }
 
 label_t const *
@@ -144,4 +151,10 @@ symbol_extra (symbol_t const * self)
 {
   assert (self != NULL);
   return self->extra;
+}
+
+callback_t
+a60_symbol_callback (void *(*cb)(symbol_t *, void *))
+{
+  return (callback_t)cb;
 }

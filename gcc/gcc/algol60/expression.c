@@ -8,6 +8,7 @@
 #include "type.h"
 #include "symbol.h"
 #include "meta.h"
+#include "visitor-impl.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -104,8 +105,8 @@ expr_kind_t;
 
 struct struct_expression_t
 {
-  char const * signature;
-  expr_kind_t kind;
+  visitable_t base;
+
   cursor_t * cursor;
   union {
     expr_int_rep_t eint;
@@ -139,8 +140,10 @@ static expression_t *
 private_new_expr (cursor_t * location, expr_kind_t kind)
 {
   expression_t * ret = calloc (1, sizeof (expression_t));
-  ret->signature = private_expression_signature;
-  ret->kind = kind;
+#ifndef NDEBUG
+  ret->base.signature = private_expression_signature;
+#endif
+  ret->base.kind = kind;
   ret->cursor = location;
   return ret;
 }
@@ -234,7 +237,7 @@ new_expr_call (cursor_t * location, label_t * label, slist_t * arguments)
 
   expression_t * ret = private_new_expr (location, ek_call);
   ret->call.lbl = label;
-  slist_set_type (arguments, adapt_test, expression);
+  slist_set_type (arguments, adapt_test, a60_as_expression);
   ret->call.arguments = arguments;
   return ret;
 }
@@ -260,7 +263,7 @@ new_expr_subscript (cursor_t * location, label_t * label, slist_t * indices)
 
   expression_t * ret = private_new_expr (location, ek_subscript);
   ret->subscript.lbl = label;
-  slist_set_type (indices, adapt_test, expression);
+  slist_set_type (indices, adapt_test, a60_as_expression);
   ret->subscript.indices = indices;
   return ret;
 }
@@ -270,9 +273,9 @@ clone_expression (expression_t const * self)
 {
   assert (self != NULL);
 
-  expression_t * ret = private_new_expr (self->cursor, self->kind);
+  expression_t * ret = private_new_expr (self->cursor, self->base.kind);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case ek_int:
       ret->eint.value = self->eint.value;
@@ -332,9 +335,12 @@ clone_expression (expression_t const * self)
 }
 
 expression_t *
-expression (void * ptr)
+a60_as_expression (void * obj)
 {
-  A60_CHECKED_CONVERSION (expression, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_expression_signature);
+#endif
+  return (expression_t *)obj;
 }
 
 
@@ -371,7 +377,7 @@ expr_to_str (expression_t const * self, estring_t * buf)
   if (buf == NULL)
     buf = new_estring ();
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case ek_int:
       estr_printf (buf, "%d", self->eint.value);
@@ -555,7 +561,7 @@ expr_type (expression_t const * self)
 {
   assert (self != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case ek_int:
       return type_int ();
@@ -772,7 +778,7 @@ expr_resolve_symbols (expression_t * self, container_t * context, logger_t * log
   assert (self != NULL);
   assert (logger != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case ek_int:
     case ek_real:
@@ -812,8 +818,8 @@ int
 expr_is_lvalue (expression_t const * self)
 {
   assert (self != NULL);
-  return (self->kind == ek_idref
-	  || self->kind == ek_subscript);
+  return (self->base.kind == ek_idref
+	  || self->base.kind == ek_subscript);
 }
 
 cursor_t *
@@ -827,7 +833,7 @@ int
 expr_int_value (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_int);
+  assert (self->base.kind == ek_int);
   return self->eint.value;
 }
 
@@ -835,7 +841,7 @@ int
 expr_bool_value (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_bool);
+  assert (self->base.kind == ek_bool);
   return self->ebool.value;
 }
 
@@ -843,7 +849,7 @@ estring_t const *
 expr_real_value (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_real);
+  assert (self->base.kind == ek_real);
   return self->ereal.value;
 }
 
@@ -851,7 +857,7 @@ estring_t const *
 expr_string_value (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_string);
+  assert (self->base.kind == ek_string);
   return self->estring.value;
 }
 
@@ -859,10 +865,10 @@ symbol_t *
 expr_symbol (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_idref
-	  || self->kind == ek_call
-	  || self->kind == ek_subscript);
-  switch (self->kind)
+  assert (self->base.kind == ek_idref
+	  || self->base.kind == ek_call
+	  || self->base.kind == ek_subscript);
+  switch (self->base.kind)
     {
     case ek_idref: return self->idref.sym;
     case ek_call: return self->call.sym;
@@ -877,7 +883,7 @@ expr_binop_t
 expr_binary_op (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_binary);
+  assert (self->base.kind == ek_binary);
   return self->binary.op;
 }
 
@@ -885,7 +891,7 @@ expression_t *
 expr_binary_left (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_binary);
+  assert (self->base.kind == ek_binary);
   return self->binary.left;
 }
 
@@ -893,7 +899,7 @@ expression_t *
 expr_binary_right (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_binary);
+  assert (self->base.kind == ek_binary);
   return self->binary.right;
 }
 
@@ -901,7 +907,7 @@ expr_unop_t
 expr_unary_op (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_unary);
+  assert (self->base.kind == ek_unary);
   return self->unary.op;
 }
 
@@ -909,7 +915,7 @@ expression_t *
 expr_unary_operand (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_unary);
+  assert (self->base.kind == ek_unary);
   return self->unary.operand;
 }
 
@@ -917,7 +923,7 @@ expression_t *
 expr_if_cond (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_if);
+  assert (self->base.kind == ek_if);
   return self->eif.cond;
 }
 
@@ -925,7 +931,7 @@ expression_t *
 expr_if_trueb (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_if);
+  assert (self->base.kind == ek_if);
   return self->eif.exp_t;
 }
 
@@ -933,7 +939,7 @@ expression_t *
 expr_if_falseb (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_if);
+  assert (self->base.kind == ek_if);
   return self->eif.exp_f;
 }
 
@@ -941,7 +947,7 @@ slist_t *
 expr_call_args (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_call);
+  assert (self->base.kind == ek_call);
   return self->call.arguments;
 }
 
@@ -949,56 +955,41 @@ slist_t *
 expr_subscript_indices (expression_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == ek_subscript);
+  assert (self->base.kind == ek_subscript);
   return self->subscript.indices;
 }
 
-#ifndef IN_GCC
-static void ATTRIBUTE_NORETURN
-no_glue_built (void)
+visitor_t *
+new_visitor_expr (
+    callback_t expr_int,
+    callback_t expr_real,
+    callback_t expr_string,
+    callback_t expr_bool,
+    callback_t expr_idref,
+    callback_t expr_if,
+    callback_t expr_binary,
+    callback_t expr_unary,
+    callback_t expr_call,
+    callback_t expr_subscript
+)
 {
-  fprintf (stderr, "Dummy expr_*_build_generic called.\n");
-  abort ();
+  return a60_build_generic_visitor (
+      A60_IFDEBUG (&private_expression_signature, NULL), 10,
+      expr_int,
+      expr_real,
+      expr_string,
+      expr_bool,
+      expr_idref,
+      expr_if,
+      expr_binary,
+      expr_unary,
+      expr_call,
+      expr_subscript
+  );
 }
-void * expr_int_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_real_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_string_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_bool_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_idref_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_if_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_binary_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_unary_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_call_build_generic (expression_t * self, void * data) { no_glue_built (); }
-void * expr_subscript_build_generic (expression_t * self, void * data) { no_glue_built (); }
-#endif
 
-
-void *
-expr_build_generic (expression_t * self, void * data)
+callback_t
+a60_expr_callback (void *(*cb)(expression_t *, void *))
 {
-  assert (self != NULL);
-  switch (self->kind)
-    {
-    case ek_int:
-      return expr_int_build_generic (self, data);
-    case ek_real:
-      return expr_real_build_generic (self, data);
-    case ek_string:
-      return expr_string_build_generic (self, data);
-    case ek_bool:
-      return expr_bool_build_generic (self, data);
-    case ek_idref:
-      return expr_idref_build_generic (self, data);
-    case ek_if:
-      return expr_if_build_generic (self, data);
-    case ek_binary:
-      return expr_binary_build_generic (self, data);
-    case ek_unary:
-      return expr_unary_build_generic (self, data);
-    case ek_call:
-      return expr_call_build_generic (self, data);
-    case ek_subscript:
-      return expr_subscript_build_generic (self, data);
-    };
-  assert (!"Should never get there!");
+  return (callback_t)cb;
 }

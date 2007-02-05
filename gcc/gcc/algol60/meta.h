@@ -11,4 +11,12 @@
   else									\
     return NULL
 
+#ifndef NDEBUG
+# define A60_IFDEBUG(X,Y) (X)
+#else
+# define A60_IFDEBUG(X,Y) (Y)
+#endif
+
+void a60_check_access (void * obj, char const* requested_signature);
+
 #endif//AL60L_META_H

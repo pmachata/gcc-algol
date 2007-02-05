@@ -234,7 +234,7 @@ Program:
     container_t * dummy = new_stmt_toplev (NULL);
     private_open_block (parser, dummy);
 
-    // actual toplevel container
+    // actual toplevel container, contains internal declarations
     container_t * c = new_stmt_toplev (NULL);
     container_set_parent (c, dummy);
     stmt_toplev_define_internals (c);
@@ -247,9 +247,8 @@ Program:
       if (!slist_empty ($2))
 	log_printfc (parser->log, ll_error, cr_csr (parser, &@3),
 		     "labels not allowed at program block.");
-      private_close_block (parser); // toplev
+      parser->result = a60_as_statement (private_close_block (parser)); // toplev
       private_close_block (parser); // dummy
-      parser->result = as_statement (parser->program_block);
       YYACCEPT;
     }
 
@@ -306,6 +305,7 @@ Block:
     container_t * c = new_stmt_block (cr_csr (parser, &@1));
     container_set_parent (c, parser->block);
     private_open_block (parser, c);
+
     if (parser->program_block == NULL)
       {
 	log_printf (parser->log, ll_debug, "  %p is program block", c);
@@ -316,7 +316,7 @@ Block:
   KWEND
     {
       log_printf (parser->log, ll_debug, "Block -> KWBEGIN BlockDeclarationList StatementList KWEND");
-      $$ = as_statement (private_close_block (parser));
+      $$ = a60_as_statement (private_close_block (parser));
     }
 
 BlockDeclarationsList:

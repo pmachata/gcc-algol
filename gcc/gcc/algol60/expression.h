@@ -15,6 +15,7 @@
 #include "type.i"
 #include "symbol.i"
 #include "pd.h"
+#include "visitor.i"
 
 /// Create an expression representing integer literal.
 expression_t * new_expr_int (cursor_t * location, int value)
@@ -106,8 +107,8 @@ expression_t * clone_expression (expression_t const * self)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_MALLOC;
 
-/// Convert void* to expression, if it is expression, or return NULL.
-expression_t * expression (void * ptr)
+/// Convert void* to expression, if it is expression, or abort.
+expression_t * a60_as_expression (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Dump the expression to string.  Returns 'buf', or allocated buffer
@@ -207,45 +208,36 @@ slist_t * expr_call_args (expression_t const * self)
 slist_t * expr_subscript_indices (expression_t const * self)
   ATTRIBUTE_NONNULL(1);
 
-/// Return GENERIC for given expression.
-/// Calls specific building function depending on the kind of
-/// expression in hand.  `data` is passed verbatim into callbacks.
-void * expr_build_generic (expression_t * self, void * data)
+/// Construct Expression visitor.  Arguments are the functions that
+/// should be called when the dispatched object's kind matches its
+/// respective argument.
+visitor_t * new_visitor_expr (
+    callback_t expr_int,
+    callback_t expr_real,
+    callback_t expr_string,
+    callback_t expr_bool,
+    callback_t expr_idref,
+    callback_t expr_if,
+    callback_t expr_binary,
+    callback_t expr_unary,
+    callback_t expr_call,
+    callback_t expr_subscript
+)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+  ATTRIBUTE_NONNULL (4)
+  ATTRIBUTE_NONNULL (5)
+  ATTRIBUTE_NONNULL (6)
+  ATTRIBUTE_NONNULL (7)
+  ATTRIBUTE_NONNULL (8)
+  ATTRIBUTE_NONNULL (9)
+  ATTRIBUTE_NONNULL (10)
+;
+
+/// For conversion of function prototype to callback.
+callback_t a60_expr_callback (void *(*cb)(expression_t *, void *))
   ATTRIBUTE_NONNULL (1);
-
-// Callbacks for expr_build_generic follow... when IN_GCC is NOT
-// defined, those have dummy definitions in expression.c.  Otherwise
-// you have to roll your own.
-
-void * expr_int_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_real_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_string_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_bool_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_idref_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_if_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_binary_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_unary_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_call_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-void * expr_subscript_build_generic (expression_t * self, void * data)
-  ATTRIBUTE_NONNULL (1);
-
 
 #endif//_AL60L_EXPRESSION_H_

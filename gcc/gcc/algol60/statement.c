@@ -15,6 +15,7 @@
 #include "boundspair.h"
 #include "for-elmt.h"
 #include "meta.h"
+#include "visitor-impl.h"
 
 static char const * private_statement_signature = "statement";
 
@@ -81,8 +82,7 @@ stmt_kind_t;
 
 struct struct_statement_t
 {
-  char const * signature;
-  stmt_kind_t kind;
+  visitable_t base;
 
   cursor_t * cursor;
   container_t * parent;
@@ -101,8 +101,8 @@ struct struct_statement_t
 static void *
 private_check_symbol_label (void * ptr, void * data ATTRIBUTE_UNUSED)
 {
-  symbol_t * sym = symbol (ptr);
-  if (sym && !types_same (symbol_type (sym), type_label ()))
+  symbol_t * sym = a60_as_symbol (ptr);
+  if (!types_same (symbol_type (sym), type_label ()))
     sym = NULL;
   return sym;
 }
@@ -111,8 +111,10 @@ static statement_t *
 private_new_statement (stmt_kind_t kind, cursor_t * cursor, container_t * parent)
 {
   statement_t * ret = malloc (sizeof (statement_t));
-  ret->signature = private_statement_signature;
-  ret->kind = kind;
+#ifndef NDEBUG
+  ret->base.signature = private_statement_signature;
+#endif
+  ret->base.kind = kind;
   ret->cursor = cursor;
   ret->parent = parent;
   ret->labels = new_slist_typed (private_check_symbol_label, NULL);
@@ -128,7 +130,7 @@ new_stmt_dummy (cursor_t * cursor)
 static void *
 private_check_expr_lvalue (void * ptr, void * data ATTRIBUTE_UNUSED)
 {
-  expression_t * expr = expression (ptr);
+  expression_t * expr = a60_as_expression (ptr);
   if (expr && !expr_is_lvalue (expr))
     expr = NULL;
   return expr;
@@ -201,8 +203,8 @@ static container_t *
 private_new_container (stmt_kind_t kind, cursor_t * cursor)
 {
   statement_t * ret = private_new_statement (kind, cursor, NULL);
-  ret->block.statements = new_slist_typed (adapt_test, statement);
-  ret->block.symtab = new_slist_typed (adapt_test, symbol);
+  ret->block.statements = new_slist_typed (adapt_test, a60_as_statement);
+  ret->block.symtab = new_slist_typed (adapt_test, a60_as_symbol);
   return (container_t *)ret;
 }
 
@@ -223,9 +225,9 @@ clone_statement (statement_t const * self)
 {
   assert (self != NULL);
 
-  statement_t * ret = private_new_statement (self->kind, self->cursor, NULL);
+  statement_t * ret = private_new_statement (self->base.kind, self->cursor, NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case sk_dummy:
       break;
@@ -263,7 +265,7 @@ clone_statement (statement_t const * self)
       {
 	ret->block.symtab = clone_slist (self->block.symtab);
 	slist_map (ret->block.symtab, adapt_test, clone_symbol);
-	ret->block.statements = new_slist_typed (adapt_test, statement);
+	ret->block.statements = new_slist_typed (adapt_test, a60_as_statement);
 
 	// extract labels from the list
 	slist_t * labels = new_slist ();
@@ -281,7 +283,7 @@ clone_statement (statement_t const * self)
 	  {
 	    statement_t * stmt = slist_it_get (it);
 	    statement_t * clone = clone_statement (stmt);
-	    container_add_stmt (container (ret), clone);
+	    container_add_stmt (a60_as_container (ret), clone);
 
 	    slist_it_reset (jt, labels);
 	    for (; slist_it_has (jt); slist_it_next (jt))
@@ -309,37 +311,27 @@ clone_statement (statement_t const * self)
 container_t *
 clone_container (container_t const * self)
 {
-  return container (clone_statement (statement ((container_t *)self)));
+  return a60_as_container (clone_statement (a60_as_statement ((container_t *)self)));
 }
 
 statement_t *
-statement (void * ptr)
+a60_as_statement (void * obj)
 {
-  A60_CHECKED_CONVERSION (statement, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_statement_signature);
+#endif
+  return (statement_t *)obj;
 }
 
 container_t *
-container (void * ptr)
+a60_as_container (void * obj)
 {
-  statement_t * st;
-  if ((st = statement (ptr))
-      && (st->kind == sk_block
-	  || st->kind == sk_toplev))
-    return (void*)st;
-  else
-    return NULL;
-}
-
-statement_t *
-as_statement (container_t * container)
-{
-  return statement (container);
-}
-
-container_t *
-as_container (statement_t * stmt)
-{
-  return container (stmt);
+#ifndef NDEBUG
+  statement_t * st = a60_as_statement (obj);
+  assert (st->base.kind == sk_block
+	  || st->base.kind == sk_toplev);
+#endif
+  return (container_t *)obj;
 }
 
 static char const *
@@ -427,7 +419,7 @@ private_dump_container (statement_t const * self, estring_t * buf, int level)
       // more statements in container (i.e. `stmt' is last statement)
       // and `stmt' is dummy statement.
       if (slist_it_has (it)
-	  || ((statement_t *)stmt)->kind != sk_dummy)
+	  || ((statement_t *)stmt)->base.kind != sk_dummy)
 	private_stmt_dump (stmt, buf, level);
       else
 	break;
@@ -458,7 +450,7 @@ private_dump_assign (statement_t const * self, estring_t * buf, int level)
 static void
 private_stmt_dump (statement_t const * self, estring_t * buf, int level)
 {
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case sk_dummy:
       return;
@@ -611,14 +603,14 @@ private_resolve_symbols_assign (statement_t * self, logger_t * log)
 static void
 private_resolve_symbols_block (statement_t * self, logger_t * log)
 {
-  assert (container (self));
+  assert (a60_as_container (self));
   slist_it_t * it;
 
   it = slist_iter (self->block.symtab);
   for (; slist_it_has (it); slist_it_next (it))
     {
       symbol_t * sym = slist_it_get (it);
-      type_resolve_symbols (symbol_type (sym), container (self), log);
+      type_resolve_symbols (symbol_type (sym), a60_as_container (self), log);
     }
 
   slist_it_reset (it, self->block.statements);
@@ -634,7 +626,7 @@ stmt_resolve_symbols (statement_t * self, logger_t * log)
   assert (self != NULL);
   assert (log != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case sk_dummy: return;
 
@@ -717,7 +709,7 @@ container_parent (container_t const * _self)
 {
   assert (_self != NULL);
   A60_USER_TO_REP (statement, self, const *);
-  assert (self->kind == sk_block || self->kind == sk_toplev);
+  assert (self->base.kind == sk_block || self->base.kind == sk_toplev);
   return self->parent;
 }
 
@@ -733,7 +725,7 @@ container_set_parent (container_t * _self, container_t * parent)
 {
   assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (self->kind == sk_block || self->kind == sk_toplev);
+  assert (self->base.kind == sk_block || self->base.kind == sk_toplev);
 
   self->parent = parent;
 }
@@ -744,7 +736,7 @@ container_add_stmt (container_t * _self, statement_t * stmt)
   assert (_self != NULL);
   assert (stmt != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (self->kind == sk_block || self->kind == sk_toplev);
+  assert (self->base.kind == sk_block || self->base.kind == sk_toplev);
 
   slist_pushback (self->block.statements, stmt);
   stmt->parent = _self;
@@ -754,7 +746,7 @@ slist_t *
 stmt_assign_lhss (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_assign);
+  assert (self->base.kind == sk_assign);
   return self->assign.lhss;
 }
 
@@ -762,7 +754,7 @@ expression_t *
 stmt_assign_rhs (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_assign);
+  assert (self->base.kind == sk_assign);
   return self->assign.rhs;
 }
 
@@ -770,7 +762,7 @@ expression_t *
 stmt_call_call (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_call);
+  assert (self->base.kind == sk_call);
   return self->call.call;
 }
 
@@ -778,7 +770,7 @@ expression_t *
 stmt_cond_cond (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_cond);
+  assert (self->base.kind == sk_cond);
   return self->cond.cond;
 }
 
@@ -786,7 +778,7 @@ statement_t *
 stmt_cond_ifclause (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_cond);
+  assert (self->base.kind == sk_cond);
   return self->cond.ifclause;
 }
 
@@ -794,7 +786,7 @@ statement_t *
 stmt_cond_elseclause (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_cond);
+  assert (self->base.kind == sk_cond);
   return self->cond.elseclause;
 }
 
@@ -802,7 +794,7 @@ expression_t *
 stmt_for_variable (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_for);
+  assert (self->base.kind == sk_for);
   return self->afor.variable;
 }
 
@@ -810,7 +802,7 @@ slist_t *
 stmt_for_elmts (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_for);
+  assert (self->base.kind == sk_for);
   return self->afor.elmts;
 }
 
@@ -818,7 +810,7 @@ statement_t *
 stmt_for_body (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_for);
+  assert (self->base.kind == sk_for);
   return self->afor.body;
 }
 
@@ -826,7 +818,7 @@ desig_expr_t *
 stmt_goto_target (statement_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == sk_goto);
+  assert (self->base.kind == sk_goto);
   return self->agoto.target;
 }
 
@@ -850,7 +842,7 @@ container_symtab (container_t const * _self)
 {
   assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (self->kind == sk_block || self->kind == sk_toplev);
+  assert (self->base.kind == sk_block || self->base.kind == sk_toplev);
   return self->block.symtab;
 }
 
@@ -859,7 +851,7 @@ container_stmts (container_t const * _self)
 {
   assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (self->kind == sk_block || self->kind == sk_toplev);
+  assert (self->base.kind == sk_block || self->base.kind == sk_toplev);
   return self->block.statements;
 }
 
@@ -903,7 +895,7 @@ container_add_symbol (container_t * _self, symbol_t * sym,
   assert (_self != NULL);
   assert (sym != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (container (self));
+  assert (a60_as_container (self));
 
   if (internal == sek_ordinary
       && container_find_name (_self, symbol_label (sym), type_any ()) != NULL)
@@ -919,7 +911,7 @@ container_erase_symbol (container_t * _self, symbol_t * sym)
   assert (_self != NULL);
   assert (sym != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (container (self));
+  assert (a60_as_container (self));
 
   slist_it_t * pr, * it;
   symbol_t * ret;
@@ -950,7 +942,7 @@ container_find_name (container_t * _self, label_t const * lbl, type_t const * at
   assert (_self != NULL);
   assert (lbl != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (container (self));
+  assert (a60_as_container (self));
 
   slist_it_t * it;
   private_container_find_it (self, lbl, atype, NULL, &it);
@@ -965,7 +957,7 @@ container_find_name_rec (container_t * _self, label_t const * lbl, type_t const 
   assert (_self != NULL);
   assert (lbl != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (container (self));
+  assert (a60_as_container (self));
 
   symbol_t * sym = container_find_name (_self, lbl, atype);
   if (sym == NULL && self->parent != NULL)
@@ -983,7 +975,7 @@ container_find_name_rec_add_undefined (container_t * self, label_t const * lbl,
   assert (lbl != NULL);
   assert (atype != NULL);
   assert (log != NULL);
-  assert (container (self));
+  assert (a60_as_container (self));
 
   symbol_t * found = container_find_name_rec (self, lbl, atype);
   if (found == NULL)
@@ -1034,8 +1026,8 @@ stmt_toplev_define_internals (container_t * _self)
 {
   assert (_self != NULL);
   A60_USER_TO_REP (statement, self, *);
-  assert (container (self));
-  assert (self->kind == sk_toplev);
+  assert (a60_as_container (self));
+  assert (self->base.kind == sk_toplev);
 
   struct interfun {
     char const* n;
@@ -1069,63 +1061,43 @@ stmt_toplev_define_internals (container_t * _self)
       symbol_set_type (s, ptr->t);
       symbol_set_hidden (s, 1);
       int fail = container_add_symbol (_self, s, sek_internal);
-#ifdef IN_GCC
-      symbol_set_extra (s, builtin_decl_get_generic (s));
-#endif
       assert (fail == 0);
     }
 }
 
-#ifndef IN_GCC
-static void ATTRIBUTE_NORETURN
-no_glue_built (void)
+visitor_t *
+new_visitor_stmt (
+    callback_t stmt_dummy,
+    callback_t stmt_assign,
+    callback_t stmt_call,
+    callback_t stmt_cond,
+    callback_t stmt_for,
+    callback_t stmt_goto,
+    callback_t stmt_block,
+    callback_t stmt_toplev
+)
 {
-  fprintf (stderr, "Dummy stmt_*_build_generic called.\n");
-  abort ();
+  return a60_build_generic_visitor (
+      A60_IFDEBUG (&private_statement_signature, NULL), 8,
+      stmt_dummy,
+      stmt_assign,
+      stmt_call,
+      stmt_cond,
+      stmt_for,
+      stmt_goto,
+      stmt_block,
+      stmt_toplev
+  );
 }
-void * stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * stmt_assign_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * stmt_call_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * stmt_cond_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * stmt_for_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * stmt_goto_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
-void * container_build_generic (statement_t * self ATTRIBUTE_UNUSED, void * data ATTRIBUTE_UNUSED) { no_glue_built (); }
 
-void * ATTRIBUTE_NORETURN builtin_decl_get_generic (symbol_t * sym ATTRIBUTE_UNUSED) {
-  fprintf (stderr, "Dummy builtin_decl_get_generic called.\n");
-  abort ();
-}
-#endif
-
-void *
-stmt_build_generic (statement_t * self, void * data)
+callback_t
+a60_stmt_callback (void *(*cb)(statement_t *, void *))
 {
-  assert (self != NULL);
-  switch (self->kind)
-    {
-    case sk_dummy:
-      return stmt_dummy_build_generic (self, data);
+  return (callback_t)cb;
+}
 
-    case sk_assign:
-      return stmt_assign_build_generic (self, data);
-
-    case sk_call:
-      return stmt_call_build_generic (self, data);
-
-    case sk_cond:
-      return stmt_cond_build_generic (self, data);
-
-    case sk_for:
-      return stmt_for_build_generic (self, data);
-
-    case sk_goto:
-      return stmt_goto_build_generic (self, data);
-
-    case sk_block:
-    case sk_toplev:
-      return stmt_container_build_generic (as_container (self), data);
-    };
-
-  assert (!"Should never get there!");
-  return NULL;
+callback_t
+a60_cont_callback (void *(*cb)(container_t *, void *))
+{
+  return (callback_t)cb;
 }

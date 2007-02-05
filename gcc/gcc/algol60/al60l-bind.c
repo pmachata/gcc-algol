@@ -38,6 +38,7 @@
 #include "expression.h"
 #include "desig-expr.h"
 #include "for-elmt.h"
+#include "visitor.h"
 
 struct struct_al60l_bind_state_t
 {
@@ -62,11 +63,177 @@ struct struct_al60l_bind_state_t
   /// Stack of statements on binding levels.  This is slist of
   /// tree chains.
   slist_t * stmts;
+
+  visitor_t * statement_build_generic;  ///< statement->GENERIC builder visitor.
+  visitor_t * expression_build_generic;  ///< expression->GENERIC builder visitor.
+  visitor_t * desig_expr_build_generic;  ///< desig_expr->GENERIC builder visitor.
+  visitor_t * type_build_generic;  ///< type->GENERIC builder visitor.
+  visitor_t * symbol_decl_for_type; ///< (symbol,type)->GENERIC, decl builder visitor.
 };
 
 #ifndef IN_GCC
 # error It makes no sense to build this file outside the GCC
 #endif
+
+// ------------------------------------
+//   CALLBACK DECLARATIONS
+// ------------------------------------
+
+// Statement callbacks.
+
+static void * stmt_dummy_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_assign_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_call_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_cond_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_for_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_goto_build_generic (statement_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_container_build_generic (container_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * stmt_toplev_build_generic (container_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+// Expression callbacks.
+
+static void * expr_int_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_real_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_string_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_bool_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_idref_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_if_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_binary_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_unary_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_call_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * expr_subscript_build_generic (expression_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+// Designational Expression callbacks.
+
+static void * desig_expr_label_build_generic (desig_expr_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * desig_expr_if_build_generic (desig_expr_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * desig_expr_switch_build_generic (desig_expr_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+// Type callbacks.
+
+static void * type_unknown_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_any_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_own_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_void_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_int_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_real_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_string_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_bool_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_label_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_switch_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_array_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * type_proc_build_generic (type_t * self, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+// Symbol dispatched on type callbacks.
+
+static void * symbol_decl_for_unknown (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_any (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_own (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_void (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_int (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_real (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_string (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_bool (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_label (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_switch (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_array (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_decl_for_proc (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+/// Special function, not callback.  Returns GENERIC for given builtin
+/// declaration.
+static void * builtin_decl_get_generic (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
 
 // ------------------------------------
 //   AUXILIARIES
@@ -87,6 +254,66 @@ new_bind_state (void)
       guard_ptr (buf, 1, ret->subblocks = new_slist ());
       guard_ptr (buf, 1, ret->vars = new_slist ());
       guard_ptr (buf, 1, ret->stmts = new_slist ());
+      guard_ptr (buf, 1,
+          ret->statement_build_generic = new_visitor_stmt (
+	      a60_stmt_callback (stmt_dummy_build_generic),
+	      a60_stmt_callback (stmt_assign_build_generic),
+	      a60_stmt_callback (stmt_call_build_generic),
+	      a60_stmt_callback (stmt_cond_build_generic),
+	      a60_stmt_callback (stmt_for_build_generic),
+	      a60_stmt_callback (stmt_goto_build_generic),
+	      a60_cont_callback (stmt_container_build_generic),
+	      a60_cont_callback (stmt_toplev_build_generic)
+	  ));
+      guard_ptr (buf, 1,
+          ret->expression_build_generic = new_visitor_expr (
+	      a60_expr_callback (expr_int_build_generic),
+	      a60_expr_callback (expr_real_build_generic),
+	      a60_expr_callback (expr_string_build_generic),
+	      a60_expr_callback (expr_bool_build_generic),
+	      a60_expr_callback (expr_idref_build_generic),
+	      a60_expr_callback (expr_if_build_generic),
+	      a60_expr_callback (expr_binary_build_generic),
+	      a60_expr_callback (expr_unary_build_generic),
+	      a60_expr_callback (expr_call_build_generic),
+	      a60_expr_callback (expr_subscript_build_generic)
+	  ));
+      guard_ptr (buf, 1,
+          ret->desig_expr_build_generic = new_visitor_desig_expr (
+	      a60_desig_expr_callback (desig_expr_label_build_generic),
+	      a60_desig_expr_callback (desig_expr_if_build_generic),
+	      a60_desig_expr_callback (desig_expr_switch_build_generic)
+	  ));
+      guard_ptr (buf, 1,
+          ret->type_build_generic = new_visitor_type (
+	      a60_type_callback (type_unknown_build_generic),
+	      a60_type_callback (type_any_build_generic),
+	      a60_type_callback (type_own_build_generic),
+	      a60_type_callback (type_void_build_generic),
+	      a60_type_callback (type_int_build_generic),
+	      a60_type_callback (type_real_build_generic),
+	      a60_type_callback (type_string_build_generic),
+	      a60_type_callback (type_bool_build_generic),
+	      a60_type_callback (type_label_build_generic),
+	      a60_type_callback (type_switch_build_generic),
+	      a60_type_callback (type_array_build_generic),
+	      a60_type_callback (type_proc_build_generic)
+	  ));
+      guard_ptr (buf, 1,
+          ret->symbol_decl_for_type = new_visitor_type (
+	      a60_symbol_callback (symbol_decl_for_unknown),
+	      a60_symbol_callback (symbol_decl_for_any),
+	      a60_symbol_callback (symbol_decl_for_own),
+	      a60_symbol_callback (symbol_decl_for_void),
+	      a60_symbol_callback (symbol_decl_for_int),
+	      a60_symbol_callback (symbol_decl_for_real),
+	      a60_symbol_callback (symbol_decl_for_string),
+	      a60_symbol_callback (symbol_decl_for_bool),
+	      a60_symbol_callback (symbol_decl_for_label),
+	      a60_symbol_callback (symbol_decl_for_switch),
+	      a60_symbol_callback (symbol_decl_for_array),
+	      a60_symbol_callback (symbol_decl_for_proc)
+	  ));
       return ret;
     }
   else
@@ -232,6 +459,12 @@ bind_state_pop_function (al60l_bind_state_t * state)
 // ------------------------------------
 //   STATEMENT
 // ------------------------------------
+
+tree
+stmt_build_generic (statement_t * statement, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->statement_build_generic, statement, statement, state);
+}
 
 void *
 stmt_dummy_build_generic (statement_t * self ATTRIBUTE_UNUSED,
@@ -575,7 +808,7 @@ stmt_container_build_generic (container_t * self, void * _state)
   for (; slist_it_has (it); slist_it_next (it))
     {
       symbol_t * sym = slist_it_get (it);
-      tree decl = symbol_decl_for_type (symbol_type (sym), sym, _state);
+      tree decl = symbol_decl_for_type (sym, symbol_type (sym), _state);
       symbol_set_extra (sym, decl);
 
       bind_state_add_decl (state, decl);
@@ -604,10 +837,38 @@ stmt_container_build_generic (container_t * self, void * _state)
   return bind_state_build_block (state);
 }
 
+void *
+stmt_toplev_build_generic (container_t * self, void * _state)
+{
+  al60l_bind_state_t * state = _state;
+
+  // Process builtins first.
+  slist_it_t * it = slist_iter (container_symtab (self));
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      symbol_t * sym = a60_as_symbol (slist_it_get (it));
+      symbol_set_extra (sym, builtin_decl_get_generic (sym, state));
+    }
+  delete_slist_it (it);
+
+  // The toplev block should contain only one node: the actual program
+  // node.  Pick it up, and dispatch on it.  Don't do the rest of
+  // bookkeeping that we do with ordinary blocks (as in
+  // stmt_container_build_generic), the toplev node is merely a
+  // container for internal declarations.
+  gcc_assert (slist_length (container_stmts (self)) == 1);
+  return stmt_build_generic (a60_as_statement (slist_front (container_stmts (self))), _state);
+}
 
 // ------------------------------------
 //   EXPRESSION
 // ------------------------------------
+
+tree
+expr_build_generic (expression_t * expression, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->expression_build_generic, expression, expression, state);
+}
 
 void *
 expr_int_build_generic (expression_t * self, void * data ATTRIBUTE_UNUSED)
@@ -761,7 +1022,7 @@ private_expr_build_apow (expression_t * self, void * data)
   symbol_t * sym = new_symbol (l);
   symbol_set_type (sym, types[typeidx]); // function type
   symbol_set_hidden (sym, 1);
-  symbol_set_extra (sym, builtin_decl_get_generic (sym));
+  symbol_set_extra (sym, builtin_decl_get_generic (sym, data));
   expression_t * e = new_expr_call_sym (c, l, args, sym);
 
   return expr_build_generic (e, data);
@@ -919,7 +1180,7 @@ private_builtin_asm_name (symbol_t const * sym)
 }
 
 void *
-builtin_decl_get_generic (symbol_t * sym)
+builtin_decl_get_generic (symbol_t * sym, void * data)
 {
   type_t * t = symbol_type (sym);
 
@@ -934,7 +1195,7 @@ builtin_decl_get_generic (symbol_t * sym)
   label_t * asm_label = new_label (private_builtin_asm_name (sym));
   sym = clone_symbol_with_name (sym, asm_label);
 
-  tree decl = symbol_decl_for_type (t, sym, NULL);
+  tree decl = symbol_decl_for_type (sym, t, data);
 
   // Builtins have file scope.
   DECL_CONTEXT (decl) = NULL_TREE;
@@ -964,6 +1225,12 @@ builtin_decl_get_generic (symbol_t * sym)
 //   DESIGNATIONAL EXPRESSION
 // ------------------------------------
 
+tree
+desig_expr_build_generic (desig_expr_t * desig_expr, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->desig_expr_build_generic, desig_expr, desig_expr, state);
+}
+
 void *
 desig_expr_label_build_generic (desig_expr_t * self,
 				void * data ATTRIBUTE_UNUSED)
@@ -992,6 +1259,12 @@ desig_expr_switch_build_generic (desig_expr_t * self ATTRIBUTE_UNUSED,
 // ------------------------------------
 //   SYMBOL
 // ------------------------------------
+
+tree
+symbol_decl_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->symbol_decl_for_type, sym_type, symbol, state);
+}
 
 /// Build GENERIC for declaration of given symbol.  This function is
 /// called by many symbol_decl_for_<type> methods. Some of them may
@@ -1029,13 +1302,13 @@ symbol_decl_for_own (symbol_t * sym, void * data)
 }
 
 void *
-symbol_decl_for_int (symbol_t * sym, void * data)
+symbol_decl_for_void (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_void (symbol_t * sym, void * data)
+symbol_decl_for_int (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
@@ -1073,7 +1346,7 @@ symbol_decl_for_switch (symbol_t * sym, void * data)
   // 'begin' 'comment' variable `x' comes from outer scope;
   //   'integer' y;
   //   'switch' r := a, b, c
-  //   'switch' s := d, r[x], c
+  //   'switch' s := d, r[x], 'if' x > 1 'then' r[x] 'else' d
   //
   //   y := x + 1;
   //   'goto' s[y];
@@ -1089,11 +1362,14 @@ symbol_decl_for_switch (symbol_t * sym, void * data)
   // { /*variable `x' comes from outer scope*/
   //   int y;
   //   void * .sw.r[] = {&&a, &&b, &&c};
-  //   void * .sw.s[] = {&&d, &&.sw.s.2, &&c};
+  //   void * .sw.s[] = {&&d, &&.sw.s.2, &&.sw.s.3};
   //   goto .stmt1;
   //
   //   .sw.s.2:
   //   goto *.sw.r[x];
+  //
+  //   .sw.s.3:
+  //   if x > 1 goto *.sw.r[x] else goto d;
   //
   //   .stmt1:
   //   y = x + 1;
@@ -1153,6 +1429,12 @@ symbol_decl_for_proc (symbol_t * sym, void * data)
 // ------------------------------------
 //   TYPE
 // ------------------------------------
+
+tree
+type_build_generic (type_t * type, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->type_build_generic, type, type, state);
+}
 
 void *
 type_unknown_build_generic (type_t * self ATTRIBUTE_UNUSED,
