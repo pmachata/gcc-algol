@@ -24,8 +24,8 @@ parser_t * new_parser (lexer_t * lexer, int manage)
 /// Destroy the parser.
 void delete_parser (parser_t * parser);
 
-/// Convert void* to parser, if it is parser, or return NULL.
-parser_t * parser (void * ptr)
+/// Convert void* to parser, if it is parser, or abort.
+parser_t * a60_as_parser (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Fire a parser.  Answer the AST tree of parsed file, or NULL when

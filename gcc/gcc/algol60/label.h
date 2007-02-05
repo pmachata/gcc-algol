@@ -32,8 +32,8 @@ label_t * new_label (estring_t const * id)
 /// Destroy the label.
 void delete_label (label_t * self);
 
-/// Convert void* to label, if it is label, or return NULL.
-label_t * label (void * ptr)
+/// Convert void* to label, if it is label, or abort.
+label_t * a60_as_label (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Answer the label identifier.

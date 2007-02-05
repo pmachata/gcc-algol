@@ -6,12 +6,14 @@
 #include "estring.h"
 #include "boundspair.h"
 #include "slist.h"
+#include "visitor-impl.h"
 
 static char const * private_label_signature = "label";
 
 struct struct_label_t
 {
-  char const * signature;
+  visitable_t base;
+
   estring_t const * id;
   slist_t * arr_bd_list;
   cursor_t * cursor;
@@ -23,7 +25,9 @@ new_label (estring_t const * id)
   assert (id != NULL);
 
   label_t * ret = malloc (sizeof (label_t));
-  ret->signature = private_label_signature;
+#ifndef NDEBUG
+  ret->base.signature = private_label_signature;
+#endif
   ret->id = id;
   ret->arr_bd_list = NULL;
   ret->cursor = NULL;
@@ -41,9 +45,12 @@ delete_label (label_t * self)
 }
 
 label_t *
-label (void * ptr)
+a60_as_label (void * obj)
 {
-  A60_CHECKED_CONVERSION(label, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_label_signature);
+#endif
+  return (label_t *)obj;
 }
 
 estring_t const *

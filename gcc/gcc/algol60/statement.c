@@ -183,7 +183,7 @@ new_stmt_for (cursor_t * cursor, expression_t * variable, slist_t * elmts, state
 
   statement_t * ret = private_new_statement (sk_for, cursor, NULL);
   ret->afor.variable = variable;
-  slist_set_type (elmts, adapt_test, for_elmt);
+  slist_set_type (elmts, adapt_test, a60_as_for_elmt);
   ret->afor.elmts = elmts;
   ret->afor.body = body;
   return ret;

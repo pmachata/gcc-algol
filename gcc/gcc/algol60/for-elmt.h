@@ -17,6 +17,7 @@
 #include "estring.i"
 #include "statement.i"
 #include "logger.i"
+#include "visitor.i"
 #include "pd.h"
 
 /// Create new element that denotes simple immediate value.
@@ -46,8 +47,8 @@ for_elmt_t * clone_for_elmt (for_elmt_t const * self)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1);
 
-/// Convert void* to for element, if it is statement, or return NULL.
-for_elmt_t * for_elmt (void * ptr)
+/// Convert void* to for element, if it is statement, or abort.
+for_elmt_t * a60_as_for_elmt (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Rewrite the element into string in its original shape (as close as
@@ -66,10 +67,6 @@ estring_t * for_elmt_to_str (for_elmt_t const * self, estring_t * buf)
 void for_elmt_resolve_symbols (for_elmt_t * self, expression_t * variable, container_t * context, logger_t * log)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
-
-/// Answer the type of this for element.
-for_elmt_kind_t for_elmt_kind (for_elmt_t * self)
-  ATTRIBUTE_NONNULL(1);
 
 /// Answer the expression of given expr for element.
 expression_t * for_elmt_expr_expr (for_elmt_t const * self)
@@ -94,5 +91,23 @@ expression_t * for_elmt_while_expr (for_elmt_t const * self)
 /// Answer the condition of given while for element.
 expression_t * for_elmt_while_cond (for_elmt_t const * self)
   ATTRIBUTE_NONNULL(1);
+
+/// Construct For Element visitor.  Arguments are the functions that
+/// should be called when the dispatched object's kind matches its
+/// respective argument.
+visitor_t * new_visitor_for_elmt (
+    callback_t for_elmt_expr,
+    callback_t for_elmt_until,
+    callback_t for_elmt_while
+)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+;
+
+/// For conversion of function prototype to callback.
+callback_t a60_for_elmt_callback (void *(*cb)(for_elmt_t *, void *))
+  ATTRIBUTE_NONNULL (1);
 
 #endif//_AL60L_FOR_ELMT_H_

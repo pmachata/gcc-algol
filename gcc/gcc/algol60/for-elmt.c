@@ -4,11 +4,20 @@
 #include "type.h"
 #include "logger.h"
 #include "meta.h"
+#include "visitor-impl.h"
 
 #include <stdlib.h>
 #include <assert.h>
 
 static char const * private_for_elmt_signature = "for_elmt";
+
+typedef enum enum_for_elmt_kind_t
+{
+  fek_expr,
+  fek_until,
+  fek_while
+}
+for_elmt_kind_t;
 
 typedef struct struct_for_elmt_expr_t
 {
@@ -33,8 +42,7 @@ for_elmt_while_t;
 
 struct struct_for_elmt_t
 {
-  char const * signature;
-  for_elmt_kind_t kind;
+  visitable_t base;
 
   cursor_t * cursor;
   union {
@@ -49,8 +57,10 @@ static for_elmt_t *
 private_new_for_elmt (for_elmt_kind_t kind, cursor_t * cursor)
 {
   for_elmt_t * ret = malloc (sizeof (for_elmt_t));
-  ret->signature = private_for_elmt_signature;
-  ret->kind = kind;
+#ifndef NDEBUG
+  ret->base.signature = private_for_elmt_signature;
+#endif
+  ret->base.kind = kind;
   ret->cursor = cursor;
   return ret;
 }
@@ -96,9 +106,9 @@ clone_for_elmt (for_elmt_t const * self)
 {
   assert (self != NULL);
 
-  for_elmt_t * ret = private_new_for_elmt (self->kind, self->cursor);
+  for_elmt_t * ret = private_new_for_elmt (self->base.kind, self->cursor);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case fek_expr:
       ret->feexpr.expr = clone_expression (self->feexpr.expr);
@@ -120,9 +130,12 @@ clone_for_elmt (for_elmt_t const * self)
 }
 
 for_elmt_t *
-for_elmt (void * ptr)
+a60_as_for_elmt (void * obj)
 {
-  A60_CHECKED_CONVERSION (for_elmt, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_for_elmt_signature);
+#endif
+  return (for_elmt_t *)obj;
 }
 
 estring_t *
@@ -130,7 +143,7 @@ for_elmt_to_str (for_elmt_t const * self, estring_t * buf)
 {
   assert (self != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case fek_expr:
       return expr_to_str (self->feexpr.expr, buf);
@@ -192,7 +205,7 @@ for_elmt_resolve_symbols (for_elmt_t * self, expression_t * variable, container_
   assert (self != NULL);
   assert (log != NULL);
 
-  switch (self->kind)
+  switch (self->base.kind)
     {
     case fek_expr:
       expr_resolve_symbols (self->feexpr.expr, context, log);
@@ -217,18 +230,11 @@ for_elmt_resolve_symbols (for_elmt_t * self, expression_t * variable, container_
     };
 }
 
-for_elmt_kind_t
-for_elmt_kind (for_elmt_t * self)
-{
-  assert (self != NULL);
-  return self->kind;
-}
-
 expression_t *
 for_elmt_expr_expr (for_elmt_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == fek_expr);
+  assert (self->base.kind == fek_expr);
   return self->feexpr.expr;
 }
 
@@ -236,7 +242,7 @@ expression_t *
 for_elmt_until_start (for_elmt_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == fek_until);
+  assert (self->base.kind == fek_until);
   return self->feuntil.start;
 }
 
@@ -244,7 +250,7 @@ expression_t *
 for_elmt_until_step (for_elmt_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == fek_until);
+  assert (self->base.kind == fek_until);
   return self->feuntil.step;
 }
 
@@ -252,7 +258,7 @@ expression_t *
 for_elmt_until_stop (for_elmt_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == fek_until);
+  assert (self->base.kind == fek_until);
   return self->feuntil.stop;
 }
 
@@ -260,7 +266,7 @@ expression_t *
 for_elmt_while_expr (for_elmt_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == fek_while);
+  assert (self->base.kind == fek_while);
   return self->fewhile.expr;
 }
 
@@ -268,6 +274,27 @@ expression_t *
 for_elmt_while_cond (for_elmt_t const * self)
 {
   assert (self != NULL);
-  assert (self->kind == fek_while);
+  assert (self->base.kind == fek_while);
   return self->fewhile.cond;
+}
+
+visitor_t *
+new_visitor_for_elmt (
+    callback_t for_elmt_expr,
+    callback_t for_elmt_until,
+    callback_t for_elmt_while
+)
+{
+  return a60_build_generic_visitor (
+      A60_IFDEBUG (&private_for_elmt_signature, NULL), 3,
+      for_elmt_expr,
+      for_elmt_until,
+      for_elmt_while
+  );
+}
+
+callback_t
+a60_for_elmt_callback (void *(*cb)(for_elmt_t *, void *))
+{
+  return (callback_t)cb;
 }

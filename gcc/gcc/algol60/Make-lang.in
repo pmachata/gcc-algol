@@ -132,11 +132,13 @@ algol60/for-elmt.o: algol60/for-elmt.c algol60/for-elmt.h algol60/for-elmt.i\
 		algol60/expression.i algol60/cursor.i algol60/estring.i algol60/logger.i\
 		algol60/expression.h algol60/estring.h algol60/logger.h\
 		algol60/type.h\
+		algol60/visitor.i algol60/visitor.h algol60/visitor-impl.h\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/label.o: algol60/label.c algol60/label.h algol60/label.i\
 		algol60/boundspair.i algol60/estring.i\
 		algol60/boundspair.h algol60/estring.h\
+		algol60/visitor.i algol60/visitor.h algol60/visitor-impl.h\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
 algol60/symbol.o: algol60/symbol.c algol60/symbol.h algol60/symbol.i\
@@ -193,7 +195,9 @@ algol60/parser-tab.o: algol60/parser-tab.c algol60/gcc-stuff\
 		algol60/pd.h algol60/cursor.h algol60/cursor.h\
 		algol60/statement.h algol60/label.h algol60/type.h\
 		algol60/symbol.h algol60/boundspair.h algol60/expression.h\
-		algol60/for-elmt.h algol60/desig-expr.h
+		algol60/visitor.i algol60/visitor.h algol60/visitor-impl.h\
+		algol60/for-elmt.h algol60/desig-expr.h \
+		algol60/meta.h algol60/gcc-stuff
 
 algol60/parser-tab.c: algol60/parser.y algol60/gcc-stuff
 	$(BISON) -t -v -d $(BISONFLAGS) -o algol60/parser-tab.c $(srcdir)/algol60/parser.y

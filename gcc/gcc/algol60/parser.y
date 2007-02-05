@@ -13,6 +13,8 @@
 #include "expression.h"
 #include "desig-expr.h"
 #include "for-elmt.h"
+#include "meta.h"
+#include "visitor-impl.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -24,7 +26,8 @@ static char const* private_parser_signature = "parser";
 
 typedef struct struct_parser_rep_t
 {
-  char const* signature;
+  visitable_t base;
+
   lexer_t * lexer;
   logger_t * log;
   int manage;
@@ -346,7 +349,7 @@ BlockDeclarations:
       slist_it_t * it;
       for (it = slist_iter ($2); slist_it_has (it); slist_it_next (it))
 	{
-	  label_t * lbl = label (slist_it_get (it));
+	  label_t * lbl = a60_as_label (slist_it_get (it));
 	  type_t * qt = rt;
 
 	  // If it was array, see if identifier has dimensions and
@@ -1025,7 +1028,7 @@ ForList:
   ForListElmt
     {
       log_printf (parser->log, ll_debug, "ForList -> ForListElmt");
-      $$ = new_slist_typed_from (adapt_test, for_elmt, 1, $1);
+      $$ = new_slist_typed_from (adapt_test, a60_as_for_elmt, 1, $1);
       @$ = @1;
     }
   |
@@ -1072,7 +1075,9 @@ new_parser (lexer_t * lexer, int manage)
   jmp_buf buf;
   if (setjmp (buf) == 0)
     {
-      ret->signature = private_parser_signature;
+#ifndef NDEBUG
+      ret->base.signature = private_parser_signature;
+#endif
       ret->lexer = lexer;
       ret->manage = manage;
       guard_ptr (buf, 1, ret->log = new_logger ("parser"));
@@ -1103,12 +1108,12 @@ delete_parser (parser_t * _parser)
 }
 
 parser_t *
-parser (void * ptr)
+a60_as_parser (void * obj)
 {
-  if (((parser_rep_t*)ptr)->signature == private_parser_signature)
-    return ptr;
-  else
-    return NULL;
+#ifndef NDEBUG
+  a60_check_access (obj, private_parser_signature);
+#endif
+  return (parser_t *)obj;
 }
 
 statement_t *
