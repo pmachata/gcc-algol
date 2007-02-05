@@ -1187,9 +1187,8 @@ separately.
 
 The subtree rooted at \file{trunk/gcc/} mimics GCC's distribution
 subtree (e.g. \file{gcc-4.2.0/}).  This is advantageous for two
-reasons.  First, you can just tar and zip the gcc subdirectory (no
-including toplevel \file{gcc/} itself, i.e. after unpacking, the two
-directories \file{gcc/} and \file{libga60/} will appear), and
+reasons.  First, you can just tar and zip the contents of directory
+\file{trunk/gcc/}, and
 distribution package is ready.  User will just enter the GCC's
 distribution directory, upack your front end here, do necessary
 patching, and GCC tree is ready to build your front end.  Second, it

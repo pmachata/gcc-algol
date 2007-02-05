@@ -1,0 +1,213 @@
+% \iffalse
+% caption.dtx - The caption package
+% (c) 1994-95 Harald Axel Sommerfeldt (axel@hp1.ang-physik.uni-kiel.de)
+%
+%<*driver>
+\documentclass{ltxdoc}
+\usepackage[latin2]{inputenc}
+\usepackage[T1]{fontenc}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\smallskipamount}
+% \OnlyDescription % Odkomentuj, pokud chce¹ jen popis pou¾ití
+\begin{document}
+  \DocInput{eeict.dtx}
+\end{document}
+%</driver>
+% \fi
+% \newcommand{\eeict}{\texttt{eeict}}
+% \catcode`\"=\active
+% \def"{\bgroup\quotedblbase\def"{\textquotedblleft\egroup}}
+% \MakeShortVerb{\|}
+% \title{\eeict\ document class}
+% \author{David Øezáè\thanks{Pøepsal jsem ¹ablonu vytvoøenou Petrem Dubem tak, aby vyhovovala
+% po¾adavkùm na vzhled pøíspìvkù pro EEICT 2003}
+% \maketitle
+% \section{Úvod}
+%
+% Dokumentární tøída \eeict\ slou¾í k~podávání pøíspìvkù napsaných v \LaTeXe\ na
+% konferenci EEICT.
+%
+% Nejlep¹í zpùsob pou¾ití -- pøevzít ukázkový pøíspìvek a patøièné èásti
+% nahradit svým textem. Vyhnete se tak pøípadným komplikacím.
+%
+% \section{Hlavièka pøíspìvku}
+%
+% Ka¾dý pøíspìvek na konferenci musí zaèínat pøíkazem |\documentclass{eeict}|.
+% ®ádná  volba pøi volání tøídy
+% není pøípustná a je ti¹e ignorována. Dokumentární tøída se
+% postará o názvy obrázkù a tabulek podle daného jazyka, o správné
+% formátování hlavièky, nastaví okraje, nadefinuje nìkolik nových
+% pøíkazù, \dots
+%
+% \DescribeMacro{\title}V hlavièce dokumentu (pøed |\begin{document}|
+% nebo alespoò pøed |\maketitle|) se musí definovat
+% název pøíspìvku pøíkazem |\title|, jeho¾ jediným argumentem je
+% název pøíspìvku (v hlavním jazyku pøíspìvku).
+%
+% \DescribeMacro{\author}Dal¹í povinným pøíkazem je pøíkaz |\author|.
+% V parametru je uvedeno jméno a pøíjmení autora (pøíjmení velkými písmeny)
+% typ studia a v závorkách rok. Dále bude uveden ústav vzniku pøíspìvku
+% a e-mail autora. Pøíkladem pou¾ití mù¾e být 
+% \begin{verbatim}
+%   \author{Jan NOVÝ, Bc. (2) \\
+%           Dept. of Microelectronics, FEEC, BUT \\
+%           E-mail: xnovyj99@stud.feec.vutbr.cz}
+% \end{verbatim}
+%
+% \DescribeMacro{\supervisor}|\supervisor| je plné jméno ¹kolitele
+% práce. Tento pøíkaz lze vynechat, pokud práce nemá ¹kolitele.
+%
+%
+% \section{Zaèátek dokumentu}
+%
+% Za |\begin{document}| musí být uveden jako první pøíkaz (lze tam
+% umístit v¹echny vý¹e uvedené pøíkazy, ale je lep¹í je nechat
+% v~hlavièce) \DescribeMacro{\maketitle}. Stejnì jako ve
+% standardních dokumentárních tøídách zpùsobí vysázení hlavièky
+% dokumentu.
+%
+% Dal¹í pøíkazem je \DescribeMacro{\abstract}|\abstract|, který je
+% v¾dy v angliètinì (i v~èesky psané práci).
+%
+% \section{Nové pøíkazy}
+%
+% Posledním novým pøíkazem je pøíkaz \DescribeMacro{\uv}|\uv|, jeho¾
+% argument bude vysázen v~uvozovkách (v~èeských nebo anglických,
+% podle jazyku daného textu). Jinou mo¾ností psaní uvozovek je
+% ohranièit text znakem dvojté uvozovky~--
+% opìt budou uvozovky správnì podle jazyku. V~anglickém textu
+% zùstává mo¾nost pou¾ít |``| a |''|.
+%
+% \StopEventually{}
+%
+% \section{Implementace}
+% \iffalse
+%<*class>
+% \fi
+% Nejprve musí být po¾adovaný formát \LaTeX{u} a identifikace tøídy.
+%    \begin{macrocode}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{eeict}%
+    [2002/11/11 Dokumentarni trida pro prispevky do sborniku EEICT]
+%    \end{macrocode}
+% T1 kódování obsahuje znaky s akcenty, funguje s nimi dìlení akcentovaných slov
+%    \begin{macrocode}
+\usepackage[T1]{fontenc}
+%    \end{macrocode}
+%
+% Jako základ pou¾iji |article| s~uvedenými parametry
+%    \begin{macrocode}
+\LoadClass[a4paper,onecolumn,12pt]{article}
+%    \end{macrocode}
+% Zmìna tiskového zrcadla
+%    \begin{macrocode}
+\setlength{\hoffset}{-0.7cm}
+\setlength{\voffset}{-1.5cm}
+\setlength{\textheight}{23.0cm}
+\setlength{\textwidth}{15.2cm}
+%    \end{macrocode}
+%
+% Nastavíme balíèky, které budeme pou¾ívat.
+% \begin{macrocode}
+\usepackage{mathptm}
+\renewcommand\rmdefault{ptm}
+\renewcommand\ttdefault{pcr}
+
+\ifx\pdfoutput\undefined  % nejedeme pod pdftexem
+  \usepackage[czech,english]{babel}
+  \main@language{english}
+  \usepackage[latin2]{inputenc}
+  \usepackage{graphics}
+  \usepackage{epsfig}
+\else % je to pdftex !
+  \usepackage[czech,english]{babel}
+  \main@language{english}
+  \usepackage[latin2]{inputenc}
+  \usepackage[pdftex]{graphicx}
+\fi
+% \end{macrocode}
+%
+% Pøíspìvek \emph{nebude} mít èíslované stránky, ani záhlaví a zápatí
+%    \begin{macrocode}
+\pagestyle{empty}
+%    \end{macrocode}
+%
+% Nastavení odsazení prvního øádku odstavce
+%    \begin{macrocode}
+\setlength{\parindent}{1cm}
+\let\@afterindentfalse\@afterindenttrue
+\@afterindenttrue
+%    \end{macrocode}
+%
+% Pøíkazy |\title| (je nadefinován v~|article|, není potøeba dìlat
+% znovu), |\author|, |\kde|, |\skolitel| a |\etitle| vlastnì jen
+% schovají svùj argument nebo argumenty do skrytých "promìnných".
+%    \begin{macrocode}
+\newcommand\supervisor[1]{\def\@skolitel{Supervised by: #1}}
+%    \end{macrocode}
+%
+% Nový pøíkaz |\maketitle| vysází hlavièku v~po¾adovaném formátu
+%    \begin{macrocode}
+\renewcommand\maketitle{\begin{center}
+  \vspace*{8mm}
+  {\Large \textbf{\MakeUppercase{\@title}} }\\
+  \vspace{15mm}
+  \@author \\[5mm]
+  \@skolitel
+  \vspace{.6cm}
+\end{center}}
+%    \end{macrocode}
+%
+% Pøedìlání pøíkazu section tak, aby se nadpisy sázely velkými písmeny.
+% \begin{macrocode}
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
+                                   {2.3ex \@plus.2ex}%
+                                   {\normalfont\normalsize\bfseries\MakeUppercase}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\bfseries\MakeUppercase}}
+\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\MakeUppercase}}
+% \end{macrocode}
+%
+%
+% Je¹tì upravíme pøíkaz na definici abstraktu.
+% \begin{macrocode}
+\renewcommand\abstract[1]{
+  \section*{\abstractname}
+  {#1}
+}
+% \end{macrocode}
+%
+% A zbývají je¹tì specialitky rozdílné pro èe¹tinu a angliètinu.
+% V~èeské èásti se pou¾ije balíèek |babel| s~parametry |english| i
+% |czech|, proto¾e abstrakt bude anglicky, tak¾e budeme potøebovat
+% oba jazyky. Pro abstrakt se pomocí |\selectlanguage| pøepneme do
+% angliètiny, èím¾ zmìníme jak vzory pro dìlení slov
+% (v~centrovaném textu se to ale neprojeví, proto¾e tam se slova
+% nedìlí), tak pravidla pro sazbu uvozovek. V~angliètinì je to v¹e
+% trochu jednodu¹¹í.
+%    \begin{macrocode}
+  \def\sktitle{Supervised by: }
+  \def\@skolitel{the work has no suppervisor}
+%    \end{macrocode}
+%
+% A na úplný závìr pøijde definice pøíkazù pro uvozovky, které
+% správnì odrá¾ejí pou¾itý jazyk.
+% \catcode`\"=12
+%    \begin{macrocode}
+\def\uv#1{\iflanguage{english}{``#1''}%
+                              {\quotedblbase #1\textquotedblleft}}%
+\catcode`\"=\active
+\def"{\bgroup
+    \iflanguage{english}%
+        {``\def"{''\egroup}}%
+        {\quotedblbase\def"{\textquotedblleft\egroup}}}
+%    \end{macrocode}
+%\iffalse
+%</class>
+%\fi
