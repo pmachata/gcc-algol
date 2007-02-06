@@ -871,12 +871,9 @@ static void *
 private_expr_build_apow (expression_t * self, void * data)
 {
   // Arithmetic power expressions are translated to function call into
-  // runtime library.  The resulting symbol is named _a60_pow_<a>_<b>,
-  // where `a' and `b' are either `i' or `r', depending on the type of
-  // each operand.
-
-  // @TODO: as of now, there is no runtime library in place yet.  The
-  // resulting binary has to be linked with apow.c and -lm explicitly.
+  // runtime library.  The resulting symbol is named `pow`, and is
+  // mangled during the translation of funcall to reflect the types of
+  // the operands.
 
   type_t * tl = expr_type (expr_binary_left (self));
   type_t * tr = expr_type (expr_binary_right (self));
@@ -895,11 +892,11 @@ private_expr_build_apow (expression_t * self, void * data)
 
   // sl, sr are indices used to compute
   // index into types array
-  int sl = (types_same (tl, type_int ()) ? 0
-	    : (gcc_assert (types_same (tl, type_real ())), 1));
-  int sr = (types_same (tr, type_int ()) ? 0
-	    : (gcc_assert (types_same (tr, type_real ())), 1));
-  int typeidx = 2*sl + sr; // index into types array
+  int sl = (types_same (tl, type_int ()) ? 0x00
+	    : (gcc_assert (types_same (tl, type_real ())), 0x02));
+  int sr = (types_same (tr, type_int ()) ? 0x00
+	    : (gcc_assert (types_same (tr, type_real ())), 0x01));
+  int typeidx = sl & sr; // index into types array
 
   label_t * l = new_label (new_estring_from ("pow"));
   slist_t * args = new_slist_from (2,
@@ -923,7 +920,7 @@ static void *
 private_expr_build_limp (expression_t * self, void * data)
 {
   // `a => b` translates as `or (not (a), b)`
-  // @@@TODO: btw, this is candidate to custom tree node!
+  // @@@TODO: btw, this is candidate for custom tree node!
   cursor_t * c = expr_cursor (self);
   expression_t * e1 = new_expr_unary (c, euk_not, expr_binary_left (self));
   expression_t * e2 = new_expr_binary (c, ebk_lor, e1, expr_binary_right (self));
