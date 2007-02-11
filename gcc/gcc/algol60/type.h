@@ -124,6 +124,10 @@ type_t * t_proc_return_type (type_t const * self)
 slist_t * t_proc_arg_types (type_t const * self)
   ATTRIBUTE_NONNULL (1);
 
+/// Answer the switchlist of switch type.
+slist_t * t_switch_switchlist (type_t const * self)
+  ATTRIBUTE_NONNULL (1);
+
 /// Return string representation of the type (for debugging and
 /// dumping purposes).  Buffer `buf' may be NULL, in which case new
 /// buffer will be allocated, or it can be preallocated buffer, in

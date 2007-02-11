@@ -1004,8 +1004,9 @@ expr_call_build_generic (expression_t * self, void * state)
 void *
 expr_subscript_build_generic (expression_t * self, void * data)
 {
-  tree array = symbol_extra (expr_symbol (self));
-  type_t * t = symbol_type (expr_symbol (self));
+  symbol_t * sym = expr_symbol (self);
+  tree array = symbol_extra (sym);
+  type_t * t = symbol_type (sym);
   gcc_assert (array != NULL);
   gcc_assert (t != NULL);
 
@@ -1121,25 +1122,40 @@ desig_expr_build_generic (desig_expr_t * desig_expr, al60l_bind_state_t * state)
 
 void *
 desig_expr_label_build_generic (desig_expr_t * self,
-				void * data ATTRIBUTE_UNUSED)
+				void * _state ATTRIBUTE_UNUSED)
 {
   symbol_t * sym = desig_expr_symbol (self);
-  return symbol_extra (sym);
+  tree decl = symbol_extra (sym);
+  TREE_USED (decl) = 1;
+  tree ret = build1 (ADDR_EXPR, ptr_type_node, decl);
+
+  return ret;
 }
 
 void *
-desig_expr_if_build_generic (desig_expr_t * self ATTRIBUTE_UNUSED,
-			     void * data ATTRIBUTE_UNUSED)
+desig_expr_if_build_generic (desig_expr_t * self,
+			     void * _state)
 {
-  // NYI!
-  gcc_unreachable ();
+  al60l_bind_state_t * state = _state;
+
+  desig_expr_t * bt = desig_expr_if_trueb (self);
+  desig_expr_t * bf = desig_expr_if_falseb (self);
+  expression_t * cond = desig_expr_if_cond (self);
+
+  tree tbt = convert (ptr_type_node, desig_expr_build_generic (bt, state));
+  tree tbf = convert (ptr_type_node, desig_expr_build_generic (bf, state));
+  tree tcond = expr_build_generic (cond, state);
+
+  tree ret  = build3 (COND_EXPR, ptr_type_node, tcond, tbt, tbf);
+
+  return ret;
 }
 
 void *
 desig_expr_switch_build_generic (desig_expr_t * self ATTRIBUTE_UNUSED,
-				 void * data ATTRIBUTE_UNUSED)
+				 void * _state ATTRIBUTE_UNUSED)
 {
-  // NYI!
+  // @@@NYI
   gcc_unreachable ();
 }
 
@@ -1220,16 +1236,15 @@ symbol_decl_for_bool (symbol_t * sym, void * data)
 }
 
 void *
-symbol_decl_for_label (symbol_t * sym, void * data)
+symbol_decl_for_label (symbol_t * sym, void * data ATTRIBUTE_UNUSED)
 {
   label_t const * lbl = symbol_label (sym);
   tree id = get_identifier (estr_cstr (label_id (lbl)));
-  tree tt = type_build_generic (type_void (), data);
-  return build_decl (LABEL_DECL, id, tt);
+  return build_decl (LABEL_DECL, id, void_type_node);
 }
 
 void *
-symbol_decl_for_switch (symbol_t * sym, void * data)
+symbol_decl_for_switch (symbol_t * sym, void * _state)
 {
   // 'begin' 'comment' variable `x' comes from outer scope;
   //   'integer' y;
@@ -1269,8 +1284,17 @@ symbol_decl_for_switch (symbol_t * sym, void * data)
   //   d: puts ("d");
   // }
 
-  // @@@for now...
-  return private_decl_for_ordinary_symbol (sym, data);
+  al60l_bind_state_t * state = _state;
+
+  label_t const * lbl = symbol_label (sym);
+  tree id = get_identifier (estr_cstr (label_id (lbl)));
+
+  slist_t * switchlist = t_switch_switchlist (symbol_type (sym));
+  tree high_bound = expr_build_generic (new_expr_int (NULL, slist_length (switchlist) - 1), state);
+  tree array_range = build_range_type (integer_type_node, integer_zero_node, high_bound);
+  tree array_type = build_array_type (ptr_type_node, array_range);
+
+  return build_decl (VAR_DECL, id, array_type);
 }
 
 void *
@@ -1394,8 +1418,8 @@ void *
 type_switch_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			   void * data ATTRIBUTE_UNUSED)
 {
-  // @@@for now...
-  return build_pointer_type (void_type_node);
+  // This is handled in symbol_decl_for_switch.
+  gcc_unreachable ();
 }
 
 void *

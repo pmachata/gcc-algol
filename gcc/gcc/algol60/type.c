@@ -249,6 +249,14 @@ t_proc_arg_types (type_t const * self)
   return self->t_proc.arg_types;
 }
 
+slist_t *
+t_switch_switchlist (type_t const * self)
+{
+  assert (self != NULL);
+  assert (self->base.kind == tk_switch);
+  return self->t_switch.switchlist;
+}
+
 static int
 private_proc_types_check (t_proc_t const * self, t_proc_t const * other,
 			  int (*pred)(type_t const*, type_t const*))
