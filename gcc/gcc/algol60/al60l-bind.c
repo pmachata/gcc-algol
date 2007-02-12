@@ -73,6 +73,8 @@ struct struct_al60l_bind_state_t
   visitor_t * desig_expr_build_generic;  ///< desig_expr->GENERIC builder visitor.
   visitor_t * type_build_generic;  ///< type->GENERIC builder visitor.
   visitor_t * symbol_decl_for_type; ///< (symbol,type)->GENERIC, decl builder visitor.
+  visitor_t * symbol_init_for_type; ///< (symbol,type)->GENERIC, init builder visitor.
+  visitor_t * symbol_init_for_switch_elmt; ///< desig_expr->GENERIC, builder for switch dispatch auxiliary code.
   visitor_t * for_elmt_build_generic; ///< for_elmt->GENERIC builder visitor.
 };
 
@@ -195,7 +197,7 @@ static void * type_proc_build_generic (type_t * self, void * data)
   ATTRIBUTE_NONNULL (1);
 
 
-// Symbol dispatched on type callbacks.
+// Declaration builder callbacks.
 
 static void * symbol_decl_for_unknown (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
@@ -231,6 +233,27 @@ static void * symbol_decl_for_array (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
 static void * symbol_decl_for_proc (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+// Initializator builder callbacks.
+
+static void * symbol_init_omit (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_init_error (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_init_for_switch (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+
+// Helper callbacks for symbol_init_for_switch.
+
+static void * symbol_init_for_switch_elmt_label (desig_expr_t * de, void * _state)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_init_for_switch_elmt_compute (desig_expr_t * de, void * _state)
   ATTRIBUTE_NONNULL (1);
 
 
@@ -331,6 +354,27 @@ new_bind_state (void)
 	      a60_symbol_callback (symbol_decl_for_switch),
 	      a60_symbol_callback (symbol_decl_for_array),
 	      a60_symbol_callback (symbol_decl_for_proc)
+	  ));
+      guard_ptr (buf, 1,
+          ret->symbol_init_for_type = new_visitor_type (
+	      a60_symbol_callback (symbol_init_error),
+	      a60_symbol_callback (symbol_init_error),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_for_switch),
+	      a60_symbol_callback (symbol_init_omit),
+	      a60_symbol_callback (symbol_init_omit)
+	  ));
+      guard_ptr (buf, 1,
+          ret->symbol_init_for_switch_elmt = new_visitor_desig_expr (
+	      a60_desig_expr_callback (symbol_init_for_switch_elmt_label),
+	      a60_desig_expr_callback (symbol_init_for_switch_elmt_compute),
+	      a60_desig_expr_callback (symbol_init_for_switch_elmt_compute)
 	  ));
       guard_ptr (buf, 1,
           ret->for_elmt_build_generic = new_visitor_for_elmt (
@@ -703,6 +747,15 @@ stmt_container_build_generic (container_t * self, void * _state)
       symbol_set_extra (sym, decl);
 
       bind_state_add_decl (state, decl);
+    }
+
+  slist_it_reset (it, container_symtab (self));
+
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      symbol_t * sym = slist_it_get (it);
+      tree init = symbol_init_for_type (sym, symbol_type (sym), _state);
+      bind_state_add_stmt (state, init);
     }
 
   slist_it_reset (it, container_stmts (self));
@@ -1152,16 +1205,23 @@ desig_expr_if_build_generic (desig_expr_t * self,
 }
 
 void *
-desig_expr_switch_build_generic (desig_expr_t * self ATTRIBUTE_UNUSED,
-				 void * _state ATTRIBUTE_UNUSED)
+desig_expr_switch_build_generic (desig_expr_t * self, void * _state)
 {
-  // @@@NYI
-  gcc_unreachable ();
+  al60l_bind_state_t * state = _state;
+
+  symbol_t * sym = desig_expr_symbol (self);
+  tree tsym = symbol_extra (sym);
+
+  expression_t * index = desig_expr_switch_index (self);
+  tree tindex = expr_build_generic (index, state);
+
+  tree ret = build4 (ARRAY_REF, ptr_type_node, tsym, tindex, NULL_TREE, NULL_TREE);
+  return ret;
 }
 
 
 // ------------------------------------
-//   SYMBOL
+//   SYMBOL -- both DECL & INIT
 // ------------------------------------
 
 tree
@@ -1169,6 +1229,27 @@ symbol_decl_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t *
 {
   return (tree)a60_visitor_dispatch (state->symbol_decl_for_type, sym_type, symbol, state);
 }
+
+tree
+symbol_init_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->symbol_init_for_type, sym_type, symbol, state);
+}
+
+void * symbol_init_omit (symbol_t * sym ATTRIBUTE_UNUSED,
+			 void * _state ATTRIBUTE_UNUSED)
+{
+  // do nothing.
+  return NULL_TREE;
+}
+
+void * symbol_init_error (symbol_t * sym ATTRIBUTE_UNUSED,
+			  void * _state ATTRIBUTE_UNUSED)
+{
+  // This is called for `unknown' and `any' metatypes.
+  gcc_unreachable ();
+}
+
 
 /// Build GENERIC for declaration of given symbol.  This function is
 /// called by many symbol_decl_for_<type> methods. Some of them may
@@ -1244,60 +1325,6 @@ symbol_decl_for_label (symbol_t * sym, void * data ATTRIBUTE_UNUSED)
 }
 
 void *
-symbol_decl_for_switch (symbol_t * sym, void * _state)
-{
-  // 'begin' 'comment' variable `x' comes from outer scope;
-  //   'integer' y;
-  //   'switch' r := a, b, c
-  //   'switch' s := d, r[x], 'if' x > 1 'then' r[x] 'else' d
-  //
-  //   y := x + 1;
-  //   'goto' s[y];
-  //
-  //   a: puts (`a');
-  //   b: puts (`b');
-  //   c: puts (`c');
-  //   d: puts (`d');
-  // 'end';
-  //
-  // Is translated like this:
-  //
-  // { /*variable `x' comes from outer scope*/
-  //   int y;
-  //   void * .sw.r[] = {&&a, &&b, &&c};
-  //   void * .sw.s[] = {&&d, &&.sw.s.2, &&.sw.s.3};
-  //   goto .stmt1;
-  //
-  //   .sw.s.2:
-  //   goto *.sw.r[x];
-  //
-  //   .sw.s.3:
-  //   if x > 1 goto *.sw.r[x] else goto d;
-  //
-  //   .stmt1:
-  //   y = x + 1;
-  //   goto *.sw.s[y];
-  //
-  //   a: puts ("a");
-  //   b: puts ("b");
-  //   c: puts ("c");
-  //   d: puts ("d");
-  // }
-
-  al60l_bind_state_t * state = _state;
-
-  label_t const * lbl = symbol_label (sym);
-  tree id = get_identifier (estr_cstr (label_id (lbl)));
-
-  slist_t * switchlist = t_switch_switchlist (symbol_type (sym));
-  tree high_bound = expr_build_generic (new_expr_int (NULL, slist_length (switchlist) - 1), state);
-  tree array_range = build_range_type (integer_type_node, integer_zero_node, high_bound);
-  tree array_type = build_array_type (ptr_type_node, array_range);
-
-  return build_decl (VAR_DECL, id, array_type);
-}
-
-void *
 symbol_decl_for_array (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
@@ -1335,6 +1362,153 @@ symbol_decl_for_proc (symbol_t * sym, void * data)
   */
 
   return fn_decl;
+}
+
+//
+// COMPILATION OF COMPUTED GOTO
+// ----------------------------
+//
+// 'begin' 'comment' variable `x' comes from outer scope;
+//   'integer' y;
+//   'switch' r := a, b, c
+//   'switch' s := d, r[x], 'if' x > 1 'then' r[x] 'else' d
+//
+//   y := x + 1;
+//   'goto' s[y];
+//
+//   a: puts (`a');
+//   b: puts (`b');
+//   c: puts (`c');
+//   d: puts (`d');
+// 'end';
+//
+// Is translated like this:
+//
+// {
+//   void * .sw.r[3];      /* switch declaration */
+//   void * .sw.s[3];      /* switch declaration */
+//
+//   {                     /* init of switch R */
+//     goto .init;
+//     .init:
+//       sw.s = {&&a, &&b, &&c};
+//   }
+//
+//   {                     /* init of switch S */
+//     goto .init;
+//     .sw.s.2:
+//       goto *.sw.r[x];
+//     .sw.s.3:
+//       goto (x > 1 ? *.sw.r[x] : d);
+//     .init:
+//       sw.s = {&&d, &&.sw.s.2, &&.sw.s.3};
+//   }
+//
+//   y = x + 1;            /* start of normal code */
+//   goto *.sw.s[y];
+//
+//   a: puts ("a");
+//   b: puts ("b");
+//   c: puts ("c");
+//   d: puts ("d");
+// }
+
+void *
+symbol_decl_for_switch (symbol_t * sym, void * _state)
+{
+  // Build declaration node for switch.  Switches are handled as
+  // arrays of void pointers, each pointer pointing to one
+  // designational expression.
+
+  al60l_bind_state_t * state = _state;
+
+  label_t const * lbl = symbol_label (sym);
+  tree id = get_identifier (estr_cstr (label_id (lbl)));
+
+  slist_t * switchlist = t_switch_switchlist (symbol_type (sym));
+  long len = slist_length (switchlist);
+  tree high_bound = expr_build_generic (new_expr_int (NULL, len), state);
+  tree array_range = build_range_type (integer_type_node, integer_one_node, high_bound);
+  tree array_type = build_array_type (ptr_type_node, array_range);
+
+  return build_decl (VAR_DECL, id, array_type);
+}
+
+void *
+symbol_init_for_switch (symbol_t * sym, void * _state)
+{
+  al60l_bind_state_t * state = _state;
+  tree sym_decl = symbol_extra (sym);
+
+  bind_state_push_block (state);
+
+  slist_t * switchlist = t_switch_switchlist (symbol_type (sym));
+
+  tree init_decl = create_artificial_label ();
+  bind_state_add_decl (state, init_decl);
+
+  tree goto_init = build1 (GOTO_EXPR, void_type_node, init_decl);
+  bind_state_add_stmt (state, goto_init);
+
+  slist_t * init_exprs = new_slist ();
+  slist_it_t * it = slist_iter (switchlist);
+  long idx = 1;
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      tree index = build_int_cst (integer_type_node, idx);
+      desig_expr_t *de = a60_as_desig_expr (slist_it_get (it));
+      tree value = a60_visitor_dispatch (state->symbol_init_for_switch_elmt, de, de, state);
+
+      tree element = build4 (ARRAY_REF, ptr_type_node, sym_decl, index, NULL_TREE, NULL_TREE);
+      tree elt_init = build2 (INIT_EXPR, ptr_type_node, element, value);
+      slist_pushback (init_exprs, elt_init);
+
+      idx++;
+    }
+
+  tree init_lbl  = build1 (LABEL_EXPR, void_type_node, init_decl);
+  bind_state_add_stmt (state, init_lbl);
+
+  slist_it_reset (it, init_exprs);
+  for (; slist_it_has (it); slist_it_next (it))
+    bind_state_add_stmt (state, slist_it_get (it));
+
+  delete_slist_it (it);
+  delete_slist (init_exprs);
+
+  tree ret = bind_state_build_block (state);
+  return ret;
+}
+
+void *
+symbol_init_for_switch_elmt_label (desig_expr_t * de, void * _state)
+{
+  // The case of simple label is optimized: no artificial label is
+  // created, and the jump is done directly, not through dispatch as
+  // in case of `if' and `switch'-style computed goto.
+
+  al60l_bind_state_t * state = _state;
+  return desig_expr_build_generic (de, state);
+}
+
+void *
+symbol_init_for_switch_elmt_compute (desig_expr_t * de, void * _state)
+{
+  // This callback is used both for `if' and `switch'-style computed goto.
+  // We dispatch the computation of goto to the DE->GENERIC builder.
+
+  al60l_bind_state_t * state = _state;
+
+  tree tmp_lbl_decl = create_artificial_label ();
+  tree tmp_label = build1 (LABEL_EXPR, void_type_node, tmp_lbl_decl);
+  bind_state_add_decl (state, tmp_lbl_decl);
+  bind_state_add_stmt (state, tmp_label);
+
+  tree target = desig_expr_build_generic (de, state);
+  tree jump = build1 (GOTO_EXPR, void_type_node, target);
+  bind_state_add_stmt (state, jump);
+
+  return build1 (ADDR_EXPR, ptr_type_node, tmp_lbl_decl);
 }
 
 

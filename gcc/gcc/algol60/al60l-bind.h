@@ -100,4 +100,10 @@ tree symbol_decl_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_stat
   ATTRIBUTE_NONNULL (2)
   ATTRIBUTE_NONNULL (3);
 
+/// Return GENERIC initialization for given symbol depending on symbol's type.
+tree symbol_init_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t * state)
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3);
+
 #endif//AL60L_GCC_BIND_H
