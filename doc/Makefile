@@ -1,4 +1,4 @@
-FILES = RRA60.pdf PIOCA60.pdf dp.pdf demo-1.pdf
+FILES = RRA60.pdf PIOCA60.pdf dp.pdf demo-1.pdf eeict.pdf
 
 all: $(FILES)
 
@@ -16,7 +16,9 @@ RRA60.pdf: RRA60.tex
 PIOCA60.pdf: PIOCA60.tex
 
 show-%: %.pdf
-	xpdf $<
+	xpdf $^
 
 clean:
 	-rm -f *.aux  *.bbl  *.blg  *.log  *.out *.toc *.snm *.nav *.brf *~ $(FILES)
+
+.PHONY: clean all

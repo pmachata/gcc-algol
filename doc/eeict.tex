@@ -1,36 +1,178 @@
 \documentclass{eeict}
-\inputencoding{latin2}
+\usepackage[latin2]{inputenc}
+\usepackage[bf]{caption2}
 
 \title{Construction of GNU Compiler Collection Front End}
+\author{Petr Machata}
+\programme{Master Degree Programme (2), FIT BUT}
+\emails{xmacha31@stud.fit.vutbr.cz}
 
-\author{
-Bc. Petr \MakeUppercase{Machata}, Master Degree Programme (2)\\
-Dept. of Information Systems, FIT, BUT\\
-E-mail: xmacha31@stud.fit.vutbr.cz
-}
-
-\supervisor{Ing. Milo¹ Eysselt, CSc., and Ing. Luká¹ Szemla}
+\supervisor{Milo¹ Eysselt, Luká¹ Szemla}
+\emailv{eysselt@fit.vutbr.cz, lukas.szemla@siemens.com}
 
 \begin{document}
+% -- Hlavièka práce --
 
 \maketitle
 
+\def\term#1{{\it #1}}
+\def\option#1{{\sffamily{}#1}}
+\def\literal#1{{\sffamily{}#1}}
+\def\file#1{{\sffamily{}#1}}
+
 \selectlanguage{english}
 
-\abstract{}
+\abstract{ The entry barrier to the GCC development got considerably
+  lower during the last years.  With work on documentation and
+  separation of internal modules, writing for GCC becomes accessible
+  to wide community of industry and academia developers.
 
-\section{Draft}
+  This paper provides an overview of GCC high-level work-flow, with
+  emphasis on information necessary for front end developer. }
 
-Foo bar baz.
+\section{Introduction}
+
+GCC can translate from variety of source languages into variety of
+assemblers.  With one command, decorated with various flags, it is
+able to do preprocessing, compilation, assembly and linking.  How does
+it do this?
+
+In following sections, we delve into successively deeper levels of
+overall GCC architecture.
+
+\section{Compilation Driver and Compiler Proper}
+
+On the outermost level, GCC is divided into a \term{compilation
+  driver}, and a \term{compiler proper}.  Besides this, GCC uses
+assembler and a linker from the host tool chain.
+
+Compilation driver is a user-interfacing application.  It knows about
+all languages that GCC supports.  Given a source file, it can guess
+what to do based on suffix of the file.  After optional preprocessing,
+it launches compiler proper, then passes its output to assembler, and,
+eventually, linker.  Depending on command line switches in effect the
+process can be cut short in any of the stages.
+
+There is one compiler proper for each language, each in own
+executable.  You can run the compiler by hand, if you so wish, it
+accepts much the same command line arguments as \file{gcc} command,
+and turns the source file into assembly.
+
+Let us now look at the compiler proper closer in next section.
+
+\section{Front End, Middle End, and Back End}
+
+The compiler proper itself is composed from three components: a
+\term{front end}, a \term{back end}, and a \term{middle end}.  Front
+end contains language-processing logic, and together with middle end
+it makes up platform independent part of the compiler.  Back end is
+then the platform dependent part.
+
+Just like the compilation process done by the driver, the compilation
+of a source file can be viewed as a pipeline that converts one program
+representation into another.  Source code enters the front end and
+flows through the pipeline, being converted at each stage into
+successively lower-level representation forms until final code
+generation in the form of assembly code \cite{LDS:2006:Novillo}.
+
+There are two intermediate languages that are used on the interfaces
+between the three ``ends'' of GCC.  The higher level one, used between
+front end and middle end, is called \term{GENERIC}.  The lower level
+one, used between middle end and back end, is called RTL, or Register
+Transfer Language.  Both middle end and back end do various
+optimizations on their intermediate representation before they turn it
+into yet lower level one.
+
+Both interfaces mentioned are {\em unidirectional}: front end feeds
+GENERIC into middle end, middle end feeds RTL into back end.  But
+sometimes the other direction is also necessary.  For example, during
+alias analysis, middle end has to know whether two objects of
+different data types may occupy the same memory location
+\cite{LDS:2006:Novillo}.  Each language has its own rules for that,
+and front end is the place where language-dependent things happen.
+For this purpose, GCC has a mechanism of \term{language hooks} or
+\term{langhooks}, which provide a way to involve front end in lower
+layers of compilation process.
+
+The goal of front end is to analyze source program, and ensure all
+types are correct and all constraints required by the language
+definition hold.  If everything is sound, it has to provide GENERIC
+representation of the program.  You need to know GENERIC to write a
+front end, but you do not have to know anything about RTL.
+
+\section{GENERIC and GIMPLE}
+
+The important intermediate form is called GENERIC.  From
+expressiveness point of view, it is similar to C.  From notation point
+of view, it is similar to Lisp.  GENERIC is capable of representing
+whole functions, i.e. it supports everything there is to represent in
+a typical C function: variables, loops, conditionals, function calls,
+etc.
+
+GENERIC is a tree language (hence the Lisp qualities).  As any well
+behaving tree, it is recursive in nature, having both internal and
+leaf nodes, with internal nodes capable of holding other internal
+nodes.  Typical leaves are identifier references, integer numbers,
+etc.  Internal nodes are then unary or binary operations, block
+containers, etc.
+
+For optimization purposes, GENERIC is still too high level a
+representation.  During a course of compilation, it is lowered.  The
+intermediate code that it is lowered into is called \term{GIMPLE}.
+The process of lowering is thus inevitably called
+\term{gimplification}.  GIMPLE is a subset of GENERIC.  Nesting
+structures are still represented as containers in GIMPLE, but all
+expressions are broken down to three address code, using temporaries
+to store intermediate results\cite{GDS:2003:Merill}.  There are
+actually two GIMPLE forms: high GIMPLE and low GIMPLE.  In low GIMPLE
+containers are further transformed into \literal{goto}s and
+labels\cite{LDS:2006:Novillo}.
+
+Apart from predefined GENERIC nodes, GCC provides a mechanism to
+define your own node types.  You have to provide a langhook for the
+purpose of gimplifying these.  For example C++ front end actually does
+not use pure GENERIC, but extends it with its own node types.
+
+\section{Fronted ASTs}
+
+While it is possible to use GENERIC for representation of programs in
+your front end, it is recommended not to do so \cite{LDS:2006:Novillo}
+\cite{LJ:2005:Tromey}.  Your own AST representation can suit the
+language in hand better, and furthermore you are better shielded from
+the changes in GCC core.  Besides, the language analysis tools that
+you write are then shielded from {\em GCC itself}, which makes them
+reusable in other tasks: e.g. as a syntax checker in smart editor.
+
+This approach was taken by the Java front end, and also the
+experimental front end of mine, which compiles Algol.
+
+\section{Garbage Collector}
+
+Internally, GCC uses garbage collector \cite{TR:GCCInt} for its memory
+management.  The objects with indeterminable lifetime, which includes
+trees, are not managed explicitly, but instead garbage-collected.
+The collector used is of mark \& sweep kind.  Pointers (variables,
+fields, ...) that should be collected are explicitly tagged, the tags
+are gathered during the build, and marking and scanning routines are
+generated.
+
+The garbage collector data are also used for implementation of
+precompiled headers.  The precompiled header mechanism can only save
+static variables if they are scalar. Complex data structures must be
+allocated in garbage-collected memory.
+
+\section{Summary}
+
+In my thesis\cite{2006:Machata}, I am describing the methodology of
+custom front end integration.  The work is half exploratory, and half
+synthesizing in nature: there is some documentation and several
+papers, but in the end, few people know how to write for GCC.  The
+thesis will provide useful how-to for anyone who wishes to write their
+own GCC front end.
 
 
-\begin{thebibliography}{9}
-
-    \bibitem{bakule} Machata, P.: Various Shit. Bachelor project at
-      the Dept. of Information Systems, FIT, Brno University of
-      Technology (May 3, 2005).
-
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{eeict}
 
 
 \end{document}

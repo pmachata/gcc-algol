@@ -4,22 +4,24 @@
 %%
 %% The original source files were:
 %%
+%% Author: Martin Drahansky, drahan@fit.vutbr.cz
+%%
 %% eeict.dtx  (with options: `class')
 %% 
 %% 
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{eeict}%
+\ProvidesClass{eeict}% 
     [2002/11/11 Dokumentarni trida pro prispevky do sborniku EEICT]
-\usepackage[T1]{fontenc}
-\LoadClass[a4paper,onecolumn,12pt]{article}
-\setlength{\hoffset}{-0.7cm}
-\setlength{\voffset}{-1.5cm}
-\setlength{\textheight}{23.0cm}
-\setlength{\textwidth}{15.2cm}
-\usepackage{mathptm}
-\renewcommand\rmdefault{ptm}
-\renewcommand\ttdefault{pcr}
+\usepackage[T1]{fontenc} 
+\LoadClass[a4paper,onecolumn,12pt]{article} 
+\setlength{\hoffset}{-0.9cm} 
+\setlength{\voffset}{-1.9cm} 
+\setlength{\textheight}{24.0cm} 
+\setlength{\textwidth}{16.0cm} 
+\usepackage{mathptm} 
+\renewcommand\rmdefault{ptm} 
+\renewcommand\ttdefault{pcr} 
 
 \ifx\pdfoutput\undefined  % nejedeme pod pdftexem
   \usepackage[czech,english]{babel}
@@ -33,25 +35,39 @@
   \usepackage[latin2]{inputenc}
   \usepackage[pdftex]{graphicx}
 \fi
+
 \pagestyle{empty}
-\setlength{\parindent}{1cm}
-\let\@afterindentfalse\@afterindenttrue
-\@afterindenttrue
+\setlength{\parindent}{0cm} 
+\let\@afterindentfalse\@afterindenttrue 
+\@afterindenttrue 
+
 \newcommand\supervisor[1]{\def\@skolitel{Supervised by: #1}}
-\renewcommand\maketitle{\begin{center}
+\newcommand\programme[1]{\def\@program{#1}}
+\newcommand\emails[1]{\def\@emajls{E-mail: #1}}
+\newcommand\emailv[1]{\def\@emajlv{E-mail: #1}}
+\renewcommand\maketitle{
+\begin{center}
   \vspace*{8mm}
-  {\Large \textbf{\MakeUppercase{\@title}} }\\
-  \vspace{15mm}
-  \@author \\
+  {\Large\textbf{\MakeUppercase{\@title}} }\\
+  \vspace{9mm}
+  {\normalsize\textbf\@author}\\
+  \vspace{0.01mm}
+  {\footnotesize\@program}\\
+  \vspace{0.01mm}
+  {\footnotesize\@emajls}\\
 [5mm]
-  \@skolitel
-  \vspace{.6cm}
-\end{center}}
-\renewcommand\section{\@startsection {section}{1}{\z@}%
-                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
-                                   {2.3ex \@plus.2ex}%
+  \@skolitel\\
+  \vspace{0.01mm}
+  {\footnotesize\@emajlv}
+  \vspace{1mm}
+  \hspace{0.8mm}
+\end{center}} 
+
+\renewcommand\section{\@startsection{section}{1}{-0.61cm}%
+                                   {-5.5ex \@plus -1ex \@minus -.2ex}%
+                                   {1.0ex \@plus.2ex}%
                                    {\normalfont\normalsize\bfseries\MakeUppercase}}
-\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}% 
                                      {-3.25ex\@plus -1ex \@minus -.2ex}%
                                      {1.5ex \@plus .2ex}%
                                      {\normalfont\normalsize\bfseries\MakeUppercase}}
