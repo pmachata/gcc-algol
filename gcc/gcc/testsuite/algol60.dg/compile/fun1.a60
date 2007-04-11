@@ -1,0 +1,28 @@
+'comment' { dg-do compile } ;
+'begin'
+	'procedure' foo1;
+	'begin'
+		puts (`yay!');
+	'end';
+
+	'procedure' foo2 (a, b, c);
+	'value' a, c;
+	'integer' a, b;
+	'real' c;
+	'begin'
+		puts (`yay!');
+	'end';
+
+	'procedure' foo3 (a);
+	'integer' a;
+	'begin'
+		puts (`yay!');
+	'end';
+
+	'procedure' foo4 (a);
+	'value' a;
+	'integer' a;
+	'begin'
+		puts (`yay!');
+	'end';
+'end';

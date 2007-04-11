@@ -63,8 +63,8 @@ void * adapt_test (void * obj, void * test)
 /// just the list.
 void delete_slist (slist_t * list);
 
-/// Convert void* to slist, if it is slist, or return NULL.
-slist_t * slist (void * ptr)
+/// Convert void* to slist, if it is slist, or abort.
+slist_t * a60_as_slist (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Add new object onto the end of the list.
@@ -153,6 +153,16 @@ slist_it_t * slist_iter (slist_t * list)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL(1);
 
+/// Crate a dummy iterator.  This is like having an iterator defined
+/// over an empty list.
+slist_it_t * new_slist_it (void)
+  ATTRIBUTE_MALLOC;
+
+/// Clone iterator.  For explicit iteration over the list.
+slist_it_t * clone_slist_it (slist_it_t const * it)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
+
 /// Query the validity of the iterator.  Return non-zero when the
 /// iterator points to the list, or zero when the iteration ended.
 int slist_it_has (slist_it_t * it)
@@ -187,6 +197,12 @@ void slist_it_next (slist_it_t * it)
 void slist_it_reset (slist_it_t * it, slist_t * list)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
+
+/// Reset existing iterator to point to the same element as other
+/// iterator.  If other iterator is null, `it' is reset as if it
+/// iterated over empty list (see new_slist_it).
+void slist_it_reset_it (slist_it_t * it, slist_it_t const * other)
+  ATTRIBUTE_NONNULL(1);
 
 /// Destroy the iterator.
 void delete_slist_it (slist_it_t * it);

@@ -19,6 +19,12 @@
 #include "logger.i"
 #include "pd.h"
 
+typedef enum enum_parmconv_t {
+  pc_byname,
+  pc_byvalue
+}
+parmconv_t;
+
 /// Create new variable given its name.
 symbol_t * new_symbol_var (label_t const * name)
   ATTRIBUTE_NONNULL(1)
@@ -27,6 +33,14 @@ symbol_t * new_symbol_var (label_t const * name)
 /// Create new function given its name.
 symbol_t * new_symbol_func (label_t const * name)
   ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_MALLOC;
+
+/// Create new formal parameter.
+/// `type' may be `t_any' for by-name parameters withou a type
+/// specified.
+symbol_t * new_symbol_formparm (label_t const * name, type_t const * type, parmconv_t convention)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_MALLOC;
 
 /// Create new symbol by cloning other symbol.

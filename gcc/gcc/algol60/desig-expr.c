@@ -1,5 +1,6 @@
 #include "desig-expr.h"
 #include "symbol.h"
+#include "a60_symtab.h"
 #include "expression.h"
 #include "meta.h"
 #include "estring.h"

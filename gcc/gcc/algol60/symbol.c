@@ -34,10 +34,18 @@ typedef struct struct_sym_func_t
 }
 sym_func_t;
 
+typedef struct struct_sym_formparm_t
+{
+  type_t const * type;
+  parmconv_t convention;
+}
+sym_formparm_t;
+
 typedef enum enum_symbol_kind_t
 {
   sk_var,
   sk_func,
+  sk_formparm,
 }
 symbol_kind_t;
 
@@ -53,6 +61,7 @@ struct struct_symbol_t
   union {
     sym_var_t sym_var;
     sym_func_t sym_func;
+    sym_formparm_t sym_formparm;
   };
 };
 
@@ -73,20 +82,32 @@ private_alloc_symbol (label_t const * label, symbol_kind_t kind)
 }
 
 symbol_t *
-new_symbol_var (label_t const * label)
+new_symbol_var (label_t const * name)
 {
-  assert (label != NULL);
+  assert (name != NULL);
 
-  symbol_t * ret = private_alloc_symbol (label, sk_var);
+  symbol_t * ret = private_alloc_symbol (name, sk_var);
   return ret;
 }
 
 symbol_t *
-new_symbol_func (label_t const * label)
+new_symbol_func (label_t const * name)
 {
-  assert (label != NULL);
+  assert (name != NULL);
 
-  symbol_t * ret = private_alloc_symbol (label, sk_func);
+  symbol_t * ret = private_alloc_symbol (name, sk_func);
+  return ret;
+}
+
+symbol_t *
+new_symbol_formparm (label_t const * name, type_t const * type, parmconv_t convention)
+{
+  assert (name != NULL);
+  assert (type != NULL);
+
+  symbol_t * ret = private_alloc_symbol (name, sk_formparm);
+  ret->sym_formparm.type = type;
+  ret->sym_formparm.convention = convention;
   return ret;
 }
 

@@ -207,9 +207,12 @@ delete_slist (slist_t * list)
 }
 
 slist_t *
-slist (void * ptr)
+a60_as_slist (void * obj)
 {
-  A60_CHECKED_CONVERSION(slist, ptr);
+#ifndef NDEBUG
+  a60_check_access (obj, private_slist_signature);
+#endif
+  return (slist_t *)obj;
 }
 
 void
@@ -396,18 +399,36 @@ slist_filter (
 }
 
 
-slist_it_t *
-slist_iter (slist_t * list)
+static slist_it_t *
+private_create_slist_iter (slist_node_t * pointee)
 {
-  assert (list != NULL);
-
   slist_it_t * ret = malloc (sizeof (slist_it_t));
   if (ret == NULL)
     return NULL;
 
-  ret->pointee = list->head;
+  ret->pointee = pointee;
 
   return ret;
+}
+
+slist_it_t *
+slist_iter (slist_t * list)
+{
+  assert (list != NULL);
+  return private_create_slist_iter (list->head);
+}
+
+slist_it_t *
+new_slist_it (void)
+{
+  return private_create_slist_iter (NULL);
+}
+
+slist_it_t *
+clone_slist_it (slist_it_t const * it)
+{
+  assert (it != NULL);
+  return private_create_slist_iter (it->pointee);
 }
 
 int
@@ -470,6 +491,16 @@ slist_it_reset (slist_it_t * it, slist_t * list)
 }
 
 void
+slist_it_reset_it (slist_it_t * it, slist_it_t const * other)
+{
+  assert (it != NULL);
+  if (other == NULL)
+    it->pointee = NULL;
+  else
+    it->pointee = other->pointee;
+}
+
+void
 delete_slist_it (slist_it_t * it)
 {
   free (it);
@@ -524,7 +555,7 @@ main (void)
     {
       slist_t * l = *lit;
       printf (" + %s\n", *nit);
-      assert (slist (l));
+      assert (a60_as_slist (l));
       assert (slist_empty (l));
 
       for (int i = 0; i < 10; ++i)
@@ -544,7 +575,7 @@ main (void)
 
       ctr = 0;
       slist_t * l2 = slist_filter (l, odd, NULL);
-      assert (slist (l2));
+      assert (a60_as_slist (l2));
       slist_each (l, incctr, &ctr);
       slist_each (l2, incctr, &ctr);
       assert (ctr == 15);

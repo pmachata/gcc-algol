@@ -13,7 +13,7 @@
 #include "expression.h"
 #include "desig-expr.h"
 #include "for-elmt.h"
-#include "a60_symtab.h"//!
+#include "a60_symtab.h"
 #include "meta.h"
 #include "visitor-impl.h"
 
@@ -70,10 +70,10 @@ static void private_dump_log_labels (parser_rep_t * parser, slist_t * slist);
 static void private_add_labels_to_symtab (parser_rep_t * parser, container_t * cont,
 					  slist_t * slist, statement_t * target);
 
-/// Create a new symbol called `lbl`, assign given type `qt`, and
-/// place the symbol into symbol table.  If there already is a symbol
-/// of such label, output an error message and give up.
-static void private_setup_and_add_symbol (parser_rep_t * parser, label_t * lbl,
+/// Given a symbol `sym', assign it a type `qt`, and place it into
+/// symbol table.  If there already is a symbol of such label, output
+/// an error message and give up.
+static void private_setup_and_add_symbol (parser_rep_t * parser, symbol_t * sym,
 					  type_t * qt);
 
 static void private_open_block (parser_rep_t * parser, container_t * cont);
@@ -393,7 +393,7 @@ BlockDeclarations:
 	  if (type_is_own ($1))
 	    qt = new_t_own (qt);
 
-	  private_setup_and_add_symbol (parser, lbl, qt);
+	  private_setup_and_add_symbol (parser, new_symbol_var (lbl), qt);
 	}
       delete_slist_it (it);
     }
@@ -402,7 +402,7 @@ BlockDeclarations:
     {
       log_printf (parser->log, ll_debug, "BlockDeclarations -> KWSWITCH Identifier SEPASSIGN SwitchList");
       type_t * t = new_t_switch ($4);
-      private_setup_and_add_symbol (parser, $2, t);
+      private_setup_and_add_symbol (parser, new_symbol_var ($2), t);
     }
   |
   OptType KWPROCEDURE Identifier FormalParameterPart SEPSEMICOLON ValuePart SpecificationPart Statement
@@ -411,10 +411,164 @@ BlockDeclarations:
 		  "BlockDeclarations -> OptType KWPROCEDURE Identifier "
 		  "FormalParameterPart SEPSEMICOLON ValuePart "
 		  "SpecificationPart Statement");
+      slist_t * formal_params = $4; // list of all formal parameters
+      slist_t * value_params = $6;  // list of formals passed by value
+      slist_t * param_types = $7;   // list [type, [id, ...], type, [id, ...], ...]
+
+      // RRA60: """In the heading a specification part, giving
+      // information about the kinds and types of the formal
+      // parameters by means of an obvious notation, may be included.
+      // In this part no formal parameter may occur more than once.
+      // Specification of formal parameters called by value [...]
+      // must be supplied and specifications of formal parameters
+      // called by name [...] may be omitted."""
+
+      // This list collects type for each declared parameter.
+      // `type_any()' is inserted for by-name symbols without type
+      // specifier.
+      slist_t * types = new_slist_typed (adapt_test, a60_as_type);
+
+      // This list collects formal parameters of the function.
+      slist_t * formparms = new_slist_typed (adapt_test, a60_as_symbol);
+
+      slist_it_t * ht = slist_iter (formal_params);
+      slist_it_t * it = new_slist_it (); // iterate over param_types and value_params
+      slist_it_t * jt = new_slist_it (); // iterate over lists inside param_types
+
+      // Build a list of formal parameters (formparam symbols).
+      for (; slist_it_has (ht); slist_it_next (ht))
+	{
+	  label_t * id0 = a60_as_label (slist_it_get (ht));
+	  type_t * type0 = NULL;
+	  parmconv_t convention = pc_byname;
+
+	  // Iterate over all param_types specifiers, and find if type
+	  // is specified at most once.
+	  for (slist_it_reset (it, param_types); slist_it_has (it); )
+	    {
+	      slist_t * bunch = a60_as_slist (slist_it_get (it));
+	      slist_it_next (it);
+
+	      type_t * type1 = a60_as_type (slist_it_get (it));
+	      slist_it_next (it);
+
+	      for (slist_it_reset (jt, bunch); slist_it_has (jt); slist_it_next (jt))
+		{
+		  label_t * id1 = a60_as_label (slist_it_get (jt));
+		  if (label_eq (id0, id1))
+		    {
+		      if (type0 != NULL)
+			{
+			  log_printfc (parser->log, ll_error, label_cursor (id1),
+				       "duplicate specifier: `%s' already declared as `%s'.",
+				       estr_cstr (label_id (id1)),
+				       estr_cstr (type_to_str (type0, parser->tmp)));
+			}
+		      else
+		        type0 = type1;
+		    }
+		}
+	    }
+
+	  for (slist_it_reset (it, value_params);
+	       slist_it_has (it); slist_it_next (it))
+	    if (label_eq (id0, a60_as_label (slist_it_get (it))))
+	      {
+		convention = pc_byvalue;
+		break;
+	      }
+
+	  // Having the type unspecified is only allowed for by-name
+	  // parameters.  Unpecified type implies type_any.
+	  if (type0 == NULL && convention == pc_byvalue)
+	    {
+	      log_printfc (parser->log, ll_error, label_cursor (id0),
+			   "parameter `%s' is declared by-value, but has no type specifier.",
+			   estr_cstr (label_id (id0)));
+	      type0 = type_int ();
+	     }
+	  else if (type0 == NULL)
+	    {
+	      assert (convention == pc_byname);
+	      type0 = type_any ();
+	    }
+
+	  symbol_t * formparm = new_symbol_formparm (id0, type0, convention);
+	  slist_pushback (formparms, formparm);
+	  slist_pushback (types, type0);
+	}
+
+      // Check that all parameters in ValuePart are really formal parameters,
+      // and that each parameter is specified at most once in ValuePart.
+      for (slist_it_reset (it, value_params); slist_it_has (it); slist_it_next (it))
+	{
+	  label_t * id1 = a60_as_label (slist_it_get (it));
+	  int found = 0;
+
+    	  for (slist_it_reset (ht, formal_params);
+	       slist_it_has (ht); slist_it_next (ht))
+	    if (label_eq (id1, a60_as_label (slist_it_get (ht))))
+	      {
+		found = 1;
+		break;
+	      }
+
+	  if (!found)
+	    {
+	      log_printfc (parser->log, ll_error, label_cursor (id1),
+			   "invalid identifier in value part: `%s' is not a formal parameter.",
+			   estr_cstr (label_id (id1)));
+	    }
+
+	  for (slist_it_reset_it (ht, it), slist_it_next (ht);
+	       slist_it_has (ht); slist_it_next (ht))
+	    if (label_eq (id1, a60_as_label (slist_it_get (ht))))
+	      {
+		log_printfc (parser->log, ll_error, label_cursor (id1),
+			     "duplicate identifier in value part: `%s' was already specified.",
+			     estr_cstr (label_id (id1)));
+		break;
+	      }
+	}
+
+      // Check that all parameters in SpecificationPart are really formal parameters.
+      for (slist_it_reset (it, param_types); slist_it_has (it); )
+	{
+	  slist_t * bunch = a60_as_slist (slist_it_get (it));
+	  slist_it_next (it);
+	  slist_it_next (it);
+
+	  for (slist_it_reset (jt, bunch); slist_it_has (jt); slist_it_next (jt))
+	    {
+	      label_t * id1 = a60_as_label (slist_it_get (jt));
+	      int found = 0;
+
+	      for (slist_it_reset (ht, formal_params);
+		   slist_it_has (ht); slist_it_next (ht))
+		if (label_eq (id1, a60_as_label (slist_it_get (ht))))
+		  {
+		    found = 1;
+		    break;
+		  }
+
+	      if (!found)
+		{
+		  log_printfc (parser->log, ll_error, label_cursor (id1),
+			       "invalid specifier: `%s' is not a formal parameter.",
+			       estr_cstr (label_id (id1)));
+		}
+	    }
+	}
+
+      delete_slist_it (jt);
+      delete_slist_it (it);
+      delete_slist_it (ht);
+
+      // Construct a type.
+      type_t * rettype = $1 ? $1 : type_void ();
+
+      //private_setup_and_add_symbol (parser, new_symbol_func ($3), 
       /*
-      slist_t * formal_params = $4;
-      slist_t * value_params = $6;
-      slist_t * param_types = $7;
       slist_it_t * it = slist_iter (formal_params);
       for (; slist_it_has (it); slist_it_next (it))
 	{
@@ -455,8 +609,8 @@ SpecificationPart:
   |
   SpecificationPart Specifier IdentifierList SEPSEMICOLON
     {
-      slist_pushfront ($$, $3);
-      slist_pushfront ($$, $2);
+      slist_pushback ($$, $3);
+      slist_pushback ($$, $2);
       @$ = @1;
     }
 
@@ -522,7 +676,7 @@ Type:
     }
 
 OptType:
-  /*epsilon*/ { $$ = 0; }
+  /*epsilon*/ { $$ = NULL; }
   |
   Type
 
@@ -1293,16 +1447,16 @@ private_add_labels_to_symtab (parser_rep_t * parser,
 }
 
 static void
-private_setup_and_add_symbol (parser_rep_t * parser, label_t * lbl, type_t * qt)
+private_setup_and_add_symbol (parser_rep_t * parser, symbol_t * sym, type_t * qt)
 {
   // Setup symbol and add to table.
-  symbol_t * sym = new_symbol_var (lbl);
+  label_t const * lbl = symbol_label (sym);
   symbol_set_type (sym, qt);
   a60_symtab_t * symtab = container_symtab (parser->block);
   int conflict = a60_symtab_add_symbol (symtab, sym, sek_ordinary);
   if (conflict)
     {
-      parser->tmp = label_to_str (symbol_label (sym), parser->tmp);
+      parser->tmp = label_to_str (lbl, parser->tmp);
       log_printfc (parser->log, ll_error, label_cursor (lbl),
 		  "duplicate identifier `%s'.", estr_cstr (parser->tmp));
     }

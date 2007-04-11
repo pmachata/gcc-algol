@@ -186,7 +186,7 @@ algol60/expression.o: algol60/expression.c algol60/expression.h algol60/expressi
 		algol60/cursor.h algol60/estring.h algol60/logger.h\
 		algol60/statement.h algol60/label.h\
 		algol60/slist.h algol60/type.h algol60/symbol.h\
-		algol60/desig-expr.h\
+		algol60/desig-expr.h algol60/a60_symtab.h\
 		algol60/visitor-impl.h algol60/visitor.h algol60/visitor.i\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
@@ -196,6 +196,7 @@ algol60/desig-expr.o: algol60/desig-expr.c algol60/desig-expr.h algol60/desig-ex
 		algol60/symbol.i\
 		algol60/expression.h algol60/logger.h algol60/estring.h\
 		algol60/statement.h algol60/symbol.h algol60/type.h\
+		algol60/a60_symtab.h\
 		algol60/visitor-impl.h algol60/visitor.h algol60/visitor.i\
 		algol60/meta.h algol60/pd.h algol60/gcc-stuff
 
@@ -204,6 +205,7 @@ algol60/parser-tab.o: algol60/parser-tab.c algol60/gcc-stuff\
 		algol60/pd.h algol60/cursor.h algol60/cursor.h\
 		algol60/statement.h algol60/label.h algol60/type.h\
 		algol60/symbol.h algol60/boundspair.h algol60/expression.h\
+		algol60/a60_symtab.h\
 		algol60/visitor.i algol60/visitor.h algol60/visitor-impl.h\
 		algol60/for-elmt.h algol60/desig-expr.h \
 		algol60/meta.h algol60/gcc-stuff

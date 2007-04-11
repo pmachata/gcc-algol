@@ -7,6 +7,7 @@
 #include "slist.h"
 #include "type.h"
 #include "symbol.h"
+#include "a60_symtab.h"
 #include "meta.h"
 #include "visitor-impl.h"
 
