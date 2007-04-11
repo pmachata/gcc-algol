@@ -13,6 +13,7 @@
 #include "expression.h"
 #include "desig-expr.h"
 #include "for-elmt.h"
+#include "a60_symtab.h"//!
 #include "meta.h"
 #include "visitor-impl.h"
 
@@ -195,9 +196,15 @@ static container_t * private_close_block (parser_rep_t * parser);
 %type <lbl> Identifier
 //%type <sym> DeclaredIdentifier
 %type <stmt> Block
+%type <type> Specifier
+%type <lst> SpecificationPart
+%type <lst> ValuePart
+%type <lst> FormalParameterList
+%type <lst> FormalParameterPart
 //%type <> BlockDeclarationsList
 //%type <> BlockDeclarations
 %type <type> Type
+%type <type> OptType
 %type <flag> OptOwn
 %type <type> OptIntrinsicType
 %type <type> IntrinsicType
@@ -227,7 +234,6 @@ static container_t * private_close_block (parser_rep_t * parser);
 %type <stmt> ForStatement
 %type <lst> ForList
 %type <lelm> ForListElmt
-
 %%
 
 Program:
@@ -240,7 +246,8 @@ Program:
     // actual toplevel container, contains internal declarations
     container_t * c = new_stmt_toplev (NULL);
     container_set_parent (c, dummy);
-    stmt_toplev_define_internals (c);
+    a60_symtab_t * symtab = container_symtab (c);
+    a60_symtab_toplev_define_internals (symtab);
     private_open_block (parser, c);
   }
   LabelList Block SEPSEMICOLON EOFTOK
@@ -277,13 +284,7 @@ Label:
     }
 
 LabelIdentifier:
-  IDENTIFIER
-    {
-      log_printf (parser->log, ll_debug, "LabelIdentifier -> IDENTIFIER");
-      estring_t * lit = $1;
-      $$ = new_label (lit);
-      label_set_cursor ($$, cr_csr (parser, &@1));
-    }
+  Identifier
   |
   LITINTEGER
     {
@@ -403,6 +404,89 @@ BlockDeclarations:
       type_t * t = new_t_switch ($4);
       private_setup_and_add_symbol (parser, $2, t);
     }
+  |
+  OptType KWPROCEDURE Identifier FormalParameterPart SEPSEMICOLON ValuePart SpecificationPart Statement
+    {
+      log_printf (parser->log, ll_debug,
+		  "BlockDeclarations -> OptType KWPROCEDURE Identifier "
+		  "FormalParameterPart SEPSEMICOLON ValuePart "
+		  "SpecificationPart Statement");
+      /*
+      slist_t * formal_params = $4;
+      slist_t * value_params = $6;
+      slist_t * param_types = $7;
+      slist_it_t * it = slist_iter (formal_params);
+      for (; slist_it_has (it); slist_it_next (it))
+	{
+	  //@TODO
+	}
+      delete_slist_it (it);
+      //type_t * t = new_t_switch ($4);
+      */
+    }
+
+FormalParameterPart:
+  /*epsilon*/ { $$ = new_slist (); }
+  |
+  SEPLPAREN FormalParameterList SEPRPAREN { $$ = $2; }
+
+FormalParameterList:
+  Identifier
+    {
+      $$ = new_slist ();
+      slist_pushfront ($$, $1);
+      @$ = @1;
+    }
+  |
+  FormalParameterList ParameterDelimiter Identifier
+    {
+      slist_pushfront ($$, $3);
+      @$ = @1;
+    }
+
+ValuePart:
+  /*epsilon*/ { $$ = new_slist (); }
+  |
+  KWVALUE IdentifierList SEPSEMICOLON { $$ = $2; }
+
+SpecificationPart:
+  /*epsilon*/
+    { $$ = new_slist (); }
+  |
+  SpecificationPart Specifier IdentifierList SEPSEMICOLON
+    {
+      slist_pushfront ($$, $3);
+      slist_pushfront ($$, $2);
+      @$ = @1;
+    }
+
+Specifier:
+  IntrinsicType
+  |
+  IntrinsicType KWARRAY { $$ = new_t_array ($1); }
+  |
+  KWARRAY { $$ = type_array_real (); }
+  |
+  KWLABEL
+    {
+      log_printf (parser->log, ll_debug, "Specifier -> KWLABEL");
+      $$ = type_label ();
+      @$ = @1;
+    }
+  |
+  KWSWITCH
+    {
+      log_printf (parser->log, ll_debug, "Specifier -> KWSWITCH");
+      $$ = type_switch_any ();
+      @$ = @1;
+    }
+  |
+  OptIntrinsicType KWPROCEDURE
+    {
+      log_printf (parser->log, ll_debug, "Specifier -> OptType KWPROCEDURE");
+      $$ = new_t_proc_stub ($1 ? $1 : type_any ());
+      @$ = @1;
+    }
 
 Type:
   OptOwn IntrinsicType
@@ -436,6 +520,11 @@ Type:
         @$ = @3;
       $$ = t;
     }
+
+OptType:
+  /*epsilon*/ { $$ = 0; }
+  |
+  Type
 
 OptOwn:
   /*epsilon*/ { $$ = 0; }
@@ -1177,15 +1266,16 @@ private_add_labels_to_symtab (parser_rep_t * parser,
   // labels to the program block, if no other block is closer.
 
   while (context != parser->program_block
-	 && slist_empty (container_symtab (context)))
+	 && a60_symtab_empty (container_symtab (context)))
     context = container_parent (context);
 
   slist_it_t * it = slist_iter (slist);
   for (; slist_it_has (it); slist_it_next (it))
     {
       label_t * lbl = slist_it_get (it);
-      symbol_t * sym = new_symbol (lbl);
-      if (container_add_symbol (context, sym, sek_ordinary) != 0)
+      symbol_t * sym = new_symbol_var (lbl);
+      a60_symtab_t * symtab = container_symtab (context);
+      if (a60_symtab_add_symbol (symtab, sym, sek_ordinary) != 0)
 	{
 	  cursor_t * csr = stmt_cursor (target);
 	  log_printfc (parser->log, ll_error, csr,
@@ -1206,9 +1296,10 @@ static void
 private_setup_and_add_symbol (parser_rep_t * parser, label_t * lbl, type_t * qt)
 {
   // Setup symbol and add to table.
-  symbol_t * sym = new_symbol (lbl);
+  symbol_t * sym = new_symbol_var (lbl);
   symbol_set_type (sym, qt);
-  int conflict = container_add_symbol (parser->block, sym, sek_ordinary);
+  a60_symtab_t * symtab = container_symtab (parser->block);
+  int conflict = a60_symtab_add_symbol (symtab, sym, sek_ordinary);
   if (conflict)
     {
       parser->tmp = label_to_str (symbol_label (sym), parser->tmp);

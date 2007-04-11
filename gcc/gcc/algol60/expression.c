@@ -616,9 +616,11 @@ private_resolve_symbols_idref (expression_t * self, container_t * block,
 			       logger_t * log)
 {
   type_t * match_type = new_t_proc (type_any (), new_slist ());
-  symbol_t * found = container_find_name_rec (block, self->idref.lbl, match_type);
+  a60_symtab_t * symtab = container_symtab (block);
+  symbol_t * found = a60_symtab_find_name_rec (symtab, self->idref.lbl, match_type);
   if (found == NULL)
-    found = container_find_name_rec_add_undefined (block, self->idref.lbl, type_any (),
+    found = a60_symtab_find_name_rec_add_undefined (symtab, self->idref.lbl,
+						    type_any (),
 						   log, self->cursor);
   self->idref.sym = found;
 }
@@ -726,8 +728,9 @@ private_resolve_symbols_call (expression_t * self,
   delete_slist_it (it);
 
   type_t * match_type = new_t_proc (type_any (), argtypes);
+  a60_symtab_t * symtab = container_symtab (block);
   self->call.sym =
-    container_find_name_rec_add_undefined (block, self->call.lbl,
+    a60_symtab_find_name_rec_add_undefined (symtab, self->call.lbl,
 					   match_type, log,
 					   self->cursor);
   assert (self->call.sym != NULL);
@@ -745,8 +748,9 @@ private_resolve_symbols_subscript (expression_t * self,
     }
   delete_slist_it (it);
 
+  a60_symtab_t * symtab = container_symtab (block);
   self->subscript.sym =
-    container_find_name_rec_add_undefined (block, self->subscript.lbl,
+    a60_symtab_find_name_rec_add_undefined (symtab, self->subscript.lbl,
 					   type_array_any (), log,
 					   self->cursor);
 

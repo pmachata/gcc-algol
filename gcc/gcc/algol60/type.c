@@ -72,7 +72,7 @@ struct struct_type_t
   };
 };
 
-char const * const private_type_signature = "type";
+static char const * const private_type_signature = "type";
 
 static type_t * private_new_type (type_kind_t kind);
 static void private_type_to_str (type_t const * self, estring_t * buf, int canon);
@@ -207,6 +207,18 @@ new_t_proc (type_t * rettype, slist_t * argtypes)
   return ret;
 }
 
+type_t  * new_t_proc_stub (type_t * rettype)
+{
+  assert (rettype != NULL);
+
+  type_t * ret = private_new_type (tk_proc);
+  ret->t_proc.ret_type = rettype;
+  // We use NULL to represent stub.  Ellipsis type would be better,
+  // but this will do.
+  ret->t_proc.arg_types = NULL;
+  return ret;
+}
+
 type_t *
 a60_as_type (void * obj)
 {
@@ -263,6 +275,11 @@ private_proc_types_check (t_proc_t const * self, t_proc_t const * other,
 {
   if (!pred (self->ret_type, other->ret_type))
     return 0;
+
+  // NULL means "any number of arguments of any type".
+  if (self->arg_types == NULL
+      || other->arg_types == NULL)
+    return 1;
 
   slist_it_t * it1 = slist_iter (self->arg_types);
   slist_it_t * it2 = slist_iter (other->arg_types);
@@ -402,6 +419,7 @@ expr_primitive_for_type (type_t const * self)
     };
 
   assert (!"Should never get there!");
+  return NULL;
 }
 
 int
@@ -745,7 +763,9 @@ MEMOIZE(string)
 MEMOIZE(bool)
 MEMOIZE(label)
 MEMOIZE2(array, any)
+MEMOIZE2(array, real)
 MEMOIZEPROC1(void, int)
+MEMOIZEPROC1(void, any)
 MEMOIZEPROC1(int, real)
 MEMOIZEPROC1(real, int)
 MEMOIZEPROC1(int, int)

@@ -39,6 +39,7 @@
 #include "desig-expr.h"
 #include "for-elmt.h"
 #include "visitor.h"
+#include "a60_symtab.h"
 
 struct struct_al60l_bind_state_t
 {
@@ -729,6 +730,29 @@ private_label_build_generic (container_t * context ATTRIBUTE_UNUSED,
   return ret;
 }
 
+static void *
+private_stmt_container_build_decl_for_symbol (symbol_t * sym, void * _state)
+{
+  // This is called from stmt_container_build_generic for each symbol
+  // in symbol table.
+  al60l_bind_state_t * state = _state;
+  tree decl = symbol_decl_for_type (sym, symbol_type (sym), state);
+  symbol_set_extra (sym, decl);
+  bind_state_add_decl (state, decl);
+  return NULL;
+}
+
+static void *
+private_stmt_container_build_init_for_symbol (symbol_t * sym, void * _state)
+{
+  // This is called from stmt_container_build_generic for each symbol
+  // in symbol table.
+  al60l_bind_state_t * state = _state;
+  tree init = symbol_init_for_type (sym, symbol_type (sym), state);
+  bind_state_add_stmt (state, init);
+  return NULL;
+}
+
 void *
 stmt_container_build_generic (container_t * self, void * _state)
 {
@@ -739,27 +763,15 @@ stmt_container_build_generic (container_t * self, void * _state)
   // will add their bind_exprs to the _front of state->subblocks.
   bind_state_push_block (state);
 
-  it = slist_iter (container_symtab (self));
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      symbol_t * sym = slist_it_get (it);
-      tree decl = symbol_decl_for_type (sym, symbol_type (sym), _state);
-      symbol_set_extra (sym, decl);
+  a60_symtab_each (container_symtab (self),
+		   a60_symbol_callback (private_stmt_container_build_decl_for_symbol),
+		   _state);
 
-      bind_state_add_decl (state, decl);
-    }
+  a60_symtab_each (container_symtab (self),
+		   a60_symbol_callback (private_stmt_container_build_init_for_symbol),
+		   _state);
 
-  slist_it_reset (it, container_symtab (self));
-
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      symbol_t * sym = slist_it_get (it);
-      tree init = symbol_init_for_type (sym, symbol_type (sym), _state);
-      bind_state_add_stmt (state, init);
-    }
-
-  slist_it_reset (it, container_stmts (self));
-
+  it = slist_iter (container_stmts (self));
   for (; slist_it_has (it); slist_it_next (it))
     {
       statement_t * st = slist_it_get (it);
@@ -781,19 +793,23 @@ stmt_container_build_generic (container_t * self, void * _state)
   return bind_state_build_block (state);
 }
 
+static void *
+private_stmt_toplev_build_decl_for_symbol (symbol_t * sym, void * _state)
+{
+  // This is called from stmt_toplev_build_generic for each symbol
+  // in symbol table.
+  al60l_bind_state_t * state = _state;
+  symbol_set_extra (sym, builtin_decl_get_generic (sym, state));
+  return NULL;
+}
+
 void *
 stmt_toplev_build_generic (container_t * self, void * _state)
 {
-  al60l_bind_state_t * state = _state;
-
   // Process builtins first.
-  slist_it_t * it = slist_iter (container_symtab (self));
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      symbol_t * sym = a60_as_symbol (slist_it_get (it));
-      symbol_set_extra (sym, builtin_decl_get_generic (sym, state));
-    }
-  delete_slist_it (it);
+  a60_symtab_each (container_symtab (self),
+		   a60_symbol_callback (private_stmt_toplev_build_decl_for_symbol),
+		   _state);
 
   // The toplev block should contain only one node: the actual program
   // node.  Pick it up, and dispatch on it.  Don't do the rest of
@@ -960,7 +976,7 @@ private_expr_build_apow (expression_t * self, void * data)
   // Don't forget to do what resolve would do for us.  We can omit
   // typechecking, and subexpression resolving has already been done
   // by this point.
-  symbol_t * sym = new_symbol (l);
+  symbol_t * sym = new_symbol_var (l);
   symbol_set_type (sym, types[typeidx]); // function type
   symbol_set_hidden (sym, 1);
   symbol_set_extra (sym, builtin_decl_get_generic (sym, data));

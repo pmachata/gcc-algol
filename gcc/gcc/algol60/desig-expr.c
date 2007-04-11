@@ -227,13 +227,14 @@ desig_expr_resolve_symbols (desig_expr_t * self, container_t * context, logger_t
 {
   assert (self != NULL);
   assert (log != NULL);
+  a60_symtab_t * symtab = container_symtab (context);
 
   switch (self->base.kind)
     {
     case dek_label:
       {
 	self->elbl.sym
-	  = container_find_name_rec_add_undefined (context, self->elbl.lbl,
+	  = a60_symtab_find_name_rec_add_undefined (symtab, self->elbl.lbl,
 						   type_label (),
 						   log, self->cursor);
 	return;
@@ -265,7 +266,7 @@ desig_expr_resolve_symbols (desig_expr_t * self, container_t * context, logger_t
     case dek_switch:
       {
 	self->eswitch.sym
-	  = container_find_name_rec_add_undefined (context, self->elbl.lbl,
+	  = a60_symtab_find_name_rec_add_undefined (symtab, self->elbl.lbl,
 						   type_switch_any (),
 						   log, self->cursor);
 	expr_resolve_symbols (self->eswitch.index, context, log);

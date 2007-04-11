@@ -28,7 +28,9 @@ type_t * type_bool (void); ///< Memoized type.
 type_t * type_label (void); ///< Memoized type.
 type_t * type_switch_any (void); ///< Memoized type for matching any switch.
 type_t * type_array_any (void); ///< Memoized type.
+type_t * type_array_real (void); ///< Memoized type.
 type_t * type_proc_void_int (void); ///< Memoized type.
+type_t * type_proc_void_any (void); ///< Memoized type.
 type_t * type_proc_int_int (void); ///< Memoized type.
 type_t * type_proc_real_int (void); ///< Memoized type.
 type_t * type_proc_int_real (void); ///< Memoized type.
@@ -74,8 +76,8 @@ type_t  * new_t_label (void)
 /// Create `switch` type.  The `switchlist` is a list of designational
 /// expressions of this given switch type.  It's not taken into
 /// account for types_same and types_match relations, it is merely
-/// additional information.  The slist will be imposed a type of
-/// `desig_expr` upon this call.  `switchlist` will NOT be cloned for
+/// additional information.  `design_expr` type will be imposed on a
+/// `switchlist` slist upon this call.  It will NOT be cloned for
 /// purposes of storage inside t_switch privates.
 type_t  * new_t_switch (slist_t * switchlist)
   ATTRIBUTE_MALLOC
@@ -91,13 +93,22 @@ type_t * new_t_own (type_t * host)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL (1);
 
-/// Create `proc` type, with return type `rettype` and argument types
+/// Create `proc` type, with return type `rettype`, argument types
 /// `argtypes`.  `argtypes` will NOT be cloned for purposes of storage
 /// inside t_proc privates.
 type_t  * new_t_proc (type_t * rettype, slist_t * argtypes)
   ATTRIBUTE_MALLOC
   ATTRIBUTE_NONNULL (1)
   ATTRIBUTE_NONNULL (2);
+
+/// Create `proc` type, with return type `rettype`, and with no
+/// constraints on argument types.  In ideal world, there would be
+/// type matching finite automaton, and this kind of things would be
+/// expressible with some repetition pattern (proc(int->any*)), but
+/// this hack will cover most uses just fine.
+type_t  * new_t_proc_stub (type_t * rettype)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1);
 
 /// Convert void* to type, if it is type, or abort.
 type_t * a60_as_type (void * ptr)

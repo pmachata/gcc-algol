@@ -16,14 +16,20 @@
 #include "statement.i"
 #include "estring.i"
 #include "visitor.i"
+#include "logger.i"
 #include "pd.h"
 
-/// Create new symbol given its name.
-symbol_t * new_symbol (label_t const * name)
+/// Create new variable given its name.
+symbol_t * new_symbol_var (label_t const * name)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_MALLOC;
 
-/// Create new symbol by cloning other symbol, only with other name.
+/// Create new function given its name.
+symbol_t * new_symbol_func (label_t const * name)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_MALLOC;
+
+/// Create new symbol by cloning other symbol.
 symbol_t * clone_symbol (symbol_t const * self)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_MALLOC;
@@ -49,6 +55,10 @@ label_t const * symbol_label (symbol_t const * self)
 /// allocated.  Returns either buf, or newly allocated buffer if buf
 /// was NULL.
 estring_t * symbol_to_str (symbol_t const * self, estring_t * buf);
+
+/// Resolve symbols in and typecheck this symbol.
+void symbol_resolve_symbols (symbol_t * self, container_t * context, logger_t * log)
+  ATTRIBUTE_NONNULL(1);
 
 /// Set the type of the symbol.  Type must not be NULL.
 void symbol_set_type (symbol_t * self, type_t * type)

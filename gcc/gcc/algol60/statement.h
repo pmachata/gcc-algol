@@ -22,6 +22,7 @@
 #include "label.i"
 #include "type.i"
 #include "estring.i"
+#include "a60_symtab.i"
 #include "visitor.i"
 #include "pd.h"
 
@@ -72,18 +73,6 @@ container_t * new_stmt_block (cursor_t * cursor)
 /// Create new toplevel block.
 container_t * new_stmt_toplev (cursor_t * cursor)
   ATTRIBUTE_MALLOC;
-
-/// Create a copy of subtree starting at given statement.
-/// Cursor is shared, and parent is set to NULL, but other components
-/// are recursively cloned.
-statement_t * clone_statement (statement_t const * self)
-  ATTRIBUTE_MALLOC
-  ATTRIBUTE_NONNULL(1);
-
-/// The same as above, just with typing for containers.
-container_t * clone_container (container_t const * self)
-  ATTRIBUTE_MALLOC
-  ATTRIBUTE_NONNULL(1);
 
 /// Convert void* to statement, if it is statement, or abort.
 statement_t * a60_as_statement (void * ptr)
@@ -186,64 +175,11 @@ void stmt_add_label (statement_t * self, symbol_t * label)
 slist_t * stmt_labels (statement_t const * self);
 
 /// Answer the symtab associated with the container.
-slist_t * container_symtab (container_t const * self)
+a60_symtab_t * container_symtab (container_t const * self)
   ATTRIBUTE_NONNULL(1);
 
 /// Answer the statement list associated with the container.
 slist_t * container_stmts (container_t const * self)
-  ATTRIBUTE_NONNULL(1);
-
-typedef enum enum_symtab_entry_kind_t
-{
-  sek_internal,
-  sek_ordinary
-} symtab_entry_kind_t;
-
-/// Add given symbol to the container and return 0.  It there already
-/// is other symbol with the same name, do nothing and return -1.
-/// `internal' is sek_internal for internal symbols (internal symbols
-/// may be overloaded) and sek_ordinary for ordinary symbols (which
-/// may not).
-int container_add_symbol (container_t * self, symbol_t * sym, symtab_entry_kind_t internal)
-  ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(2);
-
-/// Remove the symbol from symtab.  The symbol must be present in
-/// symtab.
-symbol_t * container_erase_symbol (container_t * self, symbol_t * sym)
-  ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(2);
-
-/// Look up given symbol in the container.  Answer first symbol that
-/// matches restriction `atype', or first symbol with matching name,
-/// if its type is NULL (in that case type can't be checked).  Return
-/// NULL if not found.
-symbol_t * container_find_name (container_t * self, label_t const * lbl, type_t const * atype)
-  ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(2);
-
-/// Lookup given symbol in the container, and if it fails, recursively
-/// in all parental containers. Answer first symbol that matches
-/// restriction `atype', or first symbol with matching name, if its
-/// type is NULL (in that case type can't be checked). Return NULL if
-/// not found.
-symbol_t * container_find_name_rec (container_t * self, label_t const * lbl, type_t const * atype)
-  ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(2);
-
-/// See if given symbol with requested matching type, is already
-/// defined somewhere in the scope.  If it's not, create new
-/// definition in most enclosing scope.  Answer either found, or newly
-/// created symbol.
-symbol_t * container_find_name_rec_add_undefined (container_t * self, label_t const * lbl, type_t * atype, logger_t * log, cursor_t * cursor)
-  ATTRIBUTE_NONNULL(1)
-  ATTRIBUTE_NONNULL(2)
-  ATTRIBUTE_NONNULL(3)
-  ATTRIBUTE_NONNULL(4);
-
-/// Populate given container with algol internal functions.  The
-/// container must be `stmt_toplev`.
-void stmt_toplev_define_internals (container_t * self)
   ATTRIBUTE_NONNULL(1);
 
 /// Construct Statement visitor.  Arguments are the functions that
