@@ -514,11 +514,9 @@ BlockDeclarations:
 	      }
 
 	  if (!found)
-	    {
-	      log_printfc (parser->log, ll_error, label_cursor (id1),
-			   "invalid identifier in value part: `%s' is not a formal parameter.",
-			   estr_cstr (label_id (id1)));
-	    }
+	    log_printfc (parser->log, ll_error, label_cursor (id1),
+			 "invalid identifier in value part: `%s' is not a formal parameter.",
+			 estr_cstr (label_id (id1)));
 
 	  for (slist_it_reset_it (ht, it), slist_it_next (ht);
 	       slist_it_has (ht); slist_it_next (ht))
@@ -564,19 +562,13 @@ BlockDeclarations:
       delete_slist_it (it);
       delete_slist_it (ht);
 
-      // Construct a type.
-      type_t * rettype = $1 ? $1 : type_void ();
-
-      //private_setup_and_add_symbol (parser, new_symbol_func ($3), 
-      /*
-      slist_it_t * it = slist_iter (formal_params);
-      for (; slist_it_has (it); slist_it_next (it))
-	{
-	  //@TODO
-	}
-      delete_slist_it (it);
-      //type_t * t = new_t_switch ($4);
-      */
+      // Construct a semantic structures.  Function symbol's symbol
+      // table has to be wrapped around the function statement, and
+      // embedded inside the context block.
+      type_t * func_type = new_t_proc ($1 ? $1 : type_void (), types);
+      symbol_t * func_sym = new_symbol_func ($3);
+      //private_setup_and_add_symbol (parser, func_sym, func_type);
+      //a60_symtab_set_parent (symbol_func_symtab (func_sym), );
     }
 
 FormalParameterPart:

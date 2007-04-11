@@ -18,6 +18,8 @@ typedef struct struct_slist_node_t slist_node_t;
 
 struct struct_slist_node_t
 {
+  // Link points to the next node in list.  When stored in pool, this
+  // points to the next node in pool.
   slist_node_t * link;
   void * object;
 };
@@ -35,8 +37,15 @@ struct struct_slist_t
 
 struct struct_slist_it_t
 {
+  // This is used as a pointer to the next iterator for iterator pool.
+  // Normally it points to the node the iterator is "at".
   slist_node_t * pointee;
 };
+
+// Pools.  These are used for time-efficient memory management.
+static slist_node_t * node_pool = NULL;
+static slist_it_t * it_pool = NULL;
+
 
 static slist_t *
 private_alloc_slist (void)
@@ -55,6 +64,47 @@ private_alloc_slist (void)
 
   return ret;
 }
+
+static slist_node_t *
+private_alloc_node (void)
+{
+  if (node_pool == NULL)
+    return malloc (sizeof (slist_node_t));
+  else
+    {
+      slist_node_t * node = node_pool;
+      node_pool = node_pool->link;
+      return node;
+    }
+}
+
+static slist_it_t *
+private_alloc_it (void)
+{
+  if (it_pool == NULL)
+    return malloc (sizeof (slist_it_t));
+  else
+    {
+      slist_it_t * it = it_pool;
+      it_pool = (void *)it_pool->pointee;
+      return it;
+    }
+}
+
+static void
+private_dispose_node (slist_node_t * node)
+{
+  node->link = node_pool;
+  node_pool = node;
+}
+
+static void
+private_dispose_it (slist_it_t * it)
+{
+  it->pointee = (void*)it_pool;
+  it_pool = it;
+}
+
 
 void *
 adapt_test (void * obj, void * test)
@@ -198,7 +248,7 @@ delete_slist (slist_t * list)
       for (; node != NULL; )
 	{
 	  slist_node_t * next = node->link;
-	  free (node);
+	  private_dispose_node (node);
 	  node = next;
 	}
 
@@ -221,7 +271,8 @@ slist_pushback (slist_t * list, void * object)
   assert (list != NULL);
   private_test_element (list, object);
 
-  slist_node_t * node = malloc (sizeof (slist_node_t));
+  slist_node_t * node = private_alloc_node ();
+
   node->object = object;
   node->link = NULL;
 
@@ -244,7 +295,7 @@ slist_pushfront (slist_t * list, void * object)
   assert (list != NULL);
   private_test_element (list, object);
 
-  slist_node_t * node = malloc (sizeof (slist_node_t));
+  slist_node_t * node = private_alloc_node ();
   node->object = object;
 
   if (list->tail == NULL)
@@ -272,7 +323,7 @@ slist_popfront (slist_t * list)
   list->head = node->link;
   if (list->head == NULL)
     list->tail = NULL;
-  free (node);
+  private_dispose_node (node);
 
   return object;
 }
@@ -402,7 +453,7 @@ slist_filter (
 static slist_it_t *
 private_create_slist_iter (slist_node_t * pointee)
 {
-  slist_it_t * ret = malloc (sizeof (slist_it_t));
+  slist_it_t * ret = private_alloc_it ();
   if (ret == NULL)
     return NULL;
 
@@ -471,7 +522,7 @@ slist_it_erase_after (slist_it_t * it)
   slist_node_t * tmp = it->pointee->link;
   void * ret = tmp->object;
   it->pointee->link = it->pointee->link->link;
-  free (tmp);
+  private_dispose_node (tmp);
   return ret;
 }
 
@@ -503,7 +554,7 @@ slist_it_reset_it (slist_it_t * it, slist_it_t const * other)
 void
 delete_slist_it (slist_it_t * it)
 {
-  free (it);
+  private_dispose_it (it);
 }
 
 #else /* SELF_TEST */

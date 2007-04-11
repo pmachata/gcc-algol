@@ -184,7 +184,7 @@ private_log_printfc_nogcc (logger_t * logger, debug_level_t level,
 # include "diagnostic.h"
 
 static int
-private_log_printfc (logger_t * logger ATTRIBUTE_UNUSED, debug_level_t level,
+private_log_printfc (logger_t * logger, debug_level_t level,
 		     cursor_t * cursor, char const * fmt, va_list * ap)
 {
   // GCC diagnostics are not intended for debug messages and notes.
@@ -205,6 +205,8 @@ private_log_printfc (logger_t * logger ATTRIBUTE_UNUSED, debug_level_t level,
   location_t loc;
   if (cursor != NULL)
     cursor_to_loc (cursor, &loc);
+  else
+    memset (&loc, 0, sizeof (loc));
   diagnostic_set_info (&diagnostic, fmt, ap, loc, gcc_diagnostic_kind_map[level]);
   report_diagnostic (&diagnostic);
   return 0;
