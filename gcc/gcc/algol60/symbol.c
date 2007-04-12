@@ -3,6 +3,7 @@
 #include "meta.h"
 
 #include "symbol.h"
+#include "a60_symtab.h"
 #include "label.h"
 #include "type.h"
 #include "statement.h"
@@ -20,23 +21,15 @@ sym_var_t;
 
 typedef struct struct_sym_func_t
 {
-  /// List typed with a60_as_symbol, contains explicit parameters of
-  /// the function.
-  slist_t * params;
-
   /// List typed with a60_as_symbol, contains symbols that are
   /// unresolved in function body, and as such form implicit
   /// parameters of the function.
   slist_t * implied_params;
-
-  /// Body of this function.
-  statement_t * body;
 }
 sym_func_t;
 
 typedef struct struct_sym_formparm_t
 {
-  type_t const * type;
   parmconv_t convention;
 }
 sym_formparm_t;
@@ -51,10 +44,13 @@ symbol_kind_t;
 
 struct struct_symbol_t
 {
+  // @TODO: see if it makes sense to define ordinary symbols with proc
+  // type...  Perhaps yes, in that case see if there are some parts
+  // down there that could be moved to union...
   visitable_t base;
   label_t const * label;
   statement_t * stmt;
-  type_t * type;
+  type_t const * type;
   int hidden;
   void * extra;
 
@@ -96,6 +92,7 @@ new_symbol_func (label_t const * name)
   assert (name != NULL);
 
   symbol_t * ret = private_alloc_symbol (name, sk_func);
+  ret->sym_func.implied_params = NULL;
   return ret;
 }
 
@@ -106,7 +103,7 @@ new_symbol_formparm (label_t const * name, type_t const * type, parmconv_t conve
   assert (type != NULL);
 
   symbol_t * ret = private_alloc_symbol (name, sk_formparm);
-  ret->sym_formparm.type = type;
+  ret->type = type;
   ret->sym_formparm.convention = convention;
   return ret;
 }

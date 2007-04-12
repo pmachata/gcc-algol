@@ -36,7 +36,6 @@ typedef struct struct_parser_rep_t
 
   slist_t * blockstack;
   container_t * block;
-  container_t * program_block;
   estring_t * tmp;
 } parser_rep_t;
 
@@ -238,17 +237,27 @@ static container_t * private_close_block (parser_rep_t * parser);
 
 Program:
   {
+    a60_symtab_t * symtab;
+
     // dummy container, so that toplevel references to ->parent end up
     // somewhere sensible
-    container_t * dummy = new_stmt_toplev (NULL);
+    symtab = NULL;
+    container_t * dummy = new_stmt_toplev (NULL, symtab);
     private_open_block (parser, dummy);
 
     // actual toplevel container, contains internal declarations
-    container_t * c = new_stmt_toplev (NULL);
-    container_set_parent (c, dummy);
-    a60_symtab_t * symtab = container_symtab (c);
+    symtab = a60_new_symtab (a60_stk_ordinary);
     a60_symtab_toplev_define_internals (symtab);
+    container_t * c = new_stmt_toplev (NULL, symtab);
+    container_set_parent (c, dummy);
     private_open_block (parser, c);
+
+    // This block contains actual program, and is fallback container
+    // for all labels that don't end up in some more enclosing scope.
+    symtab = a60_new_symtab (a60_stk_block);
+    container_t * d = new_stmt_block (NULL, symtab);
+    container_set_parent (d, c);
+    private_open_block (parser, d);
   }
   LabelList Block SEPSEMICOLON EOFTOK
     {
@@ -257,6 +266,8 @@ Program:
       if (!slist_empty ($2))
 	log_printfc (parser->log, ll_error, cr_csr (parser, &@3),
 		     "labels not allowed at program block.");
+      container_t * d = private_close_block (parser); // dummy label scope
+      container_add_stmt (parser->block, d);
       parser->result = a60_as_statement (private_close_block (parser)); // toplev
       private_close_block (parser); // dummy
       YYACCEPT;
@@ -306,15 +317,9 @@ Identifier:
 Block:
   KWBEGIN
   {
-    container_t * c = new_stmt_block (cr_csr (parser, &@1));
+    container_t * c = new_stmt_block (cr_csr (parser, &@1), a60_new_symtab (a60_stk_ordinary));
     container_set_parent (c, parser->block);
     private_open_block (parser, c);
-
-    if (parser->program_block == NULL)
-      {
-	log_printf (parser->log, ll_debug, "  %p is program block", c);
-	parser->program_block = c;
-      }
   }
   BlockDeclarationsList StatementList
   KWEND
@@ -405,15 +410,37 @@ BlockDeclarations:
       private_setup_and_add_symbol (parser, new_symbol_var ($2), t);
     }
   |
-  OptType KWPROCEDURE Identifier FormalParameterPart SEPSEMICOLON ValuePart SpecificationPart Statement
+  OptType KWPROCEDURE Identifier FormalParameterPart SEPSEMICOLON ValuePart SpecificationPart
+  {
+    // Before parsing a statement, we have to open two new blocks.
+    //
+    // First is the scope of function itself, and holds formal
+    // parameters (and perhaps implied parameters, if this gets
+    // implemented).  This block is parent-less, because function's
+    // enclosing scope isn't at the definition site, but at the call
+    // site.
+    //
+    // Second is the body of function.  Its symtab has a kind of
+    // a60_stk_block, because all labels in function has to be stored
+    // at most there, even if the block ends up being compound
+    // statement actually.
+
+    container_t * c1 = new_stmt_toplev (NULL, a60_new_symtab (a60_stk_ordinary));
+    container_t * c2 = new_stmt_toplev (NULL, a60_new_symtab (a60_stk_block));
+    container_set_parent (c2, c1);
+
+    private_open_block (parser, c1);
+    private_open_block (parser, c2);
+  }
+  Statement
     {
       log_printf (parser->log, ll_debug,
 		  "BlockDeclarations -> OptType KWPROCEDURE Identifier "
 		  "FormalParameterPart SEPSEMICOLON ValuePart "
 		  "SpecificationPart Statement");
-      slist_t * formal_params = $4; // list of all formal parameters
-      slist_t * value_params = $6;  // list of formals passed by value
-      slist_t * param_types = $7;   // list [type, [id, ...], type, [id, ...], ...]
+      slist_t * formal_ids = $4; // list of all formal parameters
+      slist_t * value_ids = $6;  // list of formals passed by value
+      slist_t * id_types = $7;   // list [type, [id, ...], type, [id, ...], ...]
 
       // RRA60: """In the heading a specification part, giving
       // information about the kinds and types of the formal
@@ -431,9 +458,9 @@ BlockDeclarations:
       // This list collects formal parameters of the function.
       slist_t * formparms = new_slist_typed (adapt_test, a60_as_symbol);
 
-      slist_it_t * ht = slist_iter (formal_params);
-      slist_it_t * it = new_slist_it (); // iterate over param_types and value_params
-      slist_it_t * jt = new_slist_it (); // iterate over lists inside param_types
+      slist_it_t * ht = slist_iter (formal_ids);
+      slist_it_t * it = new_slist_it (); // iterate over id_types and value_ids
+      slist_it_t * jt = new_slist_it (); // iterate over lists inside id_types
 
       // Build a list of formal parameters (formparam symbols).
       for (; slist_it_has (ht); slist_it_next (ht))
@@ -442,9 +469,9 @@ BlockDeclarations:
 	  type_t * type0 = NULL;
 	  parmconv_t convention = pc_byname;
 
-	  // Iterate over all param_types specifiers, and find if type
+	  // Iterate over all id_types specifiers, and find if type
 	  // is specified at most once.
-	  for (slist_it_reset (it, param_types); slist_it_has (it); )
+	  for (slist_it_reset (it, id_types); slist_it_has (it); )
 	    {
 	      slist_t * bunch = a60_as_slist (slist_it_get (it));
 	      slist_it_next (it);
@@ -470,7 +497,7 @@ BlockDeclarations:
 		}
 	    }
 
-	  for (slist_it_reset (it, value_params);
+	  for (slist_it_reset (it, value_ids);
 	       slist_it_has (it); slist_it_next (it))
 	    if (label_eq (id0, a60_as_label (slist_it_get (it))))
 	      {
@@ -500,12 +527,12 @@ BlockDeclarations:
 
       // Check that all parameters in ValuePart are really formal parameters,
       // and that each parameter is specified at most once in ValuePart.
-      for (slist_it_reset (it, value_params); slist_it_has (it); slist_it_next (it))
+      for (slist_it_reset (it, value_ids); slist_it_has (it); slist_it_next (it))
 	{
 	  label_t * id1 = a60_as_label (slist_it_get (it));
 	  int found = 0;
 
-    	  for (slist_it_reset (ht, formal_params);
+    	  for (slist_it_reset (ht, formal_ids);
 	       slist_it_has (ht); slist_it_next (ht))
 	    if (label_eq (id1, a60_as_label (slist_it_get (ht))))
 	      {
@@ -530,7 +557,7 @@ BlockDeclarations:
 	}
 
       // Check that all parameters in SpecificationPart are really formal parameters.
-      for (slist_it_reset (it, param_types); slist_it_has (it); )
+      for (slist_it_reset (it, id_types); slist_it_has (it); )
 	{
 	  slist_t * bunch = a60_as_slist (slist_it_get (it));
 	  slist_it_next (it);
@@ -541,7 +568,7 @@ BlockDeclarations:
 	      label_t * id1 = a60_as_label (slist_it_get (jt));
 	      int found = 0;
 
-	      for (slist_it_reset (ht, formal_params);
+	      for (slist_it_reset (ht, formal_ids);
 		   slist_it_has (ht); slist_it_next (ht))
 		if (label_eq (id1, a60_as_label (slist_it_get (ht))))
 		  {
@@ -562,11 +589,23 @@ BlockDeclarations:
       delete_slist_it (it);
       delete_slist_it (ht);
 
-      // Construct a semantic structures.  Function symbol's symbol
-      // table has to be wrapped around the function statement, and
-      // embedded inside the context block.
+
+      // Build function symbol and type, and assign the body to function.
       type_t * func_type = new_t_proc ($1 ? $1 : type_void (), types);
       symbol_t * func_sym = new_symbol_func ($3);
+      container_t * body = private_close_block (parser);
+      symbol_set_stmt (func_sym, (statement_t*)body);
+      symbol_set_type (func_sym, func_type);
+
+      // Add parameters to function symbol table.
+      for (slist_it_reset (ht, formparms); slist_it_has (ht); slist_it_next (ht))
+	{
+	  symbol_t * parameter = a60_as_symbol (slist_it_get (ht));
+	  type_t * type = symbol_type (parameter);
+	  private_setup_and_add_symbol (parser, parameter, type);
+	}
+
+      container_t * func_paramblock = private_close_block (parser);
       //private_setup_and_add_symbol (parser, func_sym, func_type);
       //a60_symtab_set_parent (symbol_func_symtab (func_sym), );
     }
@@ -1319,7 +1358,6 @@ new_parser (lexer_t * lexer, int manage)
       log_set_filter (ret->log, ll_debug);
       guard_ptr (buf, 1, ret->blockstack = new_slist ());
       guard_ptr (buf, 1, ret->tmp = new_estring ());
-      ret->program_block = NULL;
       return (void*)ret;
     }
   else
@@ -1402,6 +1440,9 @@ private_add_labels_to_symtab (parser_rep_t * parser,
 			      container_t * context,
 			      slist_t * slist, statement_t * target)
 {
+  if (slist_empty (slist))
+    return;
+
   // Algol has an interesting quirk: labels are local to the nearest
   // enclosing *block* (as opposed to mere compound statement).  So we
   // must actually look up nearest block with declarations.
@@ -1411,16 +1452,16 @@ private_add_labels_to_symtab (parser_rep_t * parser,
   // labels may be defined at that level.  However we will put all
   // labels to the program block, if no other block is closer.
 
-  while (context != parser->program_block
+  a60_symtab_t * symtab = container_symtab (context);
+  while (a60_symtab_kind (symtab) != a60_stk_block
 	 && a60_symtab_empty (container_symtab (context)))
-    context = container_parent (context);
+    symtab = a60_symtab_parent (symtab);
 
   slist_it_t * it = slist_iter (slist);
   for (; slist_it_has (it); slist_it_next (it))
     {
       label_t * lbl = slist_it_get (it);
       symbol_t * sym = new_symbol_var (lbl);
-      a60_symtab_t * symtab = container_symtab (context);
       if (a60_symtab_add_symbol (symtab, sym, sek_ordinary) != 0)
 	{
 	  cursor_t * csr = stmt_cursor (target);

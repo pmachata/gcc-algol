@@ -31,6 +31,7 @@ symbol_t * new_symbol_var (label_t const * name)
   ATTRIBUTE_MALLOC;
 
 /// Create new function given its name.
+/// Use symbol_set_stmt to assign a body & symtab to function.
 symbol_t * new_symbol_func (label_t const * name)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_MALLOC;
@@ -85,6 +86,8 @@ type_t * symbol_type (symbol_t const * self)
 
 /// Set the statement associated with the symbol.  Statement must not
 /// be NULL.
+/// @TODO: see if it's possible to move this to ordinary symbol... or
+/// perhaps to dedicated `label'-kind symbol.
 void symbol_set_stmt (symbol_t * self, statement_t * stmt)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);

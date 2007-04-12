@@ -201,24 +201,24 @@ new_stmt_goto (cursor_t * cursor, desig_expr_t * target)
 }
 
 static container_t *
-private_new_container (stmt_kind_t kind, cursor_t * cursor)
+private_new_container (stmt_kind_t kind, cursor_t * cursor, a60_symtab_t * symtab)
 {
   statement_t * ret = private_new_statement (kind, cursor, NULL);
   ret->block.statements = new_slist_typed (adapt_test, a60_as_statement);
-  ret->block.symtab = a60_new_symtab ();
+  ret->block.symtab = symtab;
   return (container_t *)ret;
 }
 
 container_t *
-new_stmt_block (cursor_t * cursor)
+new_stmt_block (cursor_t * cursor, a60_symtab_t * symtab)
 {
-  return private_new_container (sk_block, cursor);
+  return private_new_container (sk_block, cursor, symtab);
 }
 
 container_t *
-new_stmt_toplev (cursor_t * cursor)
+new_stmt_toplev (cursor_t * cursor, a60_symtab_t * symtab)
 {
-  return private_new_container (sk_toplev, cursor);
+  return private_new_container (sk_toplev, cursor, symtab);
 }
 
 statement_t *

@@ -19,6 +19,7 @@
 #include "desig-expr.i"
 #include "logger.i"
 #include "symbol.i"
+#include "a60_symtab.i"
 #include "label.i"
 #include "type.i"
 #include "estring.i"
@@ -67,11 +68,11 @@ statement_t * new_stmt_goto (cursor_t * cursor, desig_expr_t * target)
   ATTRIBUTE_NONNULL (2);
 
 /// Create new generic statement block.
-container_t * new_stmt_block (cursor_t * cursor)
+container_t * new_stmt_block (cursor_t * cursor, a60_symtab_t * symtab)
   ATTRIBUTE_MALLOC;
 
 /// Create new toplevel block.
-container_t * new_stmt_toplev (cursor_t * cursor)
+container_t * new_stmt_toplev (cursor_t * cursor, a60_symtab_t * symtab)
   ATTRIBUTE_MALLOC;
 
 /// Convert void* to statement, if it is statement, or abort.

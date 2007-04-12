@@ -17,27 +17,36 @@ struct struct_a60_symtab_t
 #ifndef NDEBUG
   char const * signature;
 #endif
+  a60_symtab_kind_t kind;
   a60_symtab_t * parent;
   slist_t * table;
 };
 
 static a60_symtab_t *
-private_new_symtab (void)
+private_new_symtab (a60_symtab_kind_t kind)
 {
   a60_symtab_t * ret = malloc (sizeof (a60_symtab_t));
 #ifndef NDEBUG
   ret->signature = private_symtab_signature;
 #endif
   ret->parent = NULL;
+  ret->kind = kind;
   return ret;
 }
 
 a60_symtab_t *
-a60_new_symtab (void)
+a60_new_symtab (a60_symtab_kind_t kind)
 {
-  a60_symtab_t * ret = private_new_symtab ();
+  a60_symtab_t * ret = private_new_symtab (kind);
   ret->table = new_slist_typed (adapt_test, a60_as_symbol);
   return ret;
+}
+
+a60_symtab_kind_t
+a60_symtab_kind (a60_symtab_t const * self)
+{
+  assert (self != NULL);
+  return self->kind;
 }
 
 void
@@ -45,6 +54,13 @@ a60_symtab_set_parent (a60_symtab_t * self, a60_symtab_t * parent)
 {
   assert (self != NULL);
   self->parent = parent;
+}
+
+a60_symtab_t *
+a60_symtab_parent (a60_symtab_t const * self)
+{
+  assert (self != NULL);
+  return self->parent;
 }
 
 void

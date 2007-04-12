@@ -20,12 +20,31 @@
 #include "pd.h"
 #include "visitor.i"
 
+// Labels shall be added to most enclosing *block*.  Block is a symtab
+// that either holds some symbols (i.e. there already variables), or
+// is explicitly marked as block symtab (such as symtab at function
+// level toplevel block).
+typedef enum enum_a60_symtab_kind_t
+{
+  a60_stk_ordinary,
+  a60_stk_block,
+}
+a60_symtab_kind_t;
+
 /// Create new symtab with optional parental symtab `parent'.
-a60_symtab_t * a60_new_symtab (void)
+a60_symtab_t * a60_new_symtab (a60_symtab_kind_t kind)
   ATTRIBUTE_MALLOC;
+
+/// Answer the parent of this symtab.
+a60_symtab_kind_t a60_symtab_kind (a60_symtab_t const * self)
+  ATTRIBUTE_NONNULL(1);
 
 /// Set the parental symtab.
 void a60_symtab_set_parent (a60_symtab_t * self, a60_symtab_t * parent)
+  ATTRIBUTE_NONNULL(1);
+
+/// Answer the parent of this symtab.
+a60_symtab_t * a60_symtab_parent (a60_symtab_t const * self)
   ATTRIBUTE_NONNULL(1);
 
 /// Delete this symtab.
