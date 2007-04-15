@@ -50,7 +50,7 @@ struct struct_symbol_t
   visitable_t base;
   label_t const * label;
   statement_t * stmt;
-  type_t const * type;
+  type_t * type;
   int hidden;
   void * extra;
 
@@ -97,7 +97,7 @@ new_symbol_func (label_t const * name)
 }
 
 symbol_t *
-new_symbol_formparm (label_t const * name, type_t const * type, parmconv_t convention)
+new_symbol_formparm (label_t const * name, type_t * type, parmconv_t convention)
 {
   assert (name != NULL);
   assert (type != NULL);
@@ -192,6 +192,9 @@ symbol_resolve_symbols (symbol_t * self, container_t * context, logger_t * log)
       // @TODO: Do the right thing :)
       log_printf (log, ll_info, "note: skipping resolve of function symbol.");
       return;
+
+    case sk_formparm:
+      return;
     }
 }
 
@@ -251,6 +254,21 @@ symbol_extra (symbol_t const * self)
 {
   assert (self != NULL);
   return self->extra;
+}
+
+visitor_t *
+new_visitor_symbol (
+    callback_t symbol_var,
+    callback_t symbol_fun,
+    callback_t symbol_formparm
+)
+{
+  return a60_build_generic_visitor (
+      A60_IFDEBUG (&private_symbol_signature, NULL), 3,
+      symbol_var,
+      symbol_fun,
+      symbol_formparm
+  );
 }
 
 callback_t

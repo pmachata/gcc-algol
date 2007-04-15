@@ -39,7 +39,7 @@ symbol_t * new_symbol_func (label_t const * name)
 /// Create new formal parameter.
 /// `type' may be `t_any' for by-name parameters withou a type
 /// specified.
-symbol_t * new_symbol_formparm (label_t const * name, type_t const * type, parmconv_t convention)
+symbol_t * new_symbol_formparm (label_t const * name, type_t * type, parmconv_t convention)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_MALLOC;
@@ -111,6 +111,20 @@ void symbol_set_extra (symbol_t * self, void * extra)
 /// Get symbol's extra.
 void * symbol_extra (symbol_t const * self)
   ATTRIBUTE_NONNULL(1);
+
+/// Construct Symbol visitor.  Arguments are the functions that
+/// should be called when the dispatched object's kind matches its
+/// respective argument.
+visitor_t * new_visitor_symbol (
+    callback_t symbol_var,
+    callback_t symbol_fun,
+    callback_t symbol_formparm
+)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL (1)
+  ATTRIBUTE_NONNULL (2)
+  ATTRIBUTE_NONNULL (3)
+;
 
 /// For conversion of function prototype to callback.
 callback_t a60_symbol_callback (void *(*cb)(symbol_t *, void *))

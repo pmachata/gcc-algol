@@ -73,9 +73,11 @@ struct struct_al60l_bind_state_t
   visitor_t * expression_build_generic;  ///< expression->GENERIC builder visitor.
   visitor_t * desig_expr_build_generic;  ///< desig_expr->GENERIC builder visitor.
   visitor_t * type_build_generic;  ///< type->GENERIC builder visitor.
+  visitor_t * symbol_decl_build_generic; ///< symbol->GENERIC, decl builder visitor.
   visitor_t * symbol_decl_for_type; ///< (symbol,type)->GENERIC, decl builder visitor.
+  visitor_t * symbol_init_build_generic; ///< symbol->GENERIC, decl builder visitor.
   visitor_t * symbol_init_for_type; ///< (symbol,type)->GENERIC, init builder visitor.
-  visitor_t * symbol_init_for_switch_elmt; ///< desig_expr->GENERIC, builder for switch dispatch auxiliary code.
+  visitor_t * symbol_var_switch_init_elmt_build_generic; ///< desig_expr->GENERIC, builder for switch dispatch auxiliary code.
   visitor_t * for_elmt_build_generic; ///< for_elmt->GENERIC builder visitor.
 };
 
@@ -200,61 +202,79 @@ static void * type_proc_build_generic (type_t * self, void * data)
 
 // Declaration builder callbacks.
 
-static void * symbol_decl_for_unknown (symbol_t * sym, void * data)
+static void * symbol_var_decl_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_any (symbol_t * sym, void * data)
+static void * symbol_fun_decl_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_own (symbol_t * sym, void * data)
+static void * symbol_formparm_decl_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_void (symbol_t * sym, void * data)
+static void * symbol_var_unknown_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_int (symbol_t * sym, void * data)
+static void * symbol_var_any_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_real (symbol_t * sym, void * data)
+static void * symbol_var_own_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_string (symbol_t * sym, void * data)
+static void * symbol_var_void_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_bool (symbol_t * sym, void * data)
+static void * symbol_var_int_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_label (symbol_t * sym, void * data)
+static void * symbol_var_real_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_switch (symbol_t * sym, void * data)
+static void * symbol_var_string_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_array (symbol_t * sym, void * data)
+static void * symbol_var_bool_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_decl_for_proc (symbol_t * sym, void * data)
+static void * symbol_var_label_build_generic (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_var_switch_build_generic (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_var_array_build_generic (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_var_proc_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
 
 // Initializator builder callbacks.
 
-static void * symbol_init_omit (symbol_t * sym, void * data)
+static void * symbol_var_init_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_init_error (symbol_t * sym, void * data)
+static void * symbol_fun_init_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_init_for_switch (symbol_t * sym, void * data)
+static void * symbol_formparm_init_build_generic (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_var_init_omit (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_var_init_error (symbol_t * sym, void * data)
+  ATTRIBUTE_NONNULL (1);
+
+static void * symbol_var_switch_init_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
 
-// Helper callbacks for symbol_init_for_switch.
+// Helper callbacks for symbol_var_switch_init_build_generic.
 
-static void * symbol_init_for_switch_elmt_label (desig_expr_t * de, void * _state)
+static void * switch_label_init_build_generic (desig_expr_t * de, void * _state)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_init_for_switch_elmt_compute (desig_expr_t * de, void * _state)
+static void * switch_compute_init_build_generic (desig_expr_t * de, void * _state)
   ATTRIBUTE_NONNULL (1);
 
 
@@ -342,40 +362,52 @@ new_bind_state (void)
 	      a60_type_callback (type_proc_build_generic)
 	  ));
       guard_ptr (buf, 1,
+	   ret->symbol_decl_build_generic = new_visitor_symbol (
+	      a60_symbol_callback (symbol_var_decl_build_generic),
+	      a60_symbol_callback (symbol_fun_decl_build_generic),
+	      a60_symbol_callback (symbol_formparm_decl_build_generic)
+	   ));
+      guard_ptr (buf, 1,
           ret->symbol_decl_for_type = new_visitor_type (
-	      a60_symbol_callback (symbol_decl_for_unknown),
-	      a60_symbol_callback (symbol_decl_for_any),
-	      a60_symbol_callback (symbol_decl_for_own),
-	      a60_symbol_callback (symbol_decl_for_void),
-	      a60_symbol_callback (symbol_decl_for_int),
-	      a60_symbol_callback (symbol_decl_for_real),
-	      a60_symbol_callback (symbol_decl_for_string),
-	      a60_symbol_callback (symbol_decl_for_bool),
-	      a60_symbol_callback (symbol_decl_for_label),
-	      a60_symbol_callback (symbol_decl_for_switch),
-	      a60_symbol_callback (symbol_decl_for_array),
-	      a60_symbol_callback (symbol_decl_for_proc)
+	      a60_symbol_callback (symbol_var_unknown_build_generic),
+	      a60_symbol_callback (symbol_var_any_build_generic),
+	      a60_symbol_callback (symbol_var_own_build_generic),
+	      a60_symbol_callback (symbol_var_void_build_generic),
+	      a60_symbol_callback (symbol_var_int_build_generic),
+	      a60_symbol_callback (symbol_var_real_build_generic),
+	      a60_symbol_callback (symbol_var_string_build_generic),
+	      a60_symbol_callback (symbol_var_bool_build_generic),
+	      a60_symbol_callback (symbol_var_label_build_generic),
+	      a60_symbol_callback (symbol_var_switch_build_generic),
+	      a60_symbol_callback (symbol_var_array_build_generic),
+	      a60_symbol_callback (symbol_var_proc_build_generic)
 	  ));
+      guard_ptr (buf, 1,
+	   ret->symbol_init_build_generic = new_visitor_symbol (
+	      a60_symbol_callback (symbol_var_init_build_generic),
+	      a60_symbol_callback (symbol_fun_init_build_generic),
+	      a60_symbol_callback (symbol_formparm_init_build_generic)
+	   ));
       guard_ptr (buf, 1,
           ret->symbol_init_for_type = new_visitor_type (
-	      a60_symbol_callback (symbol_init_error),
-	      a60_symbol_callback (symbol_init_error),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_for_switch),
-	      a60_symbol_callback (symbol_init_omit),
-	      a60_symbol_callback (symbol_init_omit)
+	      a60_symbol_callback (symbol_var_init_error),
+	      a60_symbol_callback (symbol_var_init_error),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_switch_init_build_generic),
+	      a60_symbol_callback (symbol_var_init_omit),
+	      a60_symbol_callback (symbol_var_init_omit)
 	  ));
       guard_ptr (buf, 1,
-          ret->symbol_init_for_switch_elmt = new_visitor_desig_expr (
-	      a60_desig_expr_callback (symbol_init_for_switch_elmt_label),
-	      a60_desig_expr_callback (symbol_init_for_switch_elmt_compute),
-	      a60_desig_expr_callback (symbol_init_for_switch_elmt_compute)
+          ret->symbol_var_switch_init_elmt_build_generic = new_visitor_desig_expr (
+	      a60_desig_expr_callback (switch_label_init_build_generic),
+	      a60_desig_expr_callback (switch_compute_init_build_generic),
+	      a60_desig_expr_callback (switch_compute_init_build_generic)
 	  ));
       guard_ptr (buf, 1,
           ret->for_elmt_build_generic = new_visitor_for_elmt (
@@ -736,9 +768,12 @@ private_stmt_container_build_decl_for_symbol (symbol_t * sym, void * _state)
   // This is called from stmt_container_build_generic for each symbol
   // in symbol table.
   al60l_bind_state_t * state = _state;
-  tree decl = symbol_decl_for_type (sym, symbol_type (sym), state);
-  symbol_set_extra (sym, decl);
-  bind_state_add_decl (state, decl);
+  tree decl = symbol_decl_build_generic (sym, state);
+  if (decl)
+    {
+      symbol_set_extra (sym, decl);
+      bind_state_add_decl (state, decl);
+    }
   return NULL;
 }
 
@@ -748,7 +783,7 @@ private_stmt_container_build_init_for_symbol (symbol_t * sym, void * _state)
   // This is called from stmt_container_build_generic for each symbol
   // in symbol table.
   al60l_bind_state_t * state = _state;
-  tree init = symbol_init_for_type (sym, symbol_type (sym), state);
+  tree init = symbol_init_build_generic (sym, state);
   bind_state_add_stmt (state, init);
   return NULL;
 }
@@ -1138,7 +1173,7 @@ private_builtin_asm_name (symbol_t const * sym)
 }
 
 void *
-builtin_decl_get_generic (symbol_t * sym, void * data)
+builtin_decl_get_generic (symbol_t * sym, void * _state)
 {
   type_t * t = symbol_type (sym);
 
@@ -1149,11 +1184,11 @@ builtin_decl_get_generic (symbol_t * sym, void * data)
       t = type_host (t);
     }
 
-  // biltin symbols, defined inside libga60, are mangled
+  // Builtin symbols, defined inside libga60, are mangled
   label_t * asm_label = new_label (private_builtin_asm_name (sym));
   sym = clone_symbol_with_name (sym, asm_label);
 
-  tree decl = symbol_decl_for_type (sym, t, data);
+  tree decl = symbol_decl_build_generic (sym, _state);
 
   // Builtins have file scope.
   DECL_CONTEXT (decl) = NULL_TREE;
@@ -1241,26 +1276,82 @@ desig_expr_switch_build_generic (desig_expr_t * self, void * _state)
 // ------------------------------------
 
 tree
-symbol_decl_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t * state)
+symbol_decl_build_generic (symbol_t * symbol, al60l_bind_state_t * state)
 {
-  return (tree)a60_visitor_dispatch (state->symbol_decl_for_type, sym_type, symbol, state);
+  return (tree)a60_visitor_dispatch (state->symbol_decl_build_generic, symbol, symbol, state);
 }
 
 tree
-symbol_init_for_type (symbol_t * symbol, type_t * sym_type, al60l_bind_state_t * state)
+symbol_init_build_generic (symbol_t * symbol, al60l_bind_state_t * state)
 {
-  return (tree)a60_visitor_dispatch (state->symbol_init_for_type, sym_type, symbol, state);
+  return (tree)a60_visitor_dispatch (state->symbol_init_build_generic, symbol, symbol, state);
 }
 
-void * symbol_init_omit (symbol_t * sym ATTRIBUTE_UNUSED,
-			 void * _state ATTRIBUTE_UNUSED)
+void *
+symbol_var_decl_build_generic (symbol_t * sym, void * _state)
+{
+  al60l_bind_state_t * state = _state;
+  type_t const * sym_type = symbol_type (sym);
+  return (tree)a60_visitor_dispatch (state->symbol_decl_for_type, sym_type, sym, state);
+}
+
+void *
+symbol_fun_decl_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
+			       void * _state ATTRIBUTE_UNUSED)
+{
+  // Do nothing for now.
+  // @TODO Do the right thing.
+  return NULL_TREE;
+}
+
+void *
+symbol_formparm_decl_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
+				    void * _state ATTRIBUTE_UNUSED)
+{
+  // Do nothing for now.
+  // @TODO Do the right thing.
+  return NULL_TREE;
+}
+
+
+void *
+symbol_var_init_build_generic (symbol_t * sym, void * _state)
+{
+  al60l_bind_state_t * state = _state;
+  type_t const * sym_type = symbol_type (sym);
+  return (tree)a60_visitor_dispatch (state->symbol_init_for_type, sym_type, sym, state);
+}
+
+void *
+symbol_fun_init_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
+			       void * _state ATTRIBUTE_UNUSED)
+{
+  // Do nothing for now.
+  // @TODO Do the right thing.
+  return NULL_TREE;
+}
+
+void *
+symbol_formparm_init_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
+				    void * _state ATTRIBUTE_UNUSED)
+{
+  // Do nothing for now.
+  // @TODO Do the right thing.
+  return NULL_TREE;
+}
+
+
+void *
+symbol_var_init_omit (symbol_t * sym ATTRIBUTE_UNUSED,
+		  void * _state ATTRIBUTE_UNUSED)
 {
   // do nothing.
   return NULL_TREE;
 }
 
-void * symbol_init_error (symbol_t * sym ATTRIBUTE_UNUSED,
-			  void * _state ATTRIBUTE_UNUSED)
+void *
+symbol_var_init_error (symbol_t * sym ATTRIBUTE_UNUSED,
+		   void * _state ATTRIBUTE_UNUSED)
 {
   // This is called for `unknown' and `any' metatypes.
   gcc_unreachable ();
@@ -1281,7 +1372,7 @@ private_decl_for_ordinary_symbol (symbol_t * sym, void * data)
 }
 
 void *
-symbol_decl_for_unknown (symbol_t * sym ATTRIBUTE_UNUSED,
+symbol_var_unknown_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
   gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
@@ -1289,7 +1380,7 @@ symbol_decl_for_unknown (symbol_t * sym ATTRIBUTE_UNUSED,
 }
 
 void *
-symbol_decl_for_any (symbol_t * sym ATTRIBUTE_UNUSED,
+symbol_var_any_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
 		     void * data ATTRIBUTE_UNUSED)
 {
   gcc_assert (!"You shouldn't ask for GENERIC of `any'.");
@@ -1297,43 +1388,43 @@ symbol_decl_for_any (symbol_t * sym ATTRIBUTE_UNUSED,
 }
 
 void *
-symbol_decl_for_own (symbol_t * sym, void * data)
+symbol_var_own_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_void (symbol_t * sym, void * data)
+symbol_var_void_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_int (symbol_t * sym, void * data)
+symbol_var_int_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_real (symbol_t * sym, void * data)
+symbol_var_real_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_string (symbol_t * sym, void * data)
+symbol_var_string_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_bool (symbol_t * sym, void * data)
+symbol_var_bool_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_label (symbol_t * sym, void * data ATTRIBUTE_UNUSED)
+symbol_var_label_build_generic (symbol_t * sym, void * data ATTRIBUTE_UNUSED)
 {
   label_t const * lbl = symbol_label (sym);
   tree id = get_identifier (estr_cstr (label_id (lbl)));
@@ -1341,13 +1432,13 @@ symbol_decl_for_label (symbol_t * sym, void * data ATTRIBUTE_UNUSED)
 }
 
 void *
-symbol_decl_for_array (symbol_t * sym, void * data)
+symbol_var_array_build_generic (symbol_t * sym, void * data)
 {
   return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
-symbol_decl_for_proc (symbol_t * sym, void * data)
+symbol_var_proc_build_generic (symbol_t * sym, void * data)
 {
   type_t * t = symbol_type (sym);
   tree fn_type = type_proc_build_generic (t, data);
@@ -1430,7 +1521,7 @@ symbol_decl_for_proc (symbol_t * sym, void * data)
 // }
 
 void *
-symbol_decl_for_switch (symbol_t * sym, void * _state)
+symbol_var_switch_build_generic (symbol_t * sym, void * _state)
 {
   // Build declaration node for switch.  Switches are handled as
   // arrays of void pointers, each pointer pointing to one
@@ -1451,7 +1542,7 @@ symbol_decl_for_switch (symbol_t * sym, void * _state)
 }
 
 void *
-symbol_init_for_switch (symbol_t * sym, void * _state)
+symbol_var_switch_init_build_generic (symbol_t * sym, void * _state)
 {
   al60l_bind_state_t * state = _state;
   tree sym_decl = symbol_extra (sym);
@@ -1473,7 +1564,7 @@ symbol_init_for_switch (symbol_t * sym, void * _state)
     {
       tree index = build_int_cst (integer_type_node, idx);
       desig_expr_t *de = a60_as_desig_expr (slist_it_get (it));
-      tree value = a60_visitor_dispatch (state->symbol_init_for_switch_elmt, de, de, state);
+      tree value = a60_visitor_dispatch (state->symbol_var_switch_init_elmt_build_generic, de, de, state);
 
       tree element = build4 (ARRAY_REF, ptr_type_node, sym_decl, index, NULL_TREE, NULL_TREE);
       tree elt_init = build2 (INIT_EXPR, ptr_type_node, element, value);
@@ -1497,7 +1588,7 @@ symbol_init_for_switch (symbol_t * sym, void * _state)
 }
 
 void *
-symbol_init_for_switch_elmt_label (desig_expr_t * de, void * _state)
+switch_label_init_build_generic (desig_expr_t * de, void * _state)
 {
   // The case of simple label is optimized: no artificial label is
   // created, and the jump is done directly, not through dispatch as
@@ -1508,7 +1599,7 @@ symbol_init_for_switch_elmt_label (desig_expr_t * de, void * _state)
 }
 
 void *
-symbol_init_for_switch_elmt_compute (desig_expr_t * de, void * _state)
+switch_compute_init_build_generic (desig_expr_t * de, void * _state)
 {
   // This callback is used both for `if' and `switch'-style computed goto.
   // We dispatch the computation of goto to the DE->GENERIC builder.
@@ -1608,7 +1699,7 @@ void *
 type_switch_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			   void * data ATTRIBUTE_UNUSED)
 {
-  // This is handled in symbol_decl_for_switch.
+  // This is handled in symbol_var_switch_build_generic.
   gcc_unreachable ();
 }
 

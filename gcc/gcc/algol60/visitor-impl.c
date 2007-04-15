@@ -26,13 +26,13 @@ a60_build_generic_visitor (char const* const* signature, int count, ...)
 }
 
 void *
-a60_visitor_dispatch (visitor_t * visitor, void * dispatch_on, void * self, void * data)
+a60_visitor_dispatch (visitor_t const * visitor, void const * dispatch_on, void * self, void * data)
 {
   return (a60_visitor_pick (visitor, dispatch_on))(self, data);
 }
 
 callback_t
-a60_visitor_pick (visitor_t * visitor, void * dispatch_on)
+a60_visitor_pick (visitor_t const * visitor, void const * dispatch_on)
 {
   visitable_t * visitable = (visitable_t *)dispatch_on;
   int kind = visitable->kind;

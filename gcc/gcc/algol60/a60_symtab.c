@@ -308,6 +308,7 @@ a60_symtab_to_str (a60_symtab_t const * self ATTRIBUTE_UNUSED,
 		   estring_t * buf ATTRIBUTE_UNUSED)
 {
   assert (!"NYI!");
+  return NULL;
 }
 
 void

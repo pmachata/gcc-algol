@@ -267,7 +267,7 @@ Program:
 	log_printfc (parser->log, ll_error, cr_csr (parser, &@3),
 		     "labels not allowed at program block.");
       container_t * d = private_close_block (parser); // dummy label scope
-      container_add_stmt (parser->block, d);
+      container_add_stmt (parser->block, (statement_t *)d);
       parser->result = a60_as_statement (private_close_block (parser)); // toplev
       private_close_block (parser); // dummy
       YYACCEPT;
@@ -605,9 +605,9 @@ BlockDeclarations:
 	  private_setup_and_add_symbol (parser, parameter, type);
 	}
 
-      container_t * func_paramblock = private_close_block (parser);
-      //private_setup_and_add_symbol (parser, func_sym, func_type);
-      //a60_symtab_set_parent (symbol_func_symtab (func_sym), );
+      private_close_block (parser); // Close function parameter block.
+				    // Leave parentless, re-parent later.
+      private_setup_and_add_symbol (parser, func_sym, func_type);
     }
 
 FormalParameterPart:
