@@ -438,6 +438,10 @@ BlockDeclarations:
 		  "BlockDeclarations -> OptType KWPROCEDURE Identifier "
 		  "FormalParameterPart SEPSEMICOLON ValuePart "
 		  "SpecificationPart Statement");
+
+      // Add statement to body block.
+      container_add_stmt (parser->block, $9);
+
       slist_t * formal_ids = $4; // list of all formal parameters
       slist_t * value_ids = $6;  // list of formals passed by value
       slist_t * id_types = $7;   // list [type, [id, ...], type, [id, ...], ...]
@@ -467,7 +471,6 @@ BlockDeclarations:
 	{
 	  label_t * id0 = a60_as_label (slist_it_get (ht));
 	  type_t * type0 = NULL;
-	  parmconv_t convention = pc_byname;
 
 	  // Iterate over all id_types specifiers, and find if type
 	  // is specified at most once.
@@ -497,6 +500,7 @@ BlockDeclarations:
 		}
 	    }
 
+	  parmconv_t convention = pc_byname;
 	  for (slist_it_reset (it, value_ids);
 	       slist_it_has (it); slist_it_next (it))
 	    if (label_eq (id0, a60_as_label (slist_it_get (it))))
@@ -590,12 +594,9 @@ BlockDeclarations:
       delete_slist_it (ht);
 
 
-      // Build function symbol and type, and assign the body to function.
-      type_t * func_type = new_t_proc ($1 ? $1 : type_void (), types);
-      symbol_t * func_sym = new_symbol_func ($3);
+      // BODY is a function body.
       container_t * body = private_close_block (parser);
-      symbol_set_stmt (func_sym, (statement_t*)body);
-      symbol_set_type (func_sym, func_type);
+      container_add_stmt (parser->block, (statement_t *)body);
 
       // Add parameters to function symbol table.
       for (slist_it_reset (ht, formparms); slist_it_has (ht); slist_it_next (ht))
@@ -605,8 +606,15 @@ BlockDeclarations:
 	  private_setup_and_add_symbol (parser, parameter, type);
 	}
 
-      private_close_block (parser); // Close function parameter block.
-				    // Leave parentless, re-parent later.
+      // Build function symbol and type.  Close function parameter
+      // block, leave parentless, re-parent later.
+      type_t * func_type = new_t_proc ($1 ? $1 : type_void (), types);
+      symbol_t * func_sym = new_symbol_func ($3);
+      container_t * parblock = private_close_block (parser);
+      symbol_set_stmt (func_sym, (statement_t*)parblock);
+      symbol_set_type (func_sym, func_type);
+
+      // Accomodate function symbol.
       private_setup_and_add_symbol (parser, func_sym, func_type);
     }
 

@@ -481,20 +481,28 @@ private_resolve_symbols_assign (statement_t * self, logger_t * log)
     {
       expression_t * lhs = slist_it_get (it);
       type_t * t1 = expr_type (lhs);
-      if (!types_match (tt, t1))
+
+      // If one of the operands is `unknown', then the appropriate
+      // reporting action has already been taken.
+      if (!type_is_unknown (tt)
+	  && !type_is_unknown (t1))
 	{
-	  estring_t * s1 = expr_to_str (lhs, NULL);
-	  estring_t * s2 = expr_to_str (self->assign.rhs, NULL);
-	  estring_t * s3 = type_to_str (t1, NULL);
-	  estring_t * s4 = type_to_str (tt, NULL);
-	  log_printfc (log, ll_error, self->cursor,
-		       "type mismatch in assignment %s := %s (%s doesn't match %s)",
-		       estr_cstr (s1), estr_cstr (s2), estr_cstr (s3), estr_cstr (s4));
-	  delete_estring (s1);
-	  delete_estring (s2);
-	  delete_estring (s3);
-	  delete_estring (s4);
+	  if (!types_match (tt, t1))
+	    {
+	      estring_t * s1 = expr_to_str (lhs, NULL);
+	      estring_t * s2 = expr_to_str (self->assign.rhs, NULL);
+	      estring_t * s3 = type_to_str (t1, NULL);
+	      estring_t * s4 = type_to_str (tt, NULL);
+	      log_printfc (log, ll_error, self->cursor,
+			   "type mismatch in assignment %s := %s (%s doesn't match %s)",
+			   estr_cstr (s1), estr_cstr (s2), estr_cstr (s3), estr_cstr (s4));
+	      delete_estring (s1);
+	      delete_estring (s2);
+	      delete_estring (s3);
+	      delete_estring (s4);
+	    }
 	}
+
       // Shouldn't be necessary to check this, since we now have
       // strongly typed slist that only holds lvalue expressions, and
       // this error is reported during syntax analysis.  But better

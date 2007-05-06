@@ -86,6 +86,47 @@ int a60_symtab_empty (a60_symtab_t const * self)
 void a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, logger_t * log)
   ATTRIBUTE_NONNULL(1);
 
+typedef symbol_t * (* a60_symtab_missing_handler_t) (a60_symtab_t * self, label_t const * lbl, type_t const * atype, logger_t * log, cursor_t * cursor, void * data);
+
+/// Set a missing symbol handler for this symtab.  When a symbol is
+/// looked up in this symtab, and it is not found, this handler is
+/// invoked.  To protect the system from random overwrites of missing
+/// symbol handlers, it is only possible to set a handler once.  The
+/// handler has to be cleared up with a60_symtab_unset_missing_handler
+/// before any subsequent set.
+///
+/// When the symbol lookup is invoked directly on this symtab, or
+/// recursive lookup procedure performs lookup indirectly in this
+/// symtab (i.e. one of the functions a60_symtab_find_name_rec,
+/// a60_symtab_find_name, a60_symtab_find_name_rec_add_undefined is
+/// invoked) and the symbol is not found, the handler is invoked as
+/// follows:
+///   void * ret = handler (symtab, lbl, atype, log, cursor, data);
+/// With arguments being:
+///   SYMTAB: a symbol table where the handler was set
+///   LBL:    is a name of a symbol being looked up.  It is a constant
+///           pointer and may not be tinkered with inside the handler.
+///   ATYPE, LOG, CURSOR: passed from a lookup call.  Some may be NULL.
+///   DATA: data pointer passed in this call.  E.g. associated container.
+///
+/// The return value of handler is interpreted as follows:
+///   NULL:      continue looking for symbol in superblock if applicable,
+///              report error if not found
+///   (void*)-1: stop looking for symbol, don't report errors, don't
+///              adjust symtabs
+///   other:     use this pointer as a looked up symbol value
+///
+/// Implicit behavior (i.e. when there is no handler set) is the same
+/// as if the handler was:
+///   void * handler (void * self, void * data) { return NULL; }
+void a60_symtab_set_missing_handler (a60_symtab_t * self, a60_symtab_missing_handler_t handler, void * data)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_NONNULL(2);
+
+/// Unset missing symbol handler.
+void a60_symtab_unset_missing_handler (a60_symtab_t * self)
+  ATTRIBUTE_NONNULL(1);
+
 /// Look up given symbol in the table.  Answer first symbol that
 /// matches restriction `atype', or first symbol with matching name,
 /// if its type is NULL (in that case type can't be checked).  Return
@@ -107,6 +148,10 @@ symbol_t * a60_symtab_find_name_rec (a60_symtab_t * self, label_t const * lbl, t
 /// defined somewhere in the scope.  If it's not, create new
 /// definition in most enclosing scope.  Answer either found, or newly
 /// created symbol.
+///
+/// Note that when missing handler (see a60_symtab_set_missing_handler)
+/// answers (void*)-1, the symbol table will NOT be affected, and NULL
+/// will be returned.
 symbol_t * a60_symtab_find_name_rec_add_undefined (a60_symtab_t * self, label_t const * lbl, type_t * atype, logger_t * log, cursor_t * cursor)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2)

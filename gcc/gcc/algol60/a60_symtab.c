@@ -20,6 +20,10 @@ struct struct_a60_symtab_t
   a60_symtab_kind_t kind;
   a60_symtab_t * parent;
   slist_t * table;
+
+  // Handler for unresolved symbols.
+  a60_symtab_missing_handler_t missing_handler;
+  void * missing_handler_data;
 };
 
 static a60_symtab_t *
@@ -30,6 +34,7 @@ private_new_symtab (a60_symtab_kind_t kind)
   ret->signature = private_symtab_signature;
 #endif
   ret->parent = NULL;
+  ret->missing_handler = NULL;
   ret->kind = kind;
   return ret;
 }
@@ -117,6 +122,23 @@ private_symtab_find_it (a60_symtab_t * self, label_t const * lbl, type_t const *
     *ret_prev = prev;
 }
 
+void
+a60_symtab_set_missing_handler (a60_symtab_t * self, a60_symtab_missing_handler_t handler, void * data)
+{
+  assert (self != NULL);
+  assert (handler != NULL);
+  assert (self->missing_handler == NULL);
+  self->missing_handler = handler;
+  self->missing_handler_data = data;
+}
+
+void
+a60_symtab_unset_missing_handler (a60_symtab_t * self)
+{
+  assert (self != NULL);
+  self->missing_handler = NULL;
+}
+
 int
 a60_symtab_add_symbol (a60_symtab_t * self, symbol_t * sym,
 		       a60_symtab_entry_kind_t internal)
@@ -167,20 +189,6 @@ a60_symtab_empty (a60_symtab_t const * self)
   return slist_empty (self->table);
 }
 
-symbol_t *
-a60_symtab_find_name (a60_symtab_t * self, label_t const * lbl,
-		      type_t const * atype)
-{
-  assert (self != NULL);
-  assert (lbl != NULL);
-
-  slist_it_t * it;
-  private_symtab_find_it (self, lbl, atype, NULL, &it);
-  symbol_t * ret = slist_it_has (it) ? slist_it_get (it) : NULL;
-  delete_slist_it (it);
-  return ret;
-}
-
 void
 a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, logger_t * log)
 {
@@ -193,18 +201,66 @@ a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, logger_t
   delete_slist_it (it);
 }
 
+/// Return value:
+///   NULL:          not found, continue lookup
+///   (symbol_t*)-1: not found, stop lookup, report no errors
+///   otherwise:     found this symbol
+static symbol_t *
+private_symtab_find_name (a60_symtab_t * self, label_t const * lbl,
+			  type_t const * atype, logger_t * log,
+			  cursor_t * cursor)
+{
+  slist_it_t * it;
+  private_symtab_find_it (self, lbl, atype, NULL, &it);
+  symbol_t * ret = slist_it_has (it) ? slist_it_get (it) : NULL;
+  delete_slist_it (it);
+
+  if (ret == NULL && self->missing_handler != NULL)
+    {
+      ret = self->missing_handler (self, lbl, atype, log, cursor,
+				   self->missing_handler_data);
+      if (ret != (void*)-1 && ret != NULL)
+	ret = a60_as_symbol (ret);
+    }
+
+  return ret;
+}
+
+/// Return value like private_symtab_find_name.
+static symbol_t *
+private_symtab_find_name_rec (a60_symtab_t * self, label_t const * lbl,
+			      type_t const * atype, logger_t * log,
+			      cursor_t * cursor)
+{
+  symbol_t * sym = private_symtab_find_name (self, lbl, atype, log, cursor);
+  if (sym == NULL && self->parent != NULL)
+    return private_symtab_find_name_rec (self->parent, lbl, atype, log, cursor);
+  else
+    return sym;
+}
+
+symbol_t *
+a60_symtab_find_name (a60_symtab_t * self, label_t const * lbl,
+		      type_t const * atype)
+{
+  assert (self != NULL);
+  assert (lbl != NULL);
+  symbol_t * sym = private_symtab_find_name (self, lbl, atype, NULL, NULL);
+  if (sym == (void*)-1)
+    sym = NULL;
+  return sym;
+}
+
 symbol_t *
 a60_symtab_find_name_rec (a60_symtab_t * self, label_t const * lbl,
 			  type_t const * atype)
 {
   assert (self != NULL);
   assert (lbl != NULL);
-
-  symbol_t * sym = a60_symtab_find_name (self, lbl, atype);
-  if (sym == NULL && self->parent != NULL)
-    return a60_symtab_find_name_rec (self->parent, lbl, atype);
-  else
-    return sym;
+  symbol_t * sym = private_symtab_find_name_rec (self, lbl, atype, NULL, NULL);
+  if (sym == (void*)-1)
+    sym = NULL;
+  return sym;
 }
 
 symbol_t *
@@ -217,7 +273,7 @@ a60_symtab_find_name_rec_add_undefined (a60_symtab_t * self, label_t const * lbl
   assert (atype != NULL);
   assert (log != NULL);
 
-  symbol_t * found = a60_symtab_find_name_rec (self, lbl, atype);
+  symbol_t * found = private_symtab_find_name_rec (self, lbl, atype, log, cursor);
   if (found == NULL)
     {
       if (types_same (atype, type_any ()))
@@ -227,14 +283,14 @@ a60_symtab_find_name_rec_add_undefined (a60_symtab_t * self, label_t const * lbl
       else
 	{
 	  // second chance: look up any symbol of that name
-	  found = a60_symtab_find_name_rec (self, lbl, type_any ());
+	  found = private_symtab_find_name_rec (self, lbl, type_any (), log, cursor);
 	  if (found == NULL)
 	    {
 	      log_printfc (log, ll_error, cursor,
 			   "(2) unknown symbol named `%s'",
 			   estr_cstr (label_id (lbl)));
 	    }
-	  else
+	  else if (found != (symbol_t*)-1)
 	    {
 	      estring_t * t1s = type_to_str (atype, NULL);
 	      estring_t * t2s = type_to_str (symbol_type (found), NULL);
@@ -249,14 +305,20 @@ a60_symtab_find_name_rec_add_undefined (a60_symtab_t * self, label_t const * lbl
 	      delete_estring (t1s);
 	    }
 	}
-      int was_there = a60_symtab_add_symbol (self, new_symbol_var (lbl), sek_ordinary);
-      assert (!was_there);
-      found = a60_symtab_find_name (self, lbl, atype);
-      // mark a type at new symbol, either fallback type_int, or
-      // atype, if it has suitable type
-      symbol_set_type (found, is_metatype (atype) ? type_int () : atype);
+
+      if (found != (symbol_t*)-1)
+	{
+	  int was_there = a60_symtab_add_symbol (self, new_symbol_var (lbl), sek_ordinary);
+	  assert (!was_there);
+	  found = private_symtab_find_name (self, lbl, atype, log, cursor);
+	  // mark a type at new symbol, either fallback type_int, or
+	  // atype, if it has suitable type
+	  symbol_set_type (found, is_metatype (atype) ? type_int () : atype);
+	}
     }
-  assert (found != NULL);
+
+  if (found == (symbol_t*)-1)
+    found = NULL;
 
   return found;
 }

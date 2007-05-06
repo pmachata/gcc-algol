@@ -179,6 +179,39 @@ symbol_to_str (symbol_t const * self, estring_t * buf)
   return label_to_str (self->label, buf);
 }
 
+struct parse_context_s
+{
+  symbol_t * function;
+  a60_symtab_t * func_symtab;
+};
+
+static symbol_t *
+private_function_add_implicit (a60_symtab_t * symtab ATTRIBUTE_UNUSED,
+			       label_t const * label,
+			       type_t const * atype ATTRIBUTE_UNUSED,
+			       logger_t * log,
+			       cursor_t * cursor,
+			       void * _pc)
+{
+  static estring_t * buf = NULL, * buf2 = NULL;
+  struct parse_context_s * pc = _pc;
+
+  log_printfc (log, ll_warning, cursor,
+	      "function `%s' has an implicit parameter `%s'",
+	      estr_cstr (buf = label_to_str (symbol_label (pc->function), buf)),
+	      estr_cstr (buf2 = label_to_str (label, buf2)));
+
+  symbol_t * symbol = new_symbol_var (label);
+  a60_symtab_add_symbol (pc->func_symtab, symbol, sek_internal);
+  // These symbols are handled special on instantiation. Unknown type
+  // has the property that it overtakes any expression.  No errors
+  // are reported if one of expression operand is UNKNOWN, because the
+  // reporting takes place at the leaf UNKNOWN expression.
+  symbol_set_type (symbol, type_unknown ());
+
+  return symbol;
+}
+
 void
 symbol_resolve_symbols (symbol_t * self, container_t * context, logger_t * log)
 {
@@ -189,11 +222,24 @@ symbol_resolve_symbols (symbol_t * self, container_t * context, logger_t * log)
       return;
 
     case sk_func:
-      // @TODO: Do the right thing :)
-      log_printf (log, ll_info, "note: skipping resolve of function symbol.");
+      {
+	statement_t * stmt = self->stmt;
+	container_t * context = a60_as_container (stmt);
+	a60_symtab_t * symtab = container_symtab (context);
+	struct parse_context_s pc = {self, symtab};
+
+	a60_symtab_set_missing_handler (symtab,
+					private_function_add_implicit,
+					&pc);
+	stmt_resolve_symbols (stmt, log);
+	a60_symtab_unset_missing_handler (symtab);
+      }
       return;
 
     case sk_formparm:
+      // @TODO: Do the right thing :)
+      printf ("note: skipping resolve of formal parameter symbol %s.\n",
+	      estr_cstr (symbol_to_str (self, NULL)));
       return;
     }
 }

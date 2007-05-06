@@ -616,13 +616,10 @@ static void
 private_resolve_symbols_idref (expression_t * self, container_t * block,
 			       logger_t * log)
 {
-  type_t * match_type = new_t_proc (type_any (), new_slist ());
   a60_symtab_t * symtab = container_symtab (block);
-  symbol_t * found = a60_symtab_find_name_rec (symtab, self->idref.lbl, match_type);
-  if (found == NULL)
-    found = a60_symtab_find_name_rec_add_undefined (symtab, self->idref.lbl,
-						    type_any (),
-						   log, self->cursor);
+  symbol_t * found =
+    a60_symtab_find_name_rec_add_undefined (symtab, self->idref.lbl,
+					    type_any (), log, self->cursor);
   self->idref.sym = found;
 }
 
@@ -661,28 +658,30 @@ private_resolve_symbols_binary (expression_t * self,
   expr_resolve_symbols (self->binary.left, block, log);
   expr_resolve_symbols (self->binary.right, block, log);
 
-  type_t * tt = expr_type (self);
-  if (type_is_unknown (tt))
+  // If one of the operands is `unknown', then the appropriate
+  // reporting action has already been taken.
+  if (!type_is_unknown (expr_type (self->binary.left))
+      && !type_is_unknown (expr_type (self->binary.right)))
     {
-      // @TODO: there should be some error recovery; this way our node
-      // ends up being type_unknown, and avalanche of errors is
-      // blurted on the user
+      type_t * tt = expr_type (self);
+      if (type_is_unknown (tt))
+	{
+	  estring_t * es = expr_to_str (self, NULL);
+	  estring_t * tmp = type_to_str (expr_type (self->binary.left), NULL);
+	  estr_prepend_cstr (es, "type mismatch in expression `");
+	  estr_append_cstr (es, "': ");
+	  estr_append (es, tmp);
+	  estr_push (es, ' ');
+	  estr_append_cstr (es, expr_bin_op_str [self->binary.op]);
+	  estr_push (es, ' ');
+	  type_to_str (expr_type (self->binary.right), tmp);
+	  estr_append (es, tmp);
 
-      estring_t * es = expr_to_str (self, NULL);
-      estring_t * tmp = type_to_str (expr_type (self->binary.left), NULL);
-      estr_prepend_cstr (es, "type mismatch in expression `");
-      estr_append_cstr (es, "': ");
-      estr_append (es, tmp);
-      estr_push (es, ' ');
-      estr_append_cstr (es, expr_bin_op_str [self->binary.op]);
-      estr_push (es, ' ');
-      type_to_str (expr_type (self->binary.right), tmp);
-      estr_append (es, tmp);
+	  log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
 
-      log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
-
-      delete_estring (es);
-      delete_estring (tmp);
+	  delete_estring (es);
+	  delete_estring (tmp);
+	}
     }
 }
 
@@ -692,24 +691,25 @@ private_resolve_symbols_unary (expression_t * self,
 {
   expr_resolve_symbols (self->unary.operand, block, log);
 
-  type_t * tt = expr_type (self);
-  if (type_is_unknown (tt))
+  // If the operand is `unknown', then the appropriate reporting
+  // action has already been taken.
+  if (!type_is_unknown (expr_type (self->unary.operand)))
     {
-      // @TODO: there should be some error recovery; this way our node
-      // ends up being type_unknown, and avalanche of errors is
-      // blurted on the user
+      type_t * tt = expr_type (self);
+      if (type_is_unknown (tt))
+	{
+	  estring_t * es = expr_to_str (self, NULL);
+	  estr_prepend_cstr (es, "type mismatch in expression `");
+	  estr_append_cstr (es, "': ");
+	  estr_append_cstr (es, expr_un_op_str [self->unary.op]);
+	  estring_t * tmp = type_to_str (expr_type (self->unary.operand), NULL);
+	  estr_append (es, tmp);
 
-      estring_t * es = expr_to_str (self, NULL);
-      estr_prepend_cstr (es, "type mismatch in expression `");
-      estr_append_cstr (es, "': ");
-      estr_append_cstr (es, expr_un_op_str [self->unary.op]);
-      estring_t * tmp = type_to_str (expr_type (self->unary.operand), NULL);
-      estr_append (es, tmp);
+	  log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
 
-      log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
-
-      delete_estring (es);
-      delete_estring (tmp);
+	  delete_estring (es);
+	  delete_estring (tmp);
+	}
     }
 }
 
