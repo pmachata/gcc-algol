@@ -7,6 +7,7 @@
 
 #include "cursor.h"
 #include "util.h"
+#include "visitor-impl.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +17,7 @@ static char const* private_cursor_signature = "cursor";
 
 struct struct_cursor_t
 {
-  char const* signature;
+  visitable_t base;
 
   int offset;
   int line;
@@ -30,7 +31,9 @@ new_cursor (char const* filename, int line)
 {
   cursor_t * ret = malloc (sizeof (cursor_t));
 
-  ret->signature = private_cursor_signature;
+#ifndef NDEBUG
+  ret->base.signature = private_cursor_signature;
+#endif
   ret->offset = ret->column = 0;
   ret->line = line;
 
