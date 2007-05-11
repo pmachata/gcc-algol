@@ -211,7 +211,11 @@ a60_symtab_second_lookup (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t 
     {
       symbol_t * sym = slist_it_get (it);
       label_t const * label = symbol_label (sym);
-      assert (type_is_implicit (symbol_type (sym)));
+
+      // Skip symbols that are not implied parameters.
+      if (!type_is_implicit (symbol_type (sym)))
+	continue;
+
       symbol_t * found =
 	a60_symtab_find_name_rec (context_tab, label, type_any ());
       if (found == NULL)
@@ -339,7 +343,7 @@ a60_symtab_find_name_rec_add_undefined (a60_symtab_t * self, label_t const * lbl
 	    }
 	}
 
-      if (found != (symbol_t*)-1)
+      if (found == NULL)
 	{
 	  int was_there = a60_symtab_add_symbol (self, new_symbol_var (lbl), sek_ordinary);
 	  assert (!was_there);

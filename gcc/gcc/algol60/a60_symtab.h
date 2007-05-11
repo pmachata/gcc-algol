@@ -93,8 +93,8 @@ void a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, log
 /// `self` will be a symbol table with implicit parameters,
 /// `context_tab` will be symtab of call site.
 ///
-/// All symbols in `self` have to have a type of `implicit'.
-/// This presumption is asserted on.
+/// Only the symbols in `self` that are of type `implicit' are looked
+/// up this way.
 void a60_symtab_second_lookup (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t * context_tab, logger_t * log, cursor_t * cursor)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2)

@@ -739,6 +739,20 @@ private_resolve_symbols_call (expression_t * self,
 					       match_type, log,
 					       self->cursor);
     }
+  else
+    {
+      // If this used to be an idref, we still have to check for
+      // resolved symbol's type, which has to be <proc () -> <any>>.
+      type_t const * t1 = symbol_type (self->call.sym);
+      if (!type_is_unknown (t1) && !type_is_implicit (t1)
+	  && !slist_empty (t_proc_arg_types (t1)))
+	{
+	  label_t * label = symbol_label (self->call.sym);
+	  log_printfc (log, ll_error, self->cursor,
+		       "No arguments provided for function `%s'.",
+		       estr_cstr (label_id (label)));
+	}
+    }
   assert (self->call.sym != NULL);
 
   // Type has to be either `implicit', in which case the symbol was

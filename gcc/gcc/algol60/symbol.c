@@ -237,9 +237,7 @@ symbol_resolve_symbols (symbol_t * self, container_t * context, logger_t * log)
       return;
 
     case sk_formparm:
-      // @TODO: Do the right thing :)
-      printf ("note: skipping resolve of formal parameter symbol %s.\n",
-	      estr_cstr (symbol_to_str (self, NULL)));
+      // Nothing to be done here.
       return;
     }
 }
