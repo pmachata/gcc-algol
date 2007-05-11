@@ -344,7 +344,6 @@ a60_as_expression (void * obj)
   return (expression_t *)obj;
 }
 
-
 static void
 private_render_exprs_slist (slist_t * slist, estring_t * buf,
                             char const * open, char const * close)
@@ -613,17 +612,6 @@ expr_type (expression_t const * self)
 }
 
 static void
-private_resolve_symbols_idref (expression_t * self, container_t * block,
-			       logger_t * log)
-{
-  a60_symtab_t * symtab = container_symtab (block);
-  symbol_t * found =
-    a60_symtab_find_name_rec_add_undefined (symtab, self->idref.lbl,
-					    type_any (), log, self->cursor);
-  self->idref.sym = found;
-}
-
-static void
 private_resolve_symbols_if (expression_t * self, container_t * block,
 			    logger_t * log)
 {
@@ -635,7 +623,10 @@ private_resolve_symbols_if (expression_t * self, container_t * block,
   type_t * tt = expr_type (self->eif.exp_t);
   type_t * ft = expr_type (self->eif.exp_f);
 
-  if (!types_same (ct, type_bool ()))
+  // Don't report `unknwon' or `implicit'.
+
+  if (!type_is_unknown (ct) && !type_is_implicit (ct)
+      && !types_same (ct, type_bool ()))
     {
       log_printfc (log, ll_error, self->cursor,
 		   "`if' expression condition has to be boolean");
@@ -643,7 +634,9 @@ private_resolve_symbols_if (expression_t * self, container_t * block,
     }
 
   self->eif.result_type = tt;
-  if (!types_same (tt, ft)) // match is not enough
+  if (!type_is_unknown (tt) && !type_is_implicit (tt)
+      && !type_is_unknown (ft) && !type_is_implicit (ft)
+      && !types_same (tt, ft)) // match is not enough
     {
       log_printfc (log, ll_error, self->cursor,
                    "both `if' branches have to have same types");
@@ -658,23 +651,27 @@ private_resolve_symbols_binary (expression_t * self,
   expr_resolve_symbols (self->binary.left, block, log);
   expr_resolve_symbols (self->binary.right, block, log);
 
+  type_t const * lt = expr_type (self->binary.left);
+  type_t const * rt = expr_type (self->binary.right);
+
   // If one of the operands is `unknown', then the appropriate
-  // reporting action has already been taken.
-  if (!type_is_unknown (expr_type (self->binary.left))
-      && !type_is_unknown (expr_type (self->binary.right)))
+  // reporting action has already been taken.  If one of the operands
+  // is `implicit`, it is yet to be resolved, and also don't report.
+  if (!type_is_unknown (lt) && !type_is_unknown (rt)
+      && !type_is_implicit (lt) && !type_is_implicit (lt))
     {
       type_t * tt = expr_type (self);
       if (type_is_unknown (tt))
 	{
 	  estring_t * es = expr_to_str (self, NULL);
-	  estring_t * tmp = type_to_str (expr_type (self->binary.left), NULL);
+	  estring_t * tmp = type_to_str (lt, NULL);
 	  estr_prepend_cstr (es, "type mismatch in expression `");
 	  estr_append_cstr (es, "': ");
 	  estr_append (es, tmp);
 	  estr_push (es, ' ');
 	  estr_append_cstr (es, expr_bin_op_str [self->binary.op]);
 	  estr_push (es, ' ');
-	  type_to_str (expr_type (self->binary.right), tmp);
+	  type_to_str (rt, tmp);
 	  estr_append (es, tmp);
 
 	  log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
@@ -691,9 +688,12 @@ private_resolve_symbols_unary (expression_t * self,
 {
   expr_resolve_symbols (self->unary.operand, block, log);
 
+  type_t const * t0 = expr_type (self->unary.operand);
+
   // If the operand is `unknown', then the appropriate reporting
-  // action has already been taken.
-  if (!type_is_unknown (expr_type (self->unary.operand)))
+  // action has already been taken.  If the operand is `implicit',
+  // it is yet to be resolved, and also don't report.
+  if (!type_is_unknown (t0) && !type_is_implicit (t0))
     {
       type_t * tt = expr_type (self);
       if (type_is_unknown (tt))
@@ -702,7 +702,7 @@ private_resolve_symbols_unary (expression_t * self,
 	  estr_prepend_cstr (es, "type mismatch in expression `");
 	  estr_append_cstr (es, "': ");
 	  estr_append_cstr (es, expr_un_op_str [self->unary.op]);
-	  estring_t * tmp = type_to_str (expr_type (self->unary.operand), NULL);
+	  estring_t * tmp = type_to_str (t0, NULL);
 	  estr_append (es, tmp);
 
 	  log_printfc (log, ll_error, self->cursor, "%s", estr_cstr (es));
@@ -717,24 +717,70 @@ static void
 private_resolve_symbols_call (expression_t * self,
 			      container_t * block, logger_t * log)
 {
-  slist_t * argtypes = new_slist ();
-  slist_it_t * it = slist_iter (self->call.arguments);
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      expression_t * arg = slist_it_get (it);
-      expr_resolve_symbols (arg, block, log);
-      type_t * argtype = expr_type (arg);
-      slist_pushback (argtypes, argtype);
-    }
-  delete_slist_it (it);
-
-  type_t * match_type = new_t_proc (type_any (), argtypes);
   a60_symtab_t * symtab = container_symtab (block);
-  self->call.sym =
-    a60_symtab_find_name_rec_add_undefined (symtab, self->call.lbl,
-					   match_type, log,
-					   self->cursor);
+
+  // If this used to be an idref, we can save up some work.
+  if (self->call.sym == NULL)
+    {
+      slist_t * argtypes = new_slist ();
+      slist_it_t * it = slist_iter (self->call.arguments);
+      for (; slist_it_has (it); slist_it_next (it))
+	{
+	  expression_t * arg = slist_it_get (it);
+	  expr_resolve_symbols (arg, block, log);
+	  type_t * argtype = expr_type (arg);
+	  slist_pushback (argtypes, argtype);
+	}
+      delete_slist_it (it);
+
+      type_t * match_type = new_t_proc (type_any (), argtypes);
+      self->call.sym =
+	a60_symtab_find_name_rec_add_undefined (symtab, self->call.lbl,
+					       match_type, log,
+					       self->cursor);
+    }
   assert (self->call.sym != NULL);
+
+  // Type has to be either `implicit', in which case the symbol was
+  // resolved to implicit parameter, or `proc', which is proper type,
+  // or `unknown', which means error has been detected and reported.
+  type_t * st = symbol_type (self->call.sym);
+  assert (type_is_proc (st)
+	  || type_is_unknown (st)
+	  || type_is_implicit (st));
+
+  // Algol 60 callsite resolution.  We have to bind any implicit
+  // parameters.
+  statement_t * f_stmt = symbol_stmt (self->call.sym);
+  if (f_stmt) // Not necessary for internal functions.
+    {
+      container_t * f_container = a60_as_container (f_stmt);
+      a60_symtab_t * f_implicit = container_symtab (f_container);
+      slist_t * resolved = new_slist ();
+      a60_symtab_second_lookup (f_implicit, resolved, symtab,
+				log, expr_cursor (self));
+    }
+}
+
+static void
+private_resolve_symbols_idref (expression_t * self, container_t * block,
+			       logger_t * log)
+{
+  a60_symtab_t * symtab = container_symtab (block);
+  symbol_t * found =
+    a60_symtab_find_name_rec_add_undefined (symtab, self->idref.lbl,
+					    type_any (), log, self->cursor);
+  if (type_is_proc (symbol_type (found)))
+    {
+      // Aha, so this is a call... It's Morphin' Time!
+      expression_t * expr = new_expr_call (self->cursor, self->idref.lbl, new_slist ());
+      *self = *expr;
+      free (expr);
+      self->call.sym = found;
+      private_resolve_symbols_call (self, block, log);
+    }
+  else
+    self->idref.sym = found;
 }
 
 static void
@@ -755,17 +801,17 @@ private_resolve_symbols_subscript (expression_t * self,
 					   type_array_any (), log,
 					   self->cursor);
 
-  type_t * t = symbol_type (self->subscript.sym);
-  if (types_match (t, type_array_any ()))
-    // this may not be true if the symbol was added artificially by
+  type_t * t0 = symbol_type (self->subscript.sym);
+  if (!type_is_unknown (t0) && !type_is_implicit (t0))
+    // This may not be true if the symbol was added artificially by
     // container_find_name_rec_add_undefined.  In such a case an error
     // message was emitted already, and we don't have to care.
     {
       int num_indices = slist_length (self->subscript.indices);
       int num_dimensions = 0;
-      if (type_is_own (t))
-	t = type_host (t);
-      for (; type_is_array (t); t = type_host (t))
+      if (type_is_own (t0))
+	t0 = type_host (t0);
+      for (; type_is_array (t0); t0 = type_host (t0))
 	++num_dimensions;
 
       if (num_dimensions != num_indices)
@@ -793,6 +839,8 @@ expr_resolve_symbols (expression_t * self, container_t * context, logger_t * log
       return;
 
     case ek_idref:
+      // Dispatch to resolve_call is done inside based on a type of
+      // the referred-to symbol.
       private_resolve_symbols_idref (self, context, logger);
       return;
 

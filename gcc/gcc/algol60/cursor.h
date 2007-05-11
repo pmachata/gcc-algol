@@ -22,8 +22,8 @@ cursor_t * clone_cursor (cursor_t * cursor)
 /// Destroy given cursor.
 void delete_cursor (cursor_t * cursor);
 
-/// Convert void* to cursor, if it is cursor, or return NULL.
-cursor_t * cursor (void * ptr)
+/// Convert void* to cursor, if it is cursor, or abort.
+cursor_t * a60_as_cursor (void * ptr)
   ATTRIBUTE_NONNULL(1);
 
 /// Move the point the cursor points to `offset' characters ahead.

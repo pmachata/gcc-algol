@@ -349,6 +349,7 @@ new_bind_state (void)
       guard_ptr (buf, 1,
           ret->type_build_generic = new_visitor_type (
 	      a60_type_callback (type_unknown_build_generic),
+	      a60_type_callback (type_unknown_build_generic),
 	      a60_type_callback (type_any_build_generic),
 	      a60_type_callback (type_own_build_generic),
 	      a60_type_callback (type_void_build_generic),
@@ -370,6 +371,7 @@ new_bind_state (void)
       guard_ptr (buf, 1,
           ret->symbol_decl_for_type = new_visitor_type (
 	      a60_symbol_callback (symbol_var_unknown_build_generic),
+	      a60_symbol_callback (symbol_var_unknown_build_generic),
 	      a60_symbol_callback (symbol_var_any_build_generic),
 	      a60_symbol_callback (symbol_var_own_build_generic),
 	      a60_symbol_callback (symbol_var_void_build_generic),
@@ -390,6 +392,7 @@ new_bind_state (void)
 	   ));
       guard_ptr (buf, 1,
           ret->symbol_init_for_type = new_visitor_type (
+	      a60_symbol_callback (symbol_var_init_error),
 	      a60_symbol_callback (symbol_var_init_error),
 	      a60_symbol_callback (symbol_var_init_error),
 	      a60_symbol_callback (symbol_var_init_omit),
@@ -1353,7 +1356,7 @@ void *
 symbol_var_init_error (symbol_t * sym ATTRIBUTE_UNUSED,
 		   void * _state ATTRIBUTE_UNUSED)
 {
-  // This is called for `unknown' and `any' metatypes.
+  // This is called for `unknown', `implicit' and `any' metatypes.
   gcc_unreachable ();
 }
 
@@ -1375,7 +1378,7 @@ void *
 symbol_var_unknown_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
-  gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
+  gcc_assert (!"You shouldn't ask for GENERIC of `unknown' or `implicit'.");
   gcc_unreachable ();
 }
 
@@ -1633,7 +1636,7 @@ void *
 type_unknown_build_generic (type_t * self ATTRIBUTE_UNUSED,
 			    void * data ATTRIBUTE_UNUSED)
 {
-  gcc_assert (!"You shouldn't ask for GENERIC of `unknown'.");
+  gcc_assert (!"You shouldn't ask for GENERIC of `unknown' or `implicit'.");
   gcc_unreachable ();
 }
 

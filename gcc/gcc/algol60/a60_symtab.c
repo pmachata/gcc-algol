@@ -9,6 +9,7 @@
 #include "estring.h"
 #include "slist.h"
 #include "meta.h"
+#include "cursor.h"
 
 static char const * private_symtab_signature = "symtab";
 
@@ -201,6 +202,38 @@ a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, logger_t
   delete_slist_it (it);
 }
 
+void
+a60_symtab_second_lookup (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t * context_tab,
+			  logger_t * log, cursor_t * cursor)
+{
+  slist_it_t * it = slist_iter (self->table);
+  for (; slist_it_has (it); slist_it_next (it))
+    {
+      symbol_t * sym = slist_it_get (it);
+      label_t const * label = symbol_label (sym);
+      assert (type_is_implicit (symbol_type (sym)));
+      symbol_t * found =
+	a60_symtab_find_name_rec (context_tab, label, type_any ());
+      if (found == NULL)
+	{
+	  int was_there = a60_symtab_add_symbol (context_tab, new_symbol_var (label),
+						 sek_ordinary);
+	  assert (!was_there);
+	  found = a60_symtab_find_name (self, label, type_any ());
+	  symbol_set_type (found, type_unknown ());
+
+	  log_printfc (log, ll_error, a60_as_cursor (symbol_extra (sym)),
+		       "implicit parameter `%s'",
+		       estr_cstr (label_id (label)));
+	  log_printfc (log, ll_error, cursor,
+		       "cannot be resolved at this point in file.");
+	}
+
+      slist_pushback (ret_list, found);
+    }
+  delete_slist_it (it);
+}
+
 /// Return value:
 ///   NULL:          not found, continue lookup
 ///   (symbol_t*)-1: not found, stop lookup, report no errors
@@ -313,7 +346,7 @@ a60_symtab_find_name_rec_add_undefined (a60_symtab_t * self, label_t const * lbl
 	  found = private_symtab_find_name (self, lbl, atype, log, cursor);
 	  // mark a type at new symbol, either fallback type_int, or
 	  // atype, if it has suitable type
-	  symbol_set_type (found, is_metatype (atype) ? type_int () : atype);
+	  symbol_set_type (found, is_metatype (atype) ? type_unknown () : atype);
 	}
     }
 

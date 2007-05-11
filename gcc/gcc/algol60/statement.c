@@ -483,24 +483,23 @@ private_resolve_symbols_assign (statement_t * self, logger_t * log)
       type_t * t1 = expr_type (lhs);
 
       // If one of the operands is `unknown', then the appropriate
-      // reporting action has already been taken.
-      if (!type_is_unknown (tt)
-	  && !type_is_unknown (t1))
+      // reporting action has already been taken.  If one of the
+      // operands is `implicit' then the symbol is yet to be resolved.
+      if (!type_is_unknown (tt) && !type_is_unknown (t1)
+	  && !type_is_implicit (tt) && !type_is_implicit (t1)
+	  && !types_match (tt, t1))
 	{
-	  if (!types_match (tt, t1))
-	    {
-	      estring_t * s1 = expr_to_str (lhs, NULL);
-	      estring_t * s2 = expr_to_str (self->assign.rhs, NULL);
-	      estring_t * s3 = type_to_str (t1, NULL);
-	      estring_t * s4 = type_to_str (tt, NULL);
-	      log_printfc (log, ll_error, self->cursor,
-			   "type mismatch in assignment %s := %s (%s doesn't match %s)",
-			   estr_cstr (s1), estr_cstr (s2), estr_cstr (s3), estr_cstr (s4));
-	      delete_estring (s1);
-	      delete_estring (s2);
-	      delete_estring (s3);
-	      delete_estring (s4);
-	    }
+	  estring_t * s1 = expr_to_str (lhs, NULL);
+	  estring_t * s2 = expr_to_str (self->assign.rhs, NULL);
+	  estring_t * s3 = type_to_str (t1, NULL);
+	  estring_t * s4 = type_to_str (tt, NULL);
+	  log_printfc (log, ll_error, self->cursor,
+		       "type mismatch in assignment %s := %s (%s doesn't match %s)",
+		       estr_cstr (s1), estr_cstr (s2), estr_cstr (s3), estr_cstr (s4));
+	  delete_estring (s1);
+	  delete_estring (s2);
+	  delete_estring (s3);
+	  delete_estring (s4);
 	}
 
       // Shouldn't be necessary to check this, since we now have
@@ -561,7 +560,8 @@ stmt_resolve_symbols (statement_t * self, logger_t * log)
 	  }
 
 	type_t * t1 = expr_type (self->cond.cond);
-	if (!types_match (t1, type_bool ()))
+	if (!type_is_unknown (t1) && !type_is_implicit (t1)
+	    && !types_match (t1, type_bool ()))
 	  {
 	    estring_t * s1 = expr_to_str (self->cond.cond, NULL);
 	    estring_t * s2 = type_to_str (t1, NULL);

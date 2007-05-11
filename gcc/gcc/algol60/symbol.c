@@ -203,11 +203,11 @@ private_function_add_implicit (a60_symtab_t * symtab ATTRIBUTE_UNUSED,
 
   symbol_t * symbol = new_symbol_var (label);
   a60_symtab_add_symbol (pc->func_symtab, symbol, sek_internal);
-  // These symbols are handled special on instantiation. Unknown type
-  // has the property that it overtakes any expression.  No errors
-  // are reported if one of expression operand is UNKNOWN, because the
-  // reporting takes place at the leaf UNKNOWN expression.
-  symbol_set_type (symbol, type_unknown ());
+
+  // These symbols are handled special on instantiation.  No errors
+  // are reported if one of expression operand is `implicit'.
+  symbol_set_type (symbol, type_implicit ());
+  symbol_set_extra (symbol, cursor);
 
   return symbol;
 }

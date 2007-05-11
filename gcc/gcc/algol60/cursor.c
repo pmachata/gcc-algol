@@ -62,12 +62,12 @@ delete_cursor (cursor_t * cursor)
 }
 
 cursor_t *
-cursor (void * ptr)
+a60_as_cursor (void * obj)
 {
-  if (((cursor_t*)ptr)->signature == private_cursor_signature)
-    return ptr;
-  else
-    return NULL;
+#ifndef NDEBUG
+  a60_check_access (obj, private_cursor_signature);
+#endif
+  return (cursor_t *)obj;
 }
 
 void

@@ -46,6 +46,7 @@ t_switch_t;
 typedef enum enum_type_kind_t
 {
   tk_unknown,
+  tk_implicit,
   tk_any,
   tk_own,
   tk_void,
@@ -97,6 +98,15 @@ new_t_unknown (void)
   static type_t * cache = NULL;
   if (cache == NULL)
     cache = private_new_type (tk_unknown);
+  return cache;
+}
+
+type_t *
+new_t_implicit (void)
+{
+  static type_t * cache = NULL;
+  if (cache == NULL)
+    cache = private_new_type (tk_implicit);
   return cache;
 }
 
@@ -321,6 +331,7 @@ types_same (type_t const * lhs, type_t const * rhs)
       switch (lhs->base.kind)
 	{
 	case tk_unknown:
+	case tk_implicit:
 	case tk_any:
 	case tk_int:
 	case tk_void:
@@ -361,7 +372,9 @@ types_match (type_t const * lhs, type_t const * rhs)
 	  return 1;
 	}
       else if (lhs->base.kind == tk_unknown
-	       || rhs->base.kind == tk_unknown)
+	       || rhs->base.kind == tk_unknown
+	       || lhs->base.kind == tk_implicit
+	       || rhs->base.kind == tk_implicit)
 	{
 	  return 0;
 	}
@@ -408,6 +421,7 @@ expr_primitive_for_type (type_t const * self)
       return new_expr_bool (new_cursor ("", 0), 1);
 
     case tk_unknown:
+    case tk_implicit:
     case tk_any:
     case tk_void:
     case tk_label:
@@ -430,6 +444,7 @@ is_metatype (type_t const * self)
   while (1)
     {
       if (self->base.kind == tk_unknown
+	  || self->base.kind == tk_implicit
 	  || self->base.kind == tk_any)
 	return 1;
       else if (self->base.kind == tk_array)
@@ -503,7 +518,13 @@ private_array_resolve_symbols (type_t * tself, container_t * context, logger_t *
 
   type_t * lot = expr_type (lo);
   type_t * hit = expr_type (hi);
-  if (!types_match (lot, type_int ()))
+
+  // Type of `unknown' means that appropriate reporting action has
+  // already been taken.  Type of `implicit' means the symbol is yet
+  // to be resolved.
+
+  if (!type_is_unknown (lot) && !type_is_implicit (lot)
+      && !types_match (lot, type_int ()))
     {
       log_printfc (log, ll_error, expr_cursor (lo),
 		  "invalid type %s in lower boundary",
@@ -511,7 +532,8 @@ private_array_resolve_symbols (type_t * tself, container_t * context, logger_t *
       boundspair_set_lo (bp, expr_primitive_for_type (type_int ()));
     }
 
-  if (!types_match (hit, type_int ()))
+  if (!type_is_unknown (hit) && !type_is_implicit (hit)
+      && !types_match (hit, type_int ()))
     {
       log_printfc (log, ll_error, expr_cursor (hi),
 		  "invalid type %s in upper boundary",
@@ -545,6 +567,7 @@ type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
   switch (self->base.kind)
     {
     case tk_unknown:
+    case tk_implicit:
     case tk_any:
       assert (!"Should never get there!");
 
@@ -586,6 +609,13 @@ type_is_unknown (type_t const * self)
 }
 
 int
+type_is_implicit (type_t const * self)
+{
+  assert (self != NULL);
+  return self->base.kind == tk_implicit;
+}
+
+int
 type_is_proc (type_t const * self)
 {
   assert (self != NULL);
@@ -597,6 +627,7 @@ private_type_to_str (type_t const * self, estring_t * buf, int canon)
 {
   static char const* typestrs [] = {
     [tk_unknown] = "<unknown>",
+    [tk_implicit] = "<implicit>",
     [tk_any] = "<any>",
     [tk_int] = "'integer'",
     [tk_void] = "<void>",
@@ -615,9 +646,11 @@ private_type_to_str (type_t const * self, estring_t * buf, int canon)
 
   switch (self->base.kind)
     {
-    case tk_unknown:    case tk_any:    case tk_int:
-    case tk_void:       case tk_real:   case tk_string:
-    case tk_bool:       case tk_label:
+    case tk_unknown:    case tk_implicit:
+    case tk_any:        case tk_int:
+    case tk_void:       case tk_real:
+    case tk_string:     case tk_bool:
+    case tk_label:
       assert (!"Should already be covered!");
 
     case tk_switch:
@@ -720,7 +753,9 @@ type_get_root (type_t * self)
 	self = self->t_array.host;
       else if (self->base.kind == tk_own)
 	self = self->t_own.host;
-      else if (self->base.kind == tk_any || self->base.kind == tk_unknown)
+      else if (self->base.kind == tk_any
+	       || self->base.kind == tk_unknown
+	       || self->base.kind == tk_implicit)
 	assert (!"Should never get there!");
       else
 	break;
@@ -755,6 +790,7 @@ type_t * type_proc_##TYPERET##_##TYPEARG1##_##TYPEARG2 (void) {\
 }
 
 MEMOIZE(unknown)
+MEMOIZE(implicit)
 MEMOIZE(any)
 MEMOIZE(int)
 MEMOIZE(void)
@@ -793,6 +829,7 @@ type_switch_any (void)
 visitor_t *
 new_visitor_type (
     callback_t type_unknown,
+    callback_t type_implicit,
     callback_t type_any,
     callback_t type_own,
     callback_t type_void,
@@ -807,8 +844,9 @@ new_visitor_type (
 )
 {
   return a60_build_generic_visitor (
-      A60_IFDEBUG (&private_type_signature, NULL), 12,
+      A60_IFDEBUG (&private_type_signature, NULL), 13,
       type_unknown,
+      type_implicit,
       type_any,
       type_own,
       type_void,

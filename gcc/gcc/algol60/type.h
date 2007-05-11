@@ -40,6 +40,7 @@ type_t * type_proc_int_int_int (void); ///< Memoized type.
 type_t * type_proc_real_int_real (void); ///< Memoized type.
 type_t * type_proc_real_real_int (void); ///< Memoized type.
 type_t * type_proc_real_real_real (void); ///< Memoized type.
+type_t * type_implicit (void); ///< Memoized type.
 
 /// Create `unknown` type.
 type_t  * new_t_unknown (void)
@@ -71,6 +72,10 @@ type_t  * new_t_bool (void)
 
 /// Create `label` type.
 type_t  * new_t_label (void)
+  ATTRIBUTE_MALLOC;
+
+/// Create `implicit` type.
+type_t  * new_t_implicit (void)
   ATTRIBUTE_MALLOC;
 
 /// Create `switch` type.  The `switchlist` is a list of designational
@@ -177,6 +182,8 @@ int types_same (type_t const * lhs, type_t const * rhs)
 ///
 /// The relation 'matches' is commutative.  It's not transitive:
 /// unknown~~any, any~~any, any~~unknown, but unknown!~unknown.
+///
+/// `implicit` matches like `unknown`.
 int types_match (type_t const * lhs, type_t const * rhs)
   ATTRIBUTE_NONNULL (1)
   ATTRIBUTE_NONNULL (2);
@@ -214,6 +221,10 @@ int type_is_array (type_t const * self)
 int type_is_unknown (type_t const * self)
   ATTRIBUTE_NONNULL (1);
 
+/// Check if given type is `implicit'.
+int type_is_implicit (type_t const * self)
+  ATTRIBUTE_NONNULL (1);
+
 /// Check if given type is `proc'.
 int type_is_proc (type_t const * self)
   ATTRIBUTE_NONNULL (1);
@@ -233,6 +244,7 @@ void type_resolve_symbols (type_t * self, container_t * context, logger_t * log)
 /// argument.
 visitor_t * new_visitor_type (
     callback_t type_unknown,
+    callback_t type_implicit,
     callback_t type_any,
     callback_t type_own,
     callback_t type_void,
