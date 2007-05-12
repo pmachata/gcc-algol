@@ -713,6 +713,44 @@ private_resolve_symbols_unary (expression_t * self,
     }
 }
 
+typedef struct {
+  a60_symtab_t * context_tab;
+  logger_t * log;
+  cursor_t * cursor;
+  slist_t * resolved;
+  int status;
+}
+private_resolve_context_t;
+
+static void *
+private_resolve_implicit_callback (symbol_t * sym, void * data)
+{
+  private_resolve_context_t * ctx = data;
+  label_t const * label = symbol_label (sym);
+
+  // Skip symbols that are not implied parameters.
+  if (!type_is_implicit (symbol_type (sym)))
+    return NULL;
+
+  symbol_t * found =
+    a60_symtab_find_name_rec (ctx->context_tab, label, type_any ());
+
+  if (found != NULL)
+    slist_pushback (ctx->resolved, sym);
+  else
+    {
+      log_printfc (ctx->log, ll_error, a60_as_cursor (symbol_extra (sym)),
+		   "implicit parameter `%s'",
+		   estr_cstr (label_id (label)));
+      log_printfc (ctx->log, ll_error, ctx->cursor,
+		   "cannot be resolved at this point in file.");
+
+      ctx->status = 0;
+    }
+
+  return NULL;
+}
+
 static void
 private_resolve_symbols_call (expression_t * self,
 			      container_t * block, logger_t * log)
@@ -770,11 +808,20 @@ private_resolve_symbols_call (expression_t * self,
       f_stmt = clone_statement (f_stmt);
       container_t * f_container = a60_as_container (f_stmt);
       a60_symtab_t * f_implicit = container_symtab (f_container);
-      slist_t * resolved = new_slist ();
       int e_messages = log_count_messages (log, ll_error);
       int w_messages = log_count_messages (log, ll_warning);
-      if (a60_symtab_second_resolve_symbols (f_implicit, resolved, symtab,
-					     log, expr_cursor (self)))
+
+      private_resolve_context_t ctx
+	= {symtab, log, expr_cursor (self), new_slist (), 1};
+      a60_symtab_each
+	(f_implicit, a60_symbol_callback (private_resolve_implicit_callback), &ctx);
+      slist_it_t * it = slist_iter (ctx.resolved);
+      for (; slist_it_has (it); slist_it_next (it))
+	a60_symtab_erase_symbol (f_implicit, a60_as_symbol (slist_it_get (it)));
+      delete_slist_it (it);
+      delete_slist (ctx.resolved);
+
+      if (ctx.status)
 	{
 	  assert (container_parent (f_container) == NULL);
 	  container_set_parent (f_container, block);
@@ -788,7 +835,6 @@ private_resolve_symbols_call (expression_t * self,
 	  if (level != ll_debug)
 	    log_printfc (log, level, self->cursor, "at this point in file.");
 	}
-      delete_slist (resolved);
     }
 }
 

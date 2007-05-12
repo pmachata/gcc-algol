@@ -401,7 +401,7 @@ slist_append (slist_t * list, slist_t * other)
 void
 slist_each (
   slist_t * list,
-  void (*fn)(slist_t *, void *, void *),
+  void (*fn)(void *, void *),
   void * userdata)
 {
   assert (list != NULL);
@@ -411,7 +411,7 @@ slist_each (
   for (; node != NULL; node = node->link)
     {
       void * obj = node->object;
-      (*fn) (list, obj, userdata);
+      (*fn) (obj, userdata);
     }
 }
 
@@ -564,13 +564,13 @@ delete_slist_it (slist_it_t * it)
 #include <assert.h>
 
 void
-incctr (slist_t * list, void * obj, void * pctr)
+incctr (void * obj, void * userdata)
 {
-  (*(int*)pctr)++;
+  (*(int*)userdata)++;
 }
 
 int
-odd (slist_t * list, void * obj, void * userdata)
+odd (void * obj, void * userdata)
 {
   return (int)obj % 2;
 }

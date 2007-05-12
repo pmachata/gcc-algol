@@ -219,55 +219,6 @@ a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, logger_t
   delete_slist_it (it);
 }
 
-int
-a60_symtab_second_resolve_symbols (a60_symtab_t * self, slist_t * ret_list,
-				   a60_symtab_t * context_tab,
-				   logger_t * log, cursor_t * cursor)
-{
-  int ret = 1;
-  slist_it_t * it = slist_iter (self->table);
-  for (; slist_it_has (it); slist_it_next (it))
-    {
-      symbol_t * sym = slist_it_get (it);
-      label_t const * label = symbol_label (sym);
-
-      // Skip symbols that are not implied parameters.
-      if (!type_is_implicit (symbol_type (sym)))
-	continue;
-
-      symbol_t * found =
-	a60_symtab_find_name_rec (context_tab, label, type_any ());
-      if (found == NULL)
-	{
-	  /*
-	  int was_there = a60_symtab_add_symbol (context_tab, new_symbol_var (label),
-						 sek_ordinary);
-	  assert (!was_there);
-	  found = a60_symtab_find_name (self, label, type_any ());
-	  symbol_set_type (found, type_unknown ());
-	  */
-
-	  log_printfc (log, ll_error, a60_as_cursor (symbol_extra (sym)),
-		       "implicit parameter `%s'",
-		       estr_cstr (label_id (label)));
-	  log_printfc (log, ll_error, cursor,
-		       "cannot be resolved at this point in file.");
-
-	  ret = 0;
-	}
-      else
-	slist_pushback (ret_list, sym /*found*/);
-    }
-
-  slist_it_reset (it, ret_list);
-  for (; slist_it_has (it); slist_it_next (it))
-    a60_symtab_erase_symbol (self, a60_as_symbol (slist_it_get (it)));
-
-  delete_slist_it (it);
-
-  return ret;
-}
-
 /// Return value:
 ///   NULL:          not found, continue lookup
 ///   (symbol_t*)-1: not found, stop lookup, report no errors

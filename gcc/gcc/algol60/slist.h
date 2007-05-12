@@ -112,12 +112,11 @@ void slist_append (slist_t * list, slist_t * other)
 
 /// Apply the function `fn' to each element of the list `list'.  The
 /// argument `userdata' will be passed over to fn verbatim.  The
-/// arguments of `fn' are, respectively, the list that is iterated
-/// over, the object that is currently under the cursor, and the
-/// userdata passed to slist_map.
+/// arguments of `fn' are, respectively, the object that is currently
+/// under the cursor, and the userdata passed to slist_map.
 void slist_each (
   slist_t * list,
-  void (*fn)(slist_t * /*list*/, void * /*object*/, void * /*userdata*/),
+  void (*fn)(void * /*object*/, void * /*userdata*/),
   void * userdata)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2);
