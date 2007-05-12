@@ -2,7 +2,7 @@
 'begin'
 	'procedure' foo1;
 	'begin'
-		puts (`yay!');
+		puts (`yay!'); 'comment' { dg-warning "implicit" } ;
 	'end';
 
 	'procedure' foo2 (a, b, c);
@@ -10,19 +10,19 @@
 	'integer' a, b;
 	'real' c;
 	'begin'
-		puts (`yay!');
+		puts (`yay!'); 'comment' { dg-warning "implicit" } ;
 	'end';
 
 	'procedure' foo3 (a);
 	'integer' a;
 	'begin'
-		puts (`yay!');
+		puts (`yay!'); 'comment' { dg-warning "implicit" } ;
 	'end';
 
 	'procedure' foo4 (a);
 	'value' a;
 	'integer' a;
 	'begin'
-		puts (`yay!');
+		puts (`yay!'); 'comment' { dg-warning "implicit" } ;
 	'end';
 'end';

@@ -227,6 +227,7 @@ private_symtab_pick_labels (symbol_t * sym, void * _labels)
   slist_t * labels = a60_as_slist (_labels);
   if (types_same (symbol_type (sym), type_label ()))
     slist_pushback (labels, sym);
+  return NULL;
 }
 
 statement_t *
@@ -725,7 +726,10 @@ void
 stmt_set_parent (statement_t * self, container_t * parent)
 {
   assert (self != NULL);
-  self->parent = parent;
+  if (self->base.kind == sk_block || self->base.kind == sk_toplev)
+    container_set_parent ((container_t *)self, parent);
+  else
+    self->parent = parent;
 }
 
 void
@@ -748,7 +752,7 @@ container_add_stmt (container_t * _self, statement_t * stmt)
   assert (self->base.kind == sk_block || self->base.kind == sk_toplev);
 
   slist_pushback (self->block.statements, stmt);
-  stmt->parent = _self;
+  stmt_set_parent (stmt, _self);
 }
 
 slist_t *

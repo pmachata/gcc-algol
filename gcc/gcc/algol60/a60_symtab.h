@@ -95,12 +95,15 @@ void a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, log
 /// For resolution of implicit function parameters.  This takes each
 /// symbol in the symbol table, and adds into list `ret_list` a
 /// symbols found by recursive lookup in `context_tab`.  The symbtab
-/// `self` will be a symbol table with implicit parameters,
-/// `context_tab` will be symtab of call site.
+/// `self` will be function's symbol table with implicit and explicit
+/// parameters; `context_tab` will be symtab of call site.
 ///
 /// Only the symbols in `self` that are of type `implicit' are looked
 /// up this way.
-void a60_symtab_second_lookup (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t * context_tab, logger_t * log, cursor_t * cursor)
+///
+/// The function returns 1 if all symbols were resolved, or 0 if there
+/// were resolution errors.
+int a60_symtab_second_resolve_symbols (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t * context_tab, logger_t * log, cursor_t * cursor)
   ATTRIBUTE_NONNULL(1)
   ATTRIBUTE_NONNULL(2)
   ATTRIBUTE_NONNULL(3);

@@ -159,7 +159,7 @@ estring_t * type_to_str (type_t const * self, estring_t * buf)
 estring_t * type_to_str_canon (type_t const * self, estring_t * buf)
   ATTRIBUTE_NONNULL (1);
 
-/// Answers 1 or 0, depending on whether the two types are the same.
+/// Answers 1 or 0, depending on whether the two types are same.
 /// Array bounds are not taken into account.
 /// Switchlist of switch type is not taken into account.
 int types_same (type_t const * lhs, type_t const * rhs)

@@ -114,7 +114,9 @@ private_symtab_find_it (a60_symtab_t * self, label_t const * lbl, type_t const *
       symbol_t * sym = slist_it_get (it);
       type_t * symtype = symbol_type (sym);
       if (label_eq (symbol_label (sym), lbl)
-	  && (symtype == NULL || types_match (symtype, atype)))
+	  && (symtype == NULL
+	      || types_same (symtype, atype)
+	      || types_match (symtype, atype)))
 	break;
 
       slist_it_next (it);
@@ -189,6 +191,8 @@ a60_symtab_erase_symbol (a60_symtab_t * self, symbol_t * sym)
     // found somewhere in the middle
     {
       assert (pr != NULL && it != NULL);
+      assert (slist_it_has (pr));
+      assert (slist_it_has (it));
       ret = slist_it_erase_after (pr);
       delete_slist_it (pr);
       delete_slist_it (it);
@@ -215,10 +219,12 @@ a60_symtab_resolve_symbols (a60_symtab_t * self, container_t * context, logger_t
   delete_slist_it (it);
 }
 
-void
-a60_symtab_second_lookup (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t * context_tab,
-			  logger_t * log, cursor_t * cursor)
+int
+a60_symtab_second_resolve_symbols (a60_symtab_t * self, slist_t * ret_list,
+				   a60_symtab_t * context_tab,
+				   logger_t * log, cursor_t * cursor)
 {
+  int ret = 1;
   slist_it_t * it = slist_iter (self->table);
   for (; slist_it_has (it); slist_it_next (it))
     {
@@ -233,22 +239,33 @@ a60_symtab_second_lookup (a60_symtab_t * self, slist_t * ret_list, a60_symtab_t 
 	a60_symtab_find_name_rec (context_tab, label, type_any ());
       if (found == NULL)
 	{
+	  /*
 	  int was_there = a60_symtab_add_symbol (context_tab, new_symbol_var (label),
 						 sek_ordinary);
 	  assert (!was_there);
 	  found = a60_symtab_find_name (self, label, type_any ());
 	  symbol_set_type (found, type_unknown ());
+	  */
 
 	  log_printfc (log, ll_error, a60_as_cursor (symbol_extra (sym)),
 		       "implicit parameter `%s'",
 		       estr_cstr (label_id (label)));
 	  log_printfc (log, ll_error, cursor,
 		       "cannot be resolved at this point in file.");
-	}
 
-      slist_pushback (ret_list, found);
+	  ret = 0;
+	}
+      else
+	slist_pushback (ret_list, sym /*found*/);
     }
+
+  slist_it_reset (it, ret_list);
+  for (; slist_it_has (it); slist_it_next (it))
+    a60_symtab_erase_symbol (self, a60_as_symbol (slist_it_get (it)));
+
   delete_slist_it (it);
+
+  return ret;
 }
 
 /// Return value:

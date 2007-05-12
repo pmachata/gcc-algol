@@ -658,7 +658,7 @@ private_resolve_symbols_binary (expression_t * self,
   // reporting action has already been taken.  If one of the operands
   // is `implicit`, it is yet to be resolved, and also don't report.
   if (!type_is_unknown (lt) && !type_is_unknown (rt)
-      && !type_is_implicit (lt) && !type_is_implicit (lt))
+      && !type_is_implicit (lt) && !type_is_implicit (rt))
     {
       type_t * tt = expr_type (self);
       if (type_is_unknown (tt))
@@ -771,8 +771,24 @@ private_resolve_symbols_call (expression_t * self,
       container_t * f_container = a60_as_container (f_stmt);
       a60_symtab_t * f_implicit = container_symtab (f_container);
       slist_t * resolved = new_slist ();
-      a60_symtab_second_lookup (f_implicit, resolved, symtab,
-				log, expr_cursor (self));
+      int e_messages = log_count_messages (log, ll_error);
+      int w_messages = log_count_messages (log, ll_warning);
+      if (a60_symtab_second_resolve_symbols (f_implicit, resolved, symtab,
+					     log, expr_cursor (self)))
+	{
+	  assert (container_parent (f_container) == NULL);
+	  container_set_parent (f_container, block);
+	  stmt_resolve_symbols (f_stmt, log);
+
+	  debug_level_t level = ll_debug;
+	  if (log_count_messages (log, ll_error) > e_messages)
+	    level = ll_error;
+	  else if (log_count_messages (log, ll_warning) > w_messages)
+	    level = ll_warning;
+	  if (level != ll_debug)
+	    log_printfc (log, level, self->cursor, "at this point in file.");
+	}
+      delete_slist (resolved);
     }
 }
 
