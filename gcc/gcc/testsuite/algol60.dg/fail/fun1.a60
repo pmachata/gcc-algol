@@ -4,21 +4,18 @@
 	'value' a; 'comment' { dg-error "formal parameter" } ;
 	'integer' a; 'comment' { dg-error "formal parameter" } ;
 	'begin'
-		puts (`yay!');
 	'end';
 
 	'procedure' foo2 (a, b, c); 'comment' { dg-error "type specifier" } ;
 	'value' a, c;
 	'integer' a, b;
 	'begin'
-		puts (`yay!');
 	'end';
 
 	'procedure' foo4 (a, b, c);
 	'value' a, b, a; 'comment' { dg-error "duplicate" } ;
 	'integer' a, b;
 	'begin'
-		puts (`yay!');
 	'end';
 
 	'procedure' foo5 (a, b, c);
@@ -27,6 +24,5 @@
 	'real' b, c;    'comment' { dg-error "duplicate" } ;
 	'integer' b, a; 'comment' { dg-error "duplicate" } ;
 	'begin'
-		puts (`yay!');
 	'end';
 'end';

@@ -526,7 +526,7 @@ BlockDeclarations:
 
 	  symbol_t * formparm = new_symbol_formparm (id0, type0, convention);
 	  slist_pushback (formparms, formparm);
-	  slist_pushback (types, type0);
+	  slist_pushfront (types, type0);
 	}
 
       // Check that all parameters in ValuePart are really formal parameters,

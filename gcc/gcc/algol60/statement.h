@@ -75,6 +75,18 @@ container_t * new_stmt_block (cursor_t * cursor, a60_symtab_t * symtab)
 container_t * new_stmt_toplev (cursor_t * cursor, a60_symtab_t * symtab)
   ATTRIBUTE_MALLOC;
 
+/// Create a copy of subtree starting at given statement.
+/// Cursor is shared, and parent is set to NULL, but other components
+/// are recursively cloned.
+statement_t * clone_statement (statement_t const * self)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
+
+/// The same as above, just with typing for containers.
+container_t * clone_container (container_t const * self)
+  ATTRIBUTE_MALLOC
+  ATTRIBUTE_NONNULL(1);
+
 /// Convert void* to statement, if it is statement, or abort.
 statement_t * a60_as_statement (void * ptr)
   ATTRIBUTE_NONNULL(1);

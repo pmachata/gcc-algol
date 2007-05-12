@@ -221,6 +221,104 @@ new_stmt_toplev (cursor_t * cursor, a60_symtab_t * symtab)
   return private_new_container (sk_toplev, cursor, symtab);
 }
 
+static void *
+private_symtab_pick_labels (symbol_t * sym, void * _labels)
+{
+  slist_t * labels = a60_as_slist (_labels);
+  if (types_same (symbol_type (sym), type_label ()))
+    slist_pushback (labels, sym);
+}
+
+statement_t *
+clone_statement (statement_t const * self)
+{
+  assert (self != NULL);
+
+  statement_t * ret = private_new_statement (self->base.kind, self->cursor, NULL);
+
+  switch (self->base.kind)
+    {
+    case sk_dummy:
+      break;
+
+    case sk_assign:
+      ret->assign.lhss = clone_slist (self->assign.lhss);
+      slist_map (ret->assign.lhss, adapt_test, clone_expression);
+      ret->assign.rhs = clone_expression (self->assign.rhs);
+      break;
+
+    case sk_call:
+      ret->call.call = clone_expression (self->call.call);
+      break;
+
+    case sk_cond:
+      ret->cond.cond = clone_expression (self->cond.cond);
+      ret->cond.ifclause = clone_statement (self->cond.ifclause);
+      ret->cond.elseclause
+	= ret->cond.elseclause ? clone_statement (self->cond.elseclause) : NULL;
+      break;
+
+    case sk_for:
+      ret->afor.variable = clone_expression (self->afor.variable);
+      ret->afor.elmts = clone_slist (self->afor.elmts);
+      slist_map (ret->afor.elmts, adapt_test, clone_for_elmt);
+      ret->afor.body = clone_statement (self->afor.body);
+      break;
+
+    case sk_goto:
+      ret->agoto.target = clone_desig_expr (self->agoto.target);
+      break;
+
+    case sk_block:
+    case sk_toplev:
+      {
+	ret->block.symtab = a60_clone_symtab (self->block.symtab);
+	ret->block.statements = new_slist_typed (adapt_test, a60_as_statement);
+
+	// extract labels from the list
+	slist_t * labels = new_slist ();
+	a60_symtab_each (ret->block.symtab,
+			 a60_symbol_callback (private_symtab_pick_labels),
+			 labels);
+	slist_it_t * jt = slist_iter (labels);
+
+	// clone statement list and retarget labels in one pass
+	slist_it_t * it = slist_iter (self->block.statements);
+	for (; slist_it_has (it); slist_it_next (it))
+	  {
+	    statement_t * stmt = slist_it_get (it);
+	    statement_t * clone = clone_statement (stmt);
+	    container_add_stmt (a60_as_container (ret), clone);
+
+	    slist_it_reset (jt, labels);
+	    for (; slist_it_has (jt); slist_it_next (jt))
+	      {
+		symbol_t * sym = slist_it_get (jt);
+		statement_t * target = symbol_stmt (sym);
+		if (target == stmt)
+		  {
+		    symbol_set_stmt (sym, clone);
+		    stmt_add_label (clone, sym);
+		  }
+	      }
+	  }
+
+	delete_slist_it (jt);
+	delete_slist_it (it);
+	delete_slist (labels);
+      }
+      break;
+    };
+
+  return ret;
+}
+
+container_t *
+clone_container (container_t const * self)
+{
+  return a60_as_container (clone_statement (a60_as_statement ((container_t *)self)));
+}
+
 statement_t *
 a60_as_statement (void * obj)
 {

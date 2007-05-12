@@ -48,6 +48,19 @@ a60_new_symtab (a60_symtab_kind_t kind)
   return ret;
 }
 
+a60_symtab_t *
+a60_clone_symtab (a60_symtab_t * self)
+{
+  a60_symtab_t * ret = private_new_symtab (self->kind);
+  // Don't handle missing handler just now, it's probably not used
+  // during symtab clone anyway.
+  assert (self->missing_handler == NULL);
+  ret->table = clone_slist (self->table);
+  ret->parent = self->parent;
+  slist_map (ret->table, adapt_test, clone_symbol);
+  return ret;
+}
+
 a60_symtab_kind_t
 a60_symtab_kind (a60_symtab_t const * self)
 {

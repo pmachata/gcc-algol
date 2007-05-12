@@ -36,7 +36,12 @@ a60_symtab_kind_t;
 a60_symtab_t * a60_new_symtab (a60_symtab_kind_t kind)
   ATTRIBUTE_MALLOC;
 
-/// Answer the parent of this symtab.
+/// Create a copy of this symtab.  Each symbol is cloned, too.
+a60_symtab_t * a60_clone_symtab (a60_symtab_t * self)
+  ATTRIBUTE_NONNULL(1)
+  ATTRIBUTE_MALLOC;
+
+/// Answer the kind of this symtab.
 a60_symtab_kind_t a60_symtab_kind (a60_symtab_t const * self)
   ATTRIBUTE_NONNULL(1);
 

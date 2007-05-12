@@ -747,7 +747,7 @@ private_resolve_symbols_call (expression_t * self,
       if (!type_is_unknown (t1) && !type_is_implicit (t1)
 	  && !slist_empty (t_proc_arg_types (t1)))
 	{
-	  label_t * label = symbol_label (self->call.sym);
+	  label_t const * label = symbol_label (self->call.sym);
 	  log_printfc (log, ll_error, self->cursor,
 		       "No arguments provided for function `%s'.",
 		       estr_cstr (label_id (label)));
@@ -763,11 +763,11 @@ private_resolve_symbols_call (expression_t * self,
 	  || type_is_unknown (st)
 	  || type_is_implicit (st));
 
-  // Algol 60 callsite resolution.  We have to bind any implicit
-  // parameters.
+  // Callsite resolution.  We have to bind any implicit parameters.
   statement_t * f_stmt = symbol_stmt (self->call.sym);
   if (f_stmt) // Not necessary for internal functions.
     {
+      f_stmt = clone_statement (f_stmt);
       container_t * f_container = a60_as_container (f_stmt);
       a60_symtab_t * f_implicit = container_symtab (f_container);
       slist_t * resolved = new_slist ();
