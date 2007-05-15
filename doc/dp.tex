@@ -21,7 +21,7 @@
 \author{Bc. Petr Machata}
 \title{Construction of GNU Compiler Collection Front End}
 
-\newif\iffinal\finalfalse
+\newif\iffinal\finaltrue
 \newif\ifnfinal\iffinal\nfinalfalse\else\nfinaltrue\fi
 
 \iffinal
@@ -1123,7 +1123,6 @@ build system.  If you don't want to port entire compiler over to GCC's
 transferring the build into your subdirectory.  Basically
 \literal{\$(MAKE) -C} should be enough, but you will have to take care
 of passing necessary build/host/target trichotomy
-\footnote{See section \ref{CrossCompilationIssues} for details.}
 variables and paths over to your build system, and respecting them
 there.  This in fact holds for all various variables that are passed
 from one recursive make instance to the other.
@@ -1136,7 +1135,7 @@ GCC-isms
 decrease usefullness of certain GCC-specific constructs.}, such as
 C-like preprocessing or inline assembly.  These themes are covered in
 dedicated chapters \ref{GCCServices} and \ref{LanguageExtenstions},
-respectively. \NWY
+respectively.
 
 For special-casing the code that's built as part of GCC, you can use
 \variable{IN\_GCC} preprocessor variable.  It's \literal{\#defined}
@@ -1151,7 +1150,9 @@ classified by cpp:
 \program{cpp error: attempt to use poisoned malloc}
 
 Hand-managed code is OK with GCC, so it's best to keep the collector
-off already written codebase.
+off already written codebase.  On the other hand, if you know you are
+writing what will become part of GCC, it is perhaps better to use
+garbage collector from the beginning.  It saves some nerves.
 
 \subsection{Versioning Issues}
 \label{VersioningIssues}
@@ -1176,7 +1177,7 @@ trunk/gcc/gcc/testsuite/algol60.dg/
 More will be written about the \file{trunk/gcc/libga60/} and
 \file{trunk/gcc/gcc/testsuite/} in their respective sections,
 \ref{RuntimeLibraries} and \ref{TestSuite}. For now, you can skip
-their description, if you so wish. \NWY
+their description, if you so wish.
 
 The toplevel split to \file{trunk/doc/} and \file{trunk/gcc/} is here
 to keep my diploma thesis texts separated from the GCC development
@@ -1208,7 +1209,8 @@ gcc/gcc/testsuite/algol60.dg
 
 But for test suite, you will have to add two files into subdirectory
 \file{gcc/gcc/testsuite/lib/}, and you have to symlink those two files
-explicitly:
+explicitly (we need to ``merge'' the two directory subtrees, which is
+not simply done in most OS's):
 
 \begin{verbatim}
 gcc/gcc/testsuite/lib/algol60-dg.exp
@@ -1225,10 +1227,11 @@ directory's \file{../}, not back to \file{gcc/}.  For
 this reason I had to create \file{gcc/libga60/} as an ordinary
 directory, and symlink there all the files from front end's
 \file{gcc/libga60/}.  You will have to either take care and symlink
-back by hand when someone adds new files into version system, or store
-all source files in subdirectory e.g. \file{gcc/libga60/src/}, symlink
-that, and only keep in \file{gcc/libga60/} the build machinery files
-that need to be there.
+back by hand when someone adds new files into version system (maybe
+with support of nice VCS hook), or store all source files in
+subdirectory e.g. \file{gcc/libga60/src/}, symlink that, and only keep
+in \file{gcc/libga60/} the build machinery files that need to be
+there.
 
 \section{Summary}
 
@@ -1261,23 +1264,310 @@ that need to be there.
 
 \end{itemize}
 
+%=====================================================================%
+
+\chapter{The Algol 60 GCC Frontend}
+
+The \Algol 60 GCC front end has been written in an attempt to get a
+first hand experience on work with GCC.  \Algol 60 itself turned out
+to be a kinky language, and as of now, is not yet fully implemented.
+This chapter presents overview of the compiler architecture and
+implementation, and ways it handles certain interesting \Algol 60
+constructs.
+
+
+\section[gcc-algol the Project]{{\tt gcc-algol} the Project}
+
+The programming language \Algol 60 was picked purposefuly, because
+language such as this is best fit for GCC.  It is structured, with
+static typing, has arrays and functions, and will profit from support
+of runtime library.  Lastly it has a rigorous standard, which is not
+that important in and on itself, but why invent new language?
+
+The \Algol 60 compiler was started as a project independent on
+GCC\footnote{Despite the language being picked to suit GCC!}.  I knew
+I would plug it in GCC one day, but I specifically avoided any
+relation to GCC before the time came.  This helped me simulate the
+situation where the company or an individual wants to port existing
+work to GCC back end\footnote{In the sense of GCC itself being the
+  back end.}.
+
+The front end is written in a language C.  As mentioned before, C is
+natural fit for GCC.  If you have the choice, choose either C, or
+other GCC language that can compile transitively from C.  Front end
+written in such a way is simpler to distribute and build at user
+sites.
+
+I strived to avoid any extra dependencies of the front end, to the end
+of writing linked list and generic string modules from scratch just
+for the purpose of \Algol parser.  These two modules are the only
+library functionality beyond pure \literal{libc}---even symbol tables
+are stored in linked lists \footnote{I will fix this, I promise.}.
+
+
+\section{Overall Architecture}
+
+From the bird's eye view, \Algol compiler is a straightforward
+compiler: it has Flex-based lexical analyser, Yacc-based parser, and
+several C modules with AST and semantic analysis.
+
+Algol compiler uses encapsulation heavily.  There is no (official) way
+to get inside structures, everything is passed as a pointer to
+undefined structure.  Only in the module that handles that particular
+type is the structure actually defined, so that the implementation has
+full, unrestricted access to bits.
+
+The encapsulation zeal is exposed by use of visitors.  There are
+certain polymorphic structures in \Algol AST.  For example expressions
+may be numbers, variable references, unary and binary expressions,
+function calls, etc.  All expression kinds are passed around as the
+same opaque \variable{expression\_t} pointer.  To do any action
+depending on exact type of expression, one has to define a {\em
+  visitor} over the expression structure, and let the visitor dispatch
+on the desired expression object.
+
+Other means of achieving safety include strong trend towards static.
+Whatever can be checked by compiler giving a warning is checked so.
+If the warning can be turned to full error with some extra coding, so
+much the better.  If compiler can't check that, runtime will.
+
+
+\subsection{Visitors}
+
+The figure \ref{Figure++Visitors} presents an example of visitor
+creation and usage.  You can see that the expression visitor is
+created by a dedicated function \function{new\_visitor\_expr}, which
+accepts one argument for each expression kind.  The arguments have to
+be \function{callback\_t} pointers: to convert function pointer to
+callback, you have to pass it through appropriate callback builder,
+\function{a60\_expr\_callback} in this case.  Callback builder makes
+sure that your callback function takes \literal{expression\_t*} as a
+first argument.  All is checked during compilation: that you didn't
+forget one of the callbacks, that all callbacks are typed right, etc.
+
+In addition, the visitor builder knows it builds visitor for
+expression type, and when in debug mode, it {\em dynamically} checks
+that that visitor is dispatched over expression, and not
+e.g. statement.  In release mode, the check goes away.
+
+\begin{figure}
+\begin{verbatim}
+/// Excerpt from compiler context.
+struct struct_al60l_bind_state_t
+{
+  visitor_t * expression_build_generic;
+};
+
+/// An example callback function.
+/// Builds GENERIC for integer constant node.
+void *
+expr_int_build_generic (expression_t * self, void * state)
+{
+  tree ret = build_int_cst (integer_type_node, expr_int_value (self));
+  return ret;
+}
+
+/// Creates new compiler context.
+al60l_bind_state_t *
+new_bind_state (void)
+{
+  al60l_bind_state_t * ret = xmalloc (sizeof (al60l_bind_state_t));
+  ret->expression_build_generic = new_visitor_expr (
+      a60_expr_callback (expr_int_build_generic),
+      a60_expr_callback (expr_real_build_generic),
+      a60_expr_callback (expr_string_build_generic),
+      a60_expr_callback (expr_bool_build_generic),
+      a60_expr_callback (expr_idref_build_generic),
+      a60_expr_callback (expr_if_build_generic),
+      a60_expr_callback (expr_binary_build_generic),
+      a60_expr_callback (expr_unary_build_generic),
+      a60_expr_callback (expr_call_build_generic),
+      a60_expr_callback (expr_subscript_build_generic)
+  );
+  return ret;
+}
+
+/// Wrapper function, uses visitor to build GENERIC from given expression.
+tree
+expr_build_generic (expression_t * expression, al60l_bind_state_t * state)
+{
+  return (tree)a60_visitor_dispatch (state->expression_build_generic,
+                                     expression, expression, state);
+}
+
+\end{verbatim}
+\caption{Example use of visitors in \Algol 60 front end.}
+\label{Figure++Visitors}
+\end{figure}
+
+
+\subsection{Dynamic Typing}
+
+To implement rigorous runtime checking, each polymorphic objects
+carries around two identifiers: a {\em kind}, which identifies subtype
+(e.g. ``number''), and {\em signature}, which identifies type
+(e.g. ``expression'').  Kind is actually used to model RTTI, but not
+so signature.  Given a \literal{void*}, signature makes it possible to
+decide whether it points to (e.g.) expression or not.  This property
+is not used to emulate RTTI, but rather to provide additional type
+safety, for example in a code like this:
+
+\begin{verbatim}
+  void * mystery = slist_front (state->for_statements);
+  statement_t * parent_for_stmt = a60_as_statement (mystery);
+  //statement_t * parent_for_stmt = (statement_t *)mystery;
+\end{verbatim}
+
+On first line, mysterious object is extracted from singly-linked list.
+Instead of typecasting it like in commented-out code, dedicated
+function is called, that {\em actually checks} exact type, and if it
+doesn't match, aborts.  Thus you can't conditionalize on the result of
+typecheck.  The mechanism is here to {\em prevent errors}, not to
+emulate dynamic typing systems.  This is C, you have to know what
+pointers you're passing around!
+
+In release mode, the checks go away, and \function{a60\_as\_statement}
+ends up being a macro that expands to direct C typecast.
+
+This same dynamic typing mechanism is used for visitors.  Visitor
+knows which object type it should dispatch on, and given a visitor and
+an object (passed in as \literal{void*}), it can decided whether the
+visitor matches the object type.
+
+Dynamic typing is used for implementation of {\em typed slists},
+i.e. singly-linked lists with associated predicate that is guaranteed
+to hold for its elements.  For example, in \Algol 60, each assignment
+statement is made up from a vector of left hand sides, which have to
+be lvalues, and one right hand side.  To express this property, code
+such as the one at figure \ref{Figure++TypedSlist} can be written.
+
+\begin{figure}
+\begin{verbatim}
+static void *
+private_check_expr_lvalue (void * ptr, void * data ATTRIBUTE_UNUSED)
+{
+  expression_t * expr = a60_as_expression (ptr);
+  if (expr && !expr_is_lvalue (expr))
+    expr = NULL;
+  return expr;
+}
+
+statement_t *
+new_stmt_assign (cursor_t * cursor, slist_t * lhss, expression_t * rhs)
+{
+  statement_t * ret = private_new_statement (sk_assign, cursor, NULL);
+  slist_set_type (lhss, private_check_expr_lvalue, NULL);
+  ret->assign.lhss = lhss;
+  ret->assign.rhs = rhs;
+  return ret;
+}
+\end{verbatim}
+\caption{Example use of typed slists in \Algol 60 front end.}
+\label{Figure++TypedSlist}
+\end{figure}
+
+A function \function{private\_check\_expr\_lvalue} is a predicate,
+that, given a \literal{void*} pointer, can decided whether the given
+pointer points to lvalue expression.  It does so by first checking
+that \literal{void*} is expression at all, and then asks expression
+module (because it's safe by now) on lvalue status.  This predicate is
+attached as a type to the passed-in list of left hand sides
+(\literal{lhss}), thus providing additional checking in case anything
+slipped between fingers of yacc parser.  Slist module would abort if
+one of the elements didn't pass the test, or an element that doesn't
+pass was added.
+
+As is the case for other dynamic features, in release mode this one
+goes completely away, so there is no performance cost.
+
+
+\subsection{Implementation}
+
+Visitors and dynamic typing go hand in hand, and are both implemented
+by the same module.  Each module, that wants to participate in this
+scheme, has to list the field \literal{visitable\_t} (from
+\file{visitor-impl.h}) as the first member of its data structure:
+
+\begin{verbatim}
+struct struct_expression_t
+{
+  visitable_t base;
+  // rest of structure as usual
+};
+\end{verbatim}
+
+The \literal{base} structure contains a signature (only in debug
+mode), and a kind determinator.
+
+Kind is simple \literal{int}, and its values would typically be
+determined by those of some internal \literal{enum} values.  Signature
+is \literal{char const*}, and is used as follows:
+
+\begin{verbatim}
+static char const * const private_expression_signature = "expression";
+static expression_t *
+private_new_expr (cursor_t * location, expr_kind_t kind)
+{
+  expression_t * ret = calloc (1, sizeof (expression_t));
+#ifndef NDEBUG
+  ret->base.signature = private_expression_signature;
+#endif
+  // ...
+}
+\end{verbatim}
+
+This is extremely useful for debugging and diagnostic messages. All
+you have to do to find out the type of mysterious object is to
+dereference the pointer and interpret it as a string.
+
+When creating a visitor, not a signature, but address of signature
+variable is used.  When doing a dispatch, the visitor performs simple
+check:
+
+\begin{verbatim}
+#ifndef NDEBUG
+  /* check signature */
+  char * obj_sig = *(char const* const*)object;
+  char * vis_sig = **(char const* const* *)visitor;
+  if (obj_sig != vis_sig)
+    {
+      fprintf (stderr,
+	       "error: visitor %p for `%s' dispatches over `%s'.\n",
+	       (void*)visitor, vis_sig, obj_sig);
+      abort ();
+    }
+#endif
+\end{verbatim}
+
+As you can see, this very typing mechanism gives us ability to deduce
+what's wrong, and inform a user in meaningful way:
+
+\begin{verbatim}
+error: visitor 0x0804d200 for `expression' dispatches over `statement'.
+\end{verbatim}
+
 
 %=====================================================================%
 
-\iffinal
 \chapter{Targeting GCC}
 \label{TargetingGCC}
 
-This chapter should describe how to generate GCC intermediate language
-called GENERIC.  Also use hooks if possible.
+This chapter describes how to generate GCC intermediate language
+called GENERIC.  It is organized as a catalogue of typical constructs
+found in programming language, and typical tasks performed by a
+compiler, with explanation how to handle these in context of GCC.
 
-\section{Symbol Handling}
+\section{Variables, Types, Symbols}
+
+A fundamental part of any programming language processing is dealing
+with {\em symbols}, ways of typing and typechecking them, and handling
+scoping rules.
+
+
 
 Symbol handling: probably has to be front end specific, although GCC
 can store declarations.  See how other frontends do their thing.  Name
 mangling, C and C++-compatible interfacing (extern "C").
-
-\section{Variables and Types}
 
 How to do typechecking, representing various types (including arrays,
 functions, structures).  About variables: function-static, automatic,
@@ -1354,7 +1644,6 @@ What are custom GENERIC codes, how to declare them, how to handle
 them, what's gimplification, how to gimplify them.
 
 Look into \cite{GDS:2005:Dvorak}.  Maybe find better source.
-\fi
 
 %=====================================================================%
 
