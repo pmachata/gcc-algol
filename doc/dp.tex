@@ -1,6 +1,4 @@
-\documentclass[english]{fitprj}
-%\documentclass[a4paper,11pt]{report}
-%\usepackage{a4wide}
+\documentclass[english]{cls/fitthesis}
 \usepackage[latin2]{inputenc}
 \usepackage[
   bookmarks=true,
@@ -16,87 +14,83 @@
 \pagestyle{empty}
 \topmargin 0in
 
-\date{January 3rd}
-\setyear{2007}
-\author{Bc. Petr Machata}
-\title{Construction of GNU Compiler Collection Front End}
-
 \newif\iffinal\finaltrue
 \newif\ifnfinal\iffinal\nfinalfalse\else\nfinaltrue\fi
 
-\iffinal
-\FITproject{DP}
-\else
-\FITproject{SP}
-\fi
-
 \def\Algol{{\sc Algol}\space}
 
-\edeclaration{ I hereby declare that this work has been created by me,
-  under the supervision of Ing. Milo¹ Eysselt, CSc., and under
-  supervision of Ing. Luká¹ Szemla.  All information resources that
-  I have used are properly cited.  }
-
-\acknowledgements{ I owe thanks for patience and advices to the
-  thesis' supervisor, Ing. Luká¹ Szemla, who was bombarded by
-  my status reports monthly; and Professor Jan van Katwijk of Delft
-  University of Technology, for advices regarding odds and ends of
-  \Algol 60. }
-
-
-\fitabstract{
-The entry barrier to the development for GCC got considerably lower
-during the last years.  Articles with various architectural overviews
-and how-to documents pop up in magazines, websites, and on conferences.
-With official intermediate language, GENERIC, used for communication
-between front end and the rest of the compiler, things are yet easier:
-it's no more necessary to bear the tedium of RTL when one writes new
-front end.
-
-Yet there is a complexity inherent in handling a source base the size
-of GCC.  There are files to be written, peculiar options to be set up,
-and this all with relatively thin documentation.
-
-This work is written to help with this last point.  An example front
-end is described, with everything from the source base setup, through
-various GENERIC constructs, up to the issues of employing in-line
-assembly, using GCC native preprocessor, or preparing the front end
-for cross compilation.
+\projectinfo{
+  project=DP,
+  year=2007,
+  date=22nd May 2007,
+  %Nazev prace
+  title.cs={Methodology of Construction Compiler\\Front-End and Its Integration into the GNU Compiler Collection},
+  title.en={},
+  %Autor
+  author=Petr Machata,
+  author.title.p=Bc.,
+  author.title.a=,
+  %Ustav
+  department=UIFS,
+  %Skolitel
+  supervisor=Milo¹ Eysselt,
+  supervisor.title.p=Ing.,
+  supervisor.title.a=CSc.,
+  acknowledgment={I owe thanks for patience and advices to the
+      thesis' supervisor, Ing. Luká¹ Szemla, who was bombarded by my
+      status reports monthly; and Professor Jan van Katwijk of Delft
+      University of Technology, for advices regarding odds and ends of
+      \Algol 60. }
 }
 
-\keywords{GCC, GNU Compiler Collection, frontend, front end, Algol 60, compiler}
+\declaration{ Prohla¹uji, ¾e jsem tuto bakaláøskou práci vypracoval
+  samostatnì pod vedením pana Ing. Milo¹ Eysselta, CSc., pod
+  technickým dozorem pana Ing. Luká¹ Szemly.  Uvedl jsem v¹echny
+  literární prameny a publikace, ze kterých jsem èerpal.}
 
-\fitabstractCZ{
-%ahilmorsxyz9};>
-%áèéìíïòóøùú¹ý»¾
-Vstupní bariéra pro vývoj uvnitø GCC se bìhem posledních let znatelnì
-sní¾ila.  Na konferencích, v~èasopisech a~na webu se objevují èlánky
-s~architektonickými pøehledy a~návody.  Vìci se nadále zjednodu¹ují
-pou¾itím oficiálního vnitøního jazyka GENERIC: pro komunikaci mezi
-pøední èástí a~zbytkem pøekladaèe ji¾ není nutné zabývat se obtí¾ným
-a~nepøehledným RTL.
+\abstract[en]{ The entry barrier to the development for GCC got
+  considerably lower during the last years.  Articles with various
+  architectural overviews and how-to documents pop up in magazines,
+  websites, and on conferences.  With official intermediate language,
+  GENERIC, used for communication between front end and the rest of
+  the compiler, things are yet easier: it's no more necessary to bear
+  the tedium of RTL when one writes new front end.
+\\
+  Yet there is a complexity inherent in handling a source base the
+  size of GCC.  There are files to be written, peculiar options to be
+  set up, and this all with relatively thin documentation.
+\\
+  This work is written to help with this last point.  An example front
+  end is described, with everything from the source base setup,
+  through various GENERIC constructs, up to the issues of employing
+  in-line assembly, using GCC native preprocessor, or preparing the
+  front end for cross compilation.  }
 
-Pøesto je práce se souborem zdrojových kódù velikosti GCC nutnì
-slo¾itá.  Je tøeba napsat urèité soubory a provést urèitá nastavení,
-oboje jen s pomìrnì malým mno¾stvím dokumentace.
+\keywords[en]{GCC, GNU Compiler Collection, frontend, front end, Algol 60, compiler}
 
-Cílem této práce je pomoci s posledním zmínìným bodem.  Práce popisuje
-ukázkovou pøední èást: v¹e od vytvoøení zdrojových souborù, pøes rùzné
-konstrukce jazyka GENERIC, a¾ k problémùm se zapojením assembleru,
-pou¾ívání nativního preprocesoru, nebo pøípravì pøední èásti pro
-kroskompilaci.
-}
+\abstract[cs]{ Vstupní bariéra pro vývoj uvnitø GCC se bìhem
+  posledních let znatelnì sní¾ila.  Na konferencích, v~èasopisech a~na
+  webu se objevují èlánky s~architektonickými pøehledy a~návody.  Vìci
+  se nadále zjednodu¹ují pou¾itím oficiálního vnitøního jazyka
+  GENERIC: pro komunikaci mezi pøední èástí a~zbytkem pøekladaèe ji¾
+  není nutné zabývat se obtí¾ným a~nepøehledným RTL.
+\\
+  Pøesto je práce se souborem zdrojových kódù velikosti GCC nutnì
+  slo¾itá.  Je tøeba napsat urèité soubory a provést urèitá nastavení,
+  oboje jen s pomìrnì malým mno¾stvím dokumentace.
+\\
+  Cílem této práce je pomoci s posledním zmínìným bodem.  Práce
+  popisuje ukázkovou pøední èást: v¹e od vytvoøení zdrojových souborù,
+  pøes rùzné konstrukce jazyka GENERIC, a¾ k problémùm se zapojením
+  assembleru, pou¾ívání nativního preprocesoru, nebo pøípravì pøední
+  èásti pro kroskompilaci.  }
 
-\keywordsCZ{GCC, GNU Compiler Collection, pøední èást, Algol 60, kompilátor}
+\keywords[cs]{GCC, GNU Compiler Collection, pøední èást, Algol 60, kompilátor}
 
 \begin{document}
 
 \maketitle
-% tady bude zadani
-\grantrights
-\abstractkeywordsCZ
-\abstractkeywords
-\FITstart
+\tableofcontents
 
 % for various computer-related terms
 \def\literal#1{{\sffamily{}#1}}
@@ -113,8 +107,14 @@ kroskompilaci.
 \def\program#1{{\sffamily\begin{tabbing}#1\end{tabbing}}}
 % keywords in program listings
 \def\keyw#1{{\sffamily\bfseries {#1}}}
+% comments
+\def\comment#1{{\sffamily\it {#1}}}
+% strings
+\def\litstr#1{{\sffamily\it {#1}}}
 % indentation
 \def\ind{\hspace{0.5cm}}
+% access through pointex (x->y)
+\def\ptr{$-\!\!>$}
 
 \def\note#1{{{\it Note.\space}#1}}
 \def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
@@ -636,16 +636,16 @@ there are five kinds of these nodes, five structures will have to be
 defined:
 
 \program{
-\ind{}// language-specific identifier data\\
-\ind{}\keyw{struct} lang\_identifier;\\
-\ind{}// language-specific tree node data\\
-\ind{}\keyw{union} lang\_tree\_node;\\
-\ind{}// language-specific type data\\
-\ind{}\keyw{struct} lang\_type\\
-\ind{}// language-specific declaration data\\
-\ind{}\keyw{struct} lang\_decl\\
-\ind{}// language-specific function data\\
-\ind{}\keyw{struct} language\_function
+\ind{}\=\comment{// language-specific identifier data}\\
+      \>\keyw{struct} lang\_identifier;\\
+      \>\comment{// language-specific tree node data}\\
+      \>\keyw{union} lang\_tree\_node;\\
+      \>\comment{// language-specific type data}\\
+      \>\keyw{struct} lang\_type\\
+      \>\comment{// language-specific declaration data}\\
+      \>\keyw{struct} lang\_decl\\
+      \>\comment{// language-specific function data}\\
+      \>\keyw{struct} language\_function
 }
 
 All structures may be empty, except for the
@@ -1117,15 +1117,15 @@ started poking GCC.)
 \subsection{Joining In The Minimal Front End}
 
 At this point, you have two components in hand: a minimal GCC front
-end, and your compiler.  The first step should be inclusion into the
-build system.  If you don't want to port entire compiler over to GCC's
-\file{Makefile} machinery, you will have to invent some mechanism of
-transferring the build into your subdirectory.  Basically
-\literal{\$(MAKE) -C} should be enough, but you will have to take care
-of passing necessary build/host/target trichotomy
-variables and paths over to your build system, and respecting them
-there.  This in fact holds for all various variables that are passed
-from one recursive make instance to the other.
+end, and your compiler.  The first step to get them joined should be
+inclusion of your compiler into the build system.  If you don't want
+to port entire compiler over to GCC's \file{Makefile} machinery, you
+will have to invent some mechanism of transferring the build into your
+subdirectory.  Basically \literal{\$(MAKE) -C} should be enough, but
+you will have to take care of passing necessary build/host/target
+trichotomy variables and paths over to your build system, and
+respecting them there.  This in fact holds for all various variables
+that are passed from one recursive make instance to the other.
 
 You may want to take advantage of certain GCC's services.  E.g. error
 reporting, integrated testsuite, building runtime library as part of
@@ -1412,19 +1412,17 @@ decide whether it points to (e.g.) expression or not.  This property
 is not used to emulate RTTI, but rather to provide additional type
 safety, for example in a code like this:
 
-\begin{verbatim}
-  void * mystery = slist_front (state->for_statements);
-  statement_t * parent_for_stmt = a60_as_statement (mystery);
-  //statement_t * parent_for_stmt = (statement_t *)mystery;
-\end{verbatim}
+\program{
+\ind\=\keyw{void} * mystery = slist\_front (state\ptr{}for\_statements);\\
+    \>statement\_t * parent\_for\_stmt = a60\_as\_statement (mystery);\\
+    \>\comment{//statement\_t * parent\_for\_stmt = (statement\_t *) mystery;}}
 
 On first line, mysterious object is extracted from singly-linked list.
 Instead of typecasting it like in commented-out code, dedicated
 function is called, that {\em actually checks} exact type, and if it
-doesn't match, aborts.  Thus you can't conditionalize on the result of
-typecheck.  The mechanism is here to {\em prevent errors}, not to
-emulate dynamic typing systems.  This is C, you have to know what
-pointers you're passing around!
+doesn't match, aborts.  You can't conditionalize on the result of
+typecheck, the mechanism is here to {\em prevent errors}, not to
+emulate dynamic typing systems.
 
 In release mode, the checks go away, and \function{a60\_as\_statement}
 ends up being a macro that expands to direct C typecast.
@@ -1467,7 +1465,7 @@ new_stmt_assign (cursor_t * cursor, slist_t * lhss, expression_t * rhs)
 \end{figure}
 
 A function \function{private\_check\_expr\_lvalue} is a predicate,
-that, given a \literal{void*} pointer, can decided whether the given
+that, given a \literal{void*} pointer, can decide whether the given
 pointer points to lvalue expression.  It does so by first checking
 that \literal{void*} is expression at all, and then asks expression
 module (because it's safe by now) on lvalue status.  This predicate is
@@ -1478,7 +1476,8 @@ one of the elements didn't pass the test, or an element that doesn't
 pass was added.
 
 As is the case for other dynamic features, in release mode this one
-goes completely away, so there is no performance cost.
+goes completely away, so there is neither a performance const, nor a
+memory overhead.
 
 
 \subsection{Implementation}
@@ -1488,63 +1487,108 @@ by the same module.  Each module, that wants to participate in this
 scheme, has to list the field \literal{visitable\_t} (from
 \file{visitor-impl.h}) as the first member of its data structure:
 
-\begin{verbatim}
-struct struct_expression_t
-{
-  visitable_t base;
-  // rest of structure as usual
-};
-\end{verbatim}
+\program{
+\ind\=\keyw{struct} struct\_expression\_t \{\\
+    \>\ind\=visitable\_t base;\\
+    \>    \>\comment{// rest of structure as usual}\\
+    \>\};}
 
 The \literal{base} structure contains a signature (only in debug
 mode), and a kind determinator.
 
 Kind is simple \literal{int}, and its values would typically be
-determined by those of some internal \literal{enum} values.  Signature
-is \literal{char const*}, and is used as follows:
+determined by some internal \literal{enum}.  Signature is
+\literal{char const*}, and is used as follows:
 
-\begin{verbatim}
-static char const * const private_expression_signature = "expression";
-static expression_t *
-private_new_expr (cursor_t * location, expr_kind_t kind)
-{
-  expression_t * ret = calloc (1, sizeof (expression_t));
-#ifndef NDEBUG
-  ret->base.signature = private_expression_signature;
-#endif
-  // ...
+\program{
+\ind\=\keyw{static} \keyw{char} \keyw{const} * \keyw{const} private\_expression\_signature = \litstr{"expression"};\\
+    \>\keyw{static} expression\_t *\\
+    \>private\_new\_expr (cursor\_t * location, expr\_kind\_t kind) \{\\
+    \>\ind\=expression\_t * ret = calloc (1, \keyw{sizeof} (expression\_t));\\
+    \>\keyw{\#ifndef} NDEBUG\\
+    \>    \>ret\ptr{}base.signature = private\_expression\_signature;\\
+    \>\keyw{\#endif}\\
+    \>\comment{// ...}\\
+    \>\}\\
 }
-\end{verbatim}
 
-This is extremely useful for debugging and diagnostic messages. All
-you have to do to find out the type of mysterious object is to
-dereference the pointer and interpret it as a string.
+First, using address of string gives us a unique pointer, usable for
+distinguishing between structure types.  Besides this, using strings
+is extremely useful for debugging and diagnostic messages. All you
+have to do to find out the type of mysterious object is to dereference
+the pointer and interpret what it points to as a string.
 
-When creating a visitor, not a signature, but address of signature
-variable is used.  When doing a dispatch, the visitor performs simple
+When creating a visitor, address of signature variable is used instead
+of signature itself.  Before a dispatch, the visitor performs a simple
 check:
 
-\begin{verbatim}
-#ifndef NDEBUG
-  /* check signature */
-  char * obj_sig = *(char const* const*)object;
-  char * vis_sig = **(char const* const* *)visitor;
-  if (obj_sig != vis_sig)
-    {
-      fprintf (stderr,
-	       "error: visitor %p for `%s' dispatches over `%s'.\n",
-	       (void*)visitor, vis_sig, obj_sig);
-      abort ();
-    }
-#endif
-\end{verbatim}
+\program{
+\ind\=\keyw{\#ifndef} NDEBUG\\
+    \>\ind\=\comment{// check signature}\\
+    \>    \>\keyw{char} * obj\_sig = *(\keyw{char} \keyw{const}* \keyw{const}*)object;\\
+    \>    \>\keyw{char} * vis\_sig = **(\keyw{char} \keyw{const}* \keyw{const}* *)visitor;\\
+    \>    \>\keyw{if} (obj\_sig != vis\_sig) \{\\
+    \>    \>\ind\=fprintf (\=stderr,\\
+    \>    \>    \>         \>\litstr{"error: visitor \%p for `\%s' dispatches over `\%s'.$\backslash$n"},\\
+    \>    \>    \>         \>(\keyw{void}*)visitor, vis\_sig, obj\_sig);\\
+    \>    \>    \>abort ();\\
+    \>    \>\}\\
+    \>\keyw{\#endif}\\
+}
 
-As you can see, this very typing mechanism gives us ability to deduce
-what's wrong, and inform a user in meaningful way:
+As you can see, the very typing mechanism used gives us ability to
+deduce what's wrong, and inform user in a meaningful way:
 
 \begin{verbatim}
 error: visitor 0x0804d200 for `expression' dispatches over `statement'.
 \end{verbatim}
+
+\subsection{Messages and Locus Support}
+
+Almost every part of \Algol 60 needs to inform users about problems it
+found.  This includes warnings about constructs that are legal, but
+not moral or wholesome, or errors for constructs that are disallowed
+by the spec.
+
+Messages in the compiler are formatted in usual unixish format:
+
+\begin{verbatim}
+./fail-fun2.a60:5: warning: function `foo1' has an implicit parameter `a'
+./fail-fun2.a60:5: error: type mismatch in expression `(a + 1)':
+  'Boolean' + 'integer'
+./fail-fun2.a60:9: error: at this point in file.
+\end{verbatim}
+
+Proper error reporting, as well as proper debuginfo generation,
+requires an information about location of various program constructs.
+This support is introduced via \literal{cursor\_t} structure.  It is
+defined the way all other structures are, namely it uses signature for
+dynamic typechecking, is heap-allocated, and opaque.
+
+Each message is output to log with given {\em severity}, which can be
+one of {\em debug}, {\em info}, {\em warning}, {\em error} or {\em
+  fatal error}.  Each log has associated a filter treshold: messages
+with severity below the treshold are thrown away, the rest is written.
+
+Log and cursor are two structures at the edge between GCC and \Algol
+specific code.  By default, they use their own structures and methods,
+but when compiled with GCC (as is checked by \literal{IN\_GCC}
+preprocessor variable), they use GCC services: logger uses GCC
+``native'' error reporting tools, and cursor is capable of conversion
+to GCC {\em locus}.  More will be written about these topics in
+\ref{Loci} and \ref{Diagnostics}.
+
+
+\section{Design of Abstract Syntax Tree}
+
+AST node layout mostly follows main grammar elements of \Algol 60.
+Following sections delve into what's noteworthy across AST design.
+
+\subsection{Expressions, Commands, etc.}
+
+
+
+\subsection{Typing System}
 
 
 %=====================================================================%
@@ -1737,22 +1781,193 @@ processing:
   convenient place to determine the name of the input file to parse.
 \end{enumerate}
 
-\iffinal
+\section{Loci}
+\label{Loci}
+
+{\em Locus} is a simple stack-allocated structure that denotes a
+location of certain program construct in source code.  It is used for
+diagnostic message reporting, and for tracking locations for purposes
+of writing debuginfo. The contents of locus are a {\em name of the
+  file} and a {\em number of the line} inside that file, where given
+construct appeared.  Thus its creation is straightforward, one just
+has to include the right headers.  E.g. conversion between \Algol 60
+front end's {\em cursor} type and locus is done this way:
+
+\program{
+\ind\=\keyw{\#ifdef} IN\_GCC\\
+    \>\keyw{\# include} \litstr{"system.h"}\\
+    \>\keyw{\# include} \litstr{"coretypes.h"}\\
+    \>\keyw{\# include} \litstr{"limits.h"}\\
+    \>\keyw{\# include} \litstr{"input.h"}\\
+\\
+    \>\keyw{void}\\
+    \>cursor\_to\_loc (cursor\_t \keyw{const} * cursor, location\_t * loc) \{\\
+    \>\ind\=memset (loc, 0, \keyw{sizeof} (location\_t));\\
+    \>    \>loc\ptr{}file = cursor\ptr{}filename;\\
+    \>    \>loc\ptr{}line = cursor\ptr{}line;\\
+    \>\}\\
+    \>\keyw{\#endif}}
+
 \section{Diagnostics}
 \label{Diagnostics}
 
-Employing GCC diagnostic messages.  Btw, you really want to do that,
-otherwise your buggy programs will be passed and a binary generated,
-or GCC crashed, depending on how is your error handling done.
-Describe the `pedantic' variable.  Describe pedwarn, warning, error
-and friends.  report\_diagnostic, diagnostic\_info and friends.
-Report code excerpts with verbatim.  It seems that GCC uses it's own
-printing functions, with their own formatting.  See e.g. comment
-before pp\_base\_format.  Describe that.
+GCC uses its own functinos for reporting problems.  You may or may not
+use these in your compiler.  My advise is do.  First, if errors are
+not reported via GCC's mechanisms, GCC thinks compilation was
+successful, and proceeds with compilation.  Second, a lot of
+development tools rely on the way GCC reports errors.  Prime example
+is GCC's own testsuite, you will have to provide means of converting
+from your format to what's expected by the testsuite scripts.  Third,
+GCC itself will use its own reporting tools nonetheless, e.g. for
+purposes of reporting internal errors.
 
-See this:
-\url{http://vmlinux.org/joachim/mirror/www.objsw.com/CrossGCC/FAQ-12.html}.
-\fi
+That said, using GCC reporting is simple.  For example figure
+\ref{Figure++Reporting} has the program excerpt that illustrates how
+\Algol front end does error reporting.
+
+\subsection{Configuring Reports Via Command Line}
+
+In GCC front ends, warnings make up significant part of reported
+messages, and can be richly configured.  Perhaps because C is very
+loose language, with almost everything allowed, even though lots of it
+are just historical crud that you use only inadverently.  Anyway, GCC
+allows a very fine-grained tuning of what to report, by way of various
+\option{-W} and \option{-Wno-} options.
+
+Further, GCC error reporting primitive (\function{report\_diagnostic})
+allows an explicit setting of dependency on particular command line
+option.  For example, look at how it's done in GCC's own
+\function{warning} function:
+
+\program{
+\ind\=\keyw{void}\\
+    \>warning (\keyw{int} opt, \keyw{const} \keyw{char} *fmt, ...) \{\\
+    \>\ind\=diagnostic\_info diagnostic;\\
+    \>    \>va\_list ap;\\
+\\
+    \>    \>va\_start (ap, gmsgid);\\
+    \>    \>diagnostic\_set\_info (\&diagnostic, fmt, \&ap, input\_location, DK\_WARNING);\\
+    \>    \>{\bf diagnostic.option\_index = opt;}\\
+\\
+    \>    \>report\_diagnostic (\&diagnostic);\\
+    \>    \>va\_end (ap);\\
+    \>\}
+}
+
+The interesting line is rendered in bold, the rest of function should
+be familiar from figure \ref{Figure++Reporting}.  By setting the
+\variable{option\_index}, one explicitly states that given message
+should be reported only if the associated option is in effect.
+
+\begin{figure}
+\begin{verbatim}
+#ifdef IN_GCC
+// Use GCC-native error reporting when possible.  This is at the end
+// of definitions, to keep us away from GCC memory mangement poisoning.
+# include "config.h"
+# include "system.h"
+# include "coretypes.h"
+# include "limits.h"
+# include "toplev.h"
+# include "diagnostic.h"
+
+static int
+private_log_printfc (logger_t * logger, debug_level_t level,
+		     cursor_t * cursor, char const * fmt, va_list * ap)
+{
+  // GCC diagnostics are not intended for debug messages and notes.
+  // Fall back to our own reporting in such a case.
+  if (level < ll_warning)
+    return private_log_printfc_nogcc (logger, level, cursor, fmt, ap);
+
+  // Table to convert from our own severity encoding to GCC's.
+  static diagnostic_t gcc_diagnostic_kind_map[] = {
+    [ll_warning] = DK_WARNING,
+    [ll_error] = DK_ERROR,
+    [ll_fatal_error] = DK_FATAL
+  };
+
+  diagnostic_info diagnostic;
+  location_t loc;
+  diagnostic_t gcc_level = gcc_diagnostic_kind_map[level];
+  if (cursor != NULL)
+    cursor_to_loc (cursor, &loc);
+  else
+    memset (&loc, 0, sizeof (loc));
+  diagnostic_set_info (&diagnostic, fmt, ap, loc, gcc_level);
+  report_diagnostic (&diagnostic);
+  return 0;
+}
+#else
+// ...
+#endif
+\end{verbatim}
+\caption{Error reporting via GCC tools}
+\label{Figure++Reporting}
+\end{figure}
+
+
+\subsection{Pedantic Settings}
+
+On GCC command line, one can use an option \option{-pedantic} to
+express the desire to process the program as closely to language
+standard, as possible.  The use of \option{-pedantic} on command line
+has the effect of setting the global variable \variable{pedantic} to
+non-zero value, thus allowing for conditions on this variable.
+Another option \option{-pedantic-errors} will turn these warnings into
+full errors.
+
+To honor GCC in this respect, you should report pedantic warnings with
+GCC function \function{pedwarn}.  This function will report a warning,
+unless \option{-pedantic-errors} was given on the command line, in
+which case it issues an error.  An example from C front end:
+
+\program{
+\ind\=\keyw{if} (pedantic)\\
+    \>\ind\=pedwarn (\=\litstr{"ISO C does not support \%$<$++\%$>$ and \%$<$-{}-\%$>$"}\\
+    \>    \>         \>\litstr{" on complex types"});\\
+}
+
+\subsection{Other Reporting Functions}
+
+Apart from general reporting mechanism through
+\function{report\_diagnostic}, GCC supports a lot of quick reporting
+function for various levels of severity.  These include
+\function{inform}, \function{warning}, \function{error},
+\function{sorry}, \function{fatal\_error} and
+\function{internal\_error} (in the order of increasing severity).
+Most of them have obvious meaning, \function{sorry} is used for
+reporting of unimplemented language features.
+
+GCC assumes that you use its own global variable
+\variable{input\_location} (which is a locus of currently processed
+part of source code), and if you don't, these functions won't produce
+the output you expect.
+
+You will probably want to use these functions only if your front end
+is written directly for GCC.
+
+\subsection{Formatting the Report Strings}
+
+GCC uses its own formatting functions, presumably for independence on
+the host libc environment.  In the format string, it's possible to use
+traditional numerical tags (\literal{\%d} et al.), modified optionally
+by \literal{l} or \literal{ll} prefixes.  In addition, prefix of
+\literal{w} is available, expanding to either \literal{l} or
+\literal{ll} depending on width of type \literal{HOST\_WIDE\_INT}.
+String formatting via various \literal{\%s} variants is also allowed,
+etc.
+
+In addition to these more or less standard tags, GCC also supports
+native language quotes by way of \literal{\%$<$} and \literal{\%$>$}
+(as was seen in a pedwarn example above), and \literal{\%H} for
+formatting of \literal{location\_t}.  This may come in very handy,
+although is seldom necessary, because \function{report\_diagnostic}
+takes care of this automatically.
+
+Have a look at a comment before function \function{pp\_base\_format}
+in \file{pretty\_print.c} for full reference.
+
 
 \section{Runtime Libraries}
 \label{RuntimeLibraries}
