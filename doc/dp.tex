@@ -446,6 +446,7 @@ will probably want to read chapters about defining your own GENERIC
 codes. \\ \NWY
 
 \section{Source Base}
+\label{SourceBase}
 
 Unfortunately, all GCC front ends have to be built inside the GCC tree.
 There is no way to use e.g. public headers and link against GCC
@@ -2063,17 +2064,49 @@ There is a variable \variable{target\_libraries} in toplevel
 driven by the contents of this variable.  You need to add the name of
 your library among the others.
 
-Patching \file{Makefile.def} is more creative task.  This file is used
+Patching \file{Makefile.def} is a more creative task.  This file is used
 in concert with \file{Makefile.tpl} by a tool called \literal{autogen}
 to produce \file{Makefile.in}.  Inside \file{Makefile.def}, it is
 possible to express various inter-library dependencies to define exact
 conditions when your library should be built, as well as whether the
 library should be installed, bootstrapped, or checked.
 
-\iffinal
-@@@TODO if there is time, revisit this section and write some more
-about what and how can be defined.@@@
-\fi
+An example toplevel patch, taken from \Algol 60 front end, is at
+figure \ref{Figure++ToplevelPatch}.  If you want to be extra
+independent on the exact layout of libraries in \file{configure}, you
+can craft e.g. a sed script instead of patch:
+
+\begin{verbatim}
+  sed '/^target_libraries="/s/"/"target-libga60 \\\n\t\t/' configure
+\end{verbatim}
+
+Personally I'd rather stick with the patch approach, because a bit of
+dependence is good: it helps make sure that the expectations hold.
+E.g. the sed script doesn't do any error detection, duplicate
+detection or reporting, all of which patch does.
+
+\begin{figure}
+\begin{verbatim}
+This patch is artificially created to have the smallest possible
+dependence on patched source.
+Index: configure
+===================================================================
+--- configure	(revision 118066)
++++ configure	(working copy)
+@@ -916,2 +916,3 @@
+ target_libraries="target-libiberty \
++		target-libga60 \
+ 		target-libgloss \
+Index: Makefile.def
+===================================================================
+--- Makefile.def	(revision 118066)
++++ Makefile.def	(working copy)
+@@ -100,0 +100,1 @@
++target_modules = { module= libga60; };
+\end{verbatim}
+\caption{Toplevel GCC Patch for \Algol 60 Front End}
+\label{Figure++ToplevelPatch}
+\end{figure}
 
 \subsection{Linking the Binaries With Runtime Library}
 
@@ -2106,9 +2139,6 @@ You may or may not want to depend on system libraries, such as
 handling your own runtime library, except that you don't have to build
 them.
 
-\iffinal
-@@@TODO:maybe move to numerical support chapter:
-\fi
 
 Since version 4.3.0, GCC uses \literal{libgmp} to do its constant
 folding, which means that the library will be available at compiler
@@ -2116,19 +2146,136 @@ runtime.  Very often that means the library will also be available at
 binary run site.  That doesn't hold universally, but at least
 \literal{libgmp} was ported to all platforms where GCC has supported
 backends.  What this means for you is that you can dispatch to this
-library many numerical algorithms that would otherwise have to be
-handrolled or cut'n'pasted.  As far as I know, this is the approach
-Fortran fronted is about to take.
+library many compile-time numerical algorithms that would otherwise
+have to be handrolled or cut'n'pasted.  As far as I know, this is the
+approach Fortran fronted is about to take.
 
-\iffinal
-\section{Testsuite}
+\section{Regression Test Suite}
 \label{TestSuite}
 
-What's dejagnu testsuite, how to write tests, how to integrate them
-into GCC testsuite.  You need acurate error reporting to use the
-dejagnu GCC framework.  In fortran, they are doing transformations of
-error messages to format expected by the framework, describe that.
+During the development of a tool as complex as compiler is, thorough
+testsuite is an absolute necessity.  The GCC project does contain such
+testsuite.  It's built on popular \literal{dejagnu} test harness, and
+as such suits best traditional regression testing approach.
 
+Unit testing technically could be done through \literal{dejagnu}, but
+natural fit here is processing of output from given compiled binary.
+This works fine for compilers: the testsuite contains source files to
+be processed by your compiler, annotated with commands that describe
+expected output of the compiler.  Unit testing will be best done
+directly as part of build of each module.
+
+\subsection{Build System Adjustments}
+
+If you want your test suite to be run as part of generic \literal{make
+  check} performance, you have to append checking target for your
+language to the the variable in \file{Make-lang.in} as follows:
+
+\program{
+\comment{\# List of targets that can use the generic check- rule.}\\
+lang\_checks += check-algol60}
+
+\literal{check-algol60} is handled automatically by a pattern rule in
+\file{build/gcc/Makefile}, you don't have to provide that yourself.
+
+If you want to include other means of testing, e.g. the testsuite that
+is already written as part of your front end, do so by explicitly
+stating dependency of \literal{check}.  E.g look at this example:
+
+\program{
+\ind\=internal-algol60-checks:\\
+    \>\ind\ind\$(MAKE) -C \$(srcdir)/algol60/tests check\\
+    \>.PHONY check: internal-algol60-checks}
+
+\subsection{Organization of GCC Test Suite}
+
+Test suite is located in the subdirectory \file{gcc/gcc/testsuite}
+(see \ref{SourceBase} for explanation of directory notation) (this
+particular subdirectory will be referred to simply as \file{testsuite/}
+in context of this section).  Under this directory is located
+\file{testsuite/lib/}, which contains support files for test suite;
+and number of front end specific directories, such as
+\file{testsuite/g++.dg/} or \file{testsuite/algol60.dg/}.
+
+To run a testsuite for your front end, issue a line like this in
+\file{build/} directory:
+
+\program{\ind\# gmake -C gcc check-algol60}
+
+(You would run \literal{internal-algol60-checks} target similarly, if
+it is present.  Alternatively, simple \literal{make check} will run
+all GCC tests, including yours.)
+
+Going through each of the files that make up test suite really makes
+no sense.  Setup of testsuite scripts for your language is a
+convoluted process, and I recommend simply copying over testsuite
+scripts from other front end (e.g. \Algol 60, where I took a time to
+clean up files a bit to get rid of what is not used or looks like
+historical crud).  I'll just explain what's the intent of each file.
+
+First, \file{testsuite/lib/algol60.exp} support file.  This is the
+more entangled of the two support files.  It contains various
+initialization and tool-specific procedures, and also contains a very
+important procedure \function{algol60\_target\_compile}, which binds
+GCC-specific side of test suite to dejagnu back end.
+
+Second, \file{testsuite/lib/algol60-dg.exp} support file.  This file
+is included as a library by various test suites that you can have.
+\Algol 60 only has one test suite, but that doesn't have to be the
+case.  The important thing is, this file is {\em tool}-specific.  This
+file abstracts away from GCC part of the suite, so that you only have
+to sync implementation on one place when porting test suites.
+
+Third, the directory \file{testsuite/algol60.dg/} itself.  The name of
+this directory has to match the name of your checking target.  I named
+my \function{check-algol60}, and directory is named accordingly.  The
+directory contains a script \file{testsuite/algol60.dg/dg.exp}, which
+is test suite driver. Basically what it does is that it iterates
+through all the test cases matching glob \file{*.a60}, and
+\function{runtest} each of them.
+
+\subsection{Test Directives}
+
+By now we have developed a suite of scripts that checks that each test
+case passes, but what's inside the test cases themselves?
+
+Each test case is just a source file written in a language of tested
+front end, which is \Algol 60 in my case.  The file contains dejagnu
+directives, a metainformation that describes what to do with the test
+(i.e. compile, run, \dots), and what output to expect (particular
+error messages, output of test run, \dots).  The exact nature of the
+directives will be best seen on an example:
+
+\program{
+\ind\=\+\keyw{comment} \comment{\{ dg-do compile \}} ;\\
+\keyw{begin}\\
+\ind\=\keyw{integer} a;\\
+    \>\keyw{real} b;\\
+    \>a := 4.5; \keyw{comment} \comment {\{ dg-error "type mismatch" \}} ;\\
+    \>b := \litstr{`ahoj'}; \keyw{comment} \comment{\{ dg-error "type mismatch" \}} ;\\
+\keyw{end};}
+
+The first directive specifies that the test should be compiled.  The
+following two directives specify that the ``type mismatch'' error
+should appear on the line, on which the directive appears.  The test
+fails should the error not appear, or should it be different error,
+and passes if the error message is matched.
+
+There are many other directives, e.g. for capturing output of the test
+that was compiled and run, for marking the test case as expected to
+fail, to limit the test to certain architectures, etc.  The full list
+is available in \cite{TR:GCCInt}
+\footnote{\url{http://gcc.gnu.org/onlinedocs/gccint/Test-Directives.html}}.
+
+The directive processing tool expects the diagnostic messages to be in
+certain format, namely the traditional \literal{file:line[:column]:
+  severity: description}.  If your front end provides e.g. more
+verbose, or differently formatted messages, you have to rewrap them to
+suit expectations.  Have a look at
+\file{testsuite/lib/gfortran-dg.exp} if you are interested in that.
+
+
+\iffinal
 \section{Debuginfo}
 \label{Debuginfo}
 
