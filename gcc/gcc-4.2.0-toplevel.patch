@@ -1,0 +1,586 @@
+--- gcc-4.2.0/configure	2007-05-14 05:19:11.000000000 +0200
++++ gcc-4.2.0-2/configure	2007-05-18 15:11:59.000000000 +0200
+@@ -930,6 +930,7 @@
+ # the host libraries and the host tools (which may be a cross compiler)
+ #
+ target_libraries="target-libiberty \
++		target-libga60 \
+ 		target-libgloss \
+ 		target-newlib \
+ 		target-libstdc++-v3 \
+--- gcc-4.2.0/Makefile.in	2006-12-29 18:47:06.000000000 +0100
++++ gcc-4.2.0-2/Makefile.in	2007-05-18 16:00:14.000000000 +0200
+@@ -642,6 +642,7 @@
+     maybe-configure-gnattools
+ .PHONY: configure-target
+ configure-target:  \
++    maybe-configure-target-libga60 \
+     maybe-configure-target-libstdc++-v3 \
+     maybe-configure-target-libmudflap \
+     maybe-configure-target-libssp \
+@@ -786,6 +787,7 @@
+ 
+ .PHONY: all-target
+ 
++all-target: maybe-all-target-libga60
+ all-target: maybe-all-target-libstdc++-v3
+ all-target: maybe-all-target-libmudflap
+ all-target: maybe-all-target-libssp
+@@ -894,6 +896,7 @@
+ 
+ .PHONY: info-target
+ 
++info-target: maybe-info-target-libga60
+ info-target: maybe-info-target-libstdc++-v3
+ info-target: maybe-info-target-libmudflap
+ info-target: maybe-info-target-libssp
+@@ -997,6 +1000,7 @@
+ 
+ .PHONY: dvi-target
+ 
++dvi-target: maybe-dvi-target-libga60
+ dvi-target: maybe-dvi-target-libstdc++-v3
+ dvi-target: maybe-dvi-target-libmudflap
+ dvi-target: maybe-dvi-target-libssp
+@@ -1100,6 +1104,7 @@
+ 
+ .PHONY: pdf-target
+ 
++pdf-target: maybe-pdf-target-libga60
+ pdf-target: maybe-pdf-target-libstdc++-v3
+ pdf-target: maybe-pdf-target-libmudflap
+ pdf-target: maybe-pdf-target-libssp
+@@ -1203,6 +1208,7 @@
+ 
+ .PHONY: html-target
+ 
++html-target: maybe-html-target-libga60
+ html-target: maybe-html-target-libstdc++-v3
+ html-target: maybe-html-target-libmudflap
+ html-target: maybe-html-target-libssp
+@@ -1306,6 +1312,7 @@
+ 
+ .PHONY: TAGS-target
+ 
++TAGS-target: maybe-TAGS-target-libga60
+ TAGS-target: maybe-TAGS-target-libstdc++-v3
+ TAGS-target: maybe-TAGS-target-libmudflap
+ TAGS-target: maybe-TAGS-target-libssp
+@@ -1409,6 +1416,7 @@
+ 
+ .PHONY: install-info-target
+ 
++install-info-target: maybe-install-info-target-libga60
+ install-info-target: maybe-install-info-target-libstdc++-v3
+ install-info-target: maybe-install-info-target-libmudflap
+ install-info-target: maybe-install-info-target-libssp
+@@ -1512,6 +1520,7 @@
+ 
+ .PHONY: install-html-target
+ 
++install-html-target: maybe-install-html-target-libga60
+ install-html-target: maybe-install-html-target-libstdc++-v3
+ install-html-target: maybe-install-html-target-libmudflap
+ install-html-target: maybe-install-html-target-libssp
+@@ -1615,6 +1624,7 @@
+ 
+ .PHONY: installcheck-target
+ 
++installcheck-target: maybe-installcheck-target-libga60
+ installcheck-target: maybe-installcheck-target-libstdc++-v3
+ installcheck-target: maybe-installcheck-target-libmudflap
+ installcheck-target: maybe-installcheck-target-libssp
+@@ -1718,6 +1728,7 @@
+ 
+ .PHONY: mostlyclean-target
+ 
++mostlyclean-target: maybe-mostlyclean-target-libga60
+ mostlyclean-target: maybe-mostlyclean-target-libstdc++-v3
+ mostlyclean-target: maybe-mostlyclean-target-libmudflap
+ mostlyclean-target: maybe-mostlyclean-target-libssp
+@@ -1821,6 +1832,7 @@
+ 
+ .PHONY: clean-target
+ 
++clean-target: maybe-clean-target-libga60
+ clean-target: maybe-clean-target-libstdc++-v3
+ clean-target: maybe-clean-target-libmudflap
+ clean-target: maybe-clean-target-libssp
+@@ -1924,6 +1936,7 @@
+ 
+ .PHONY: distclean-target
+ 
++distclean-target: maybe-distclean-target-libga60
+ distclean-target: maybe-distclean-target-libstdc++-v3
+ distclean-target: maybe-distclean-target-libmudflap
+ distclean-target: maybe-distclean-target-libssp
+@@ -2027,6 +2040,7 @@
+ 
+ .PHONY: maintainer-clean-target
+ 
++maintainer-clean-target: maybe-maintainer-clean-target-libga60
+ maintainer-clean-target: maybe-maintainer-clean-target-libstdc++-v3
+ maintainer-clean-target: maybe-maintainer-clean-target-libmudflap
+ maintainer-clean-target: maybe-maintainer-clean-target-libssp
+@@ -2186,6 +2200,7 @@
+ 
+ .PHONY: check-target
+ check-target:  \
++    maybe-check-target-libga60 \
+     maybe-check-target-libstdc++-v3 \
+     maybe-check-target-libmudflap \
+     maybe-check-target-libssp \
+@@ -2386,6 +2401,7 @@
+ 
+ .PHONY: install-target
+ install-target:  \
++    maybe-install-target-libga60 \
+     maybe-install-target-libstdc++-v3 \
+     maybe-install-target-libmudflap \
+     maybe-install-target-libssp \
+@@ -33527,6 +33543,419 @@
+ 
+ 
+ 
++.PHONY: configure-target-libga60 maybe-configure-target-libga60
++maybe-configure-target-libga60:
++@if gcc-bootstrap
++configure-target-libga60: stage_current
++@endif gcc-bootstrap
++@if target-libga60
++maybe-configure-target-libga60: configure-target-libga60
++configure-target-libga60: 
++	@: $(MAKE); $(unstage)
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	echo "Checking multilib configuration for libga60..."; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libga60 ; \
++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libga60/multilib.tmp 2> /dev/null ; \
++	if test -r $(TARGET_SUBDIR)/libga60/multilib.out; then \
++	  if cmp -s $(TARGET_SUBDIR)/libga60/multilib.tmp $(TARGET_SUBDIR)/libga60/multilib.out; then \
++	    rm -f $(TARGET_SUBDIR)/libga60/multilib.tmp; \
++	  else \
++	    rm -f $(TARGET_SUBDIR)/libga60/Makefile; \
++	    mv $(TARGET_SUBDIR)/libga60/multilib.tmp $(TARGET_SUBDIR)/libga60/multilib.out; \
++	  fi; \
++	else \
++	  mv $(TARGET_SUBDIR)/libga60/multilib.tmp $(TARGET_SUBDIR)/libga60/multilib.out; \
++	fi; \
++	test ! -f $(TARGET_SUBDIR)/libga60/Makefile || exit 0; \
++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libga60 ; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo Configuring in $(TARGET_SUBDIR)/libga60; \
++	cd "$(TARGET_SUBDIR)/libga60" || exit 1; \
++	case $(srcdir) in \
++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
++	  *) topdir=`echo $(TARGET_SUBDIR)/libga60/ | \
++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
++	esac; \
++	srcdiroption="--srcdir=$${topdir}/libga60"; \
++	libsrcdir="$$s/libga60"; \
++	rm -f no-such-file || : ; \
++	CONFIG_SITE=no-such-file $(SHELL) $${libsrcdir}/configure \
++	  $(TARGET_CONFIGARGS) $${srcdiroption}  \
++	  || exit 1
++@endif target-libga60
++
++
++
++
++
++.PHONY: all-target-libga60 maybe-all-target-libga60
++maybe-all-target-libga60:
++@if gcc-bootstrap
++all-target-libga60: stage_current
++@endif gcc-bootstrap
++@if target-libga60
++TARGET-target-libga60=all
++maybe-all-target-libga60: all-target-libga60
++all-target-libga60: configure-target-libga60
++	@: $(MAKE); $(unstage)
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  $(TARGET-target-libga60))
++@endif target-libga60
++
++
++
++
++
++.PHONY: check-target-libga60 maybe-check-target-libga60
++maybe-check-target-libga60:
++@if target-libga60
++maybe-check-target-libga60: check-target-libga60
++
++check-target-libga60:
++	@: $(MAKE); $(unstage)
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)   check)
++
++@endif target-libga60
++
++.PHONY: install-target-libga60 maybe-install-target-libga60
++maybe-install-target-libga60:
++@if target-libga60
++maybe-install-target-libga60: install-target-libga60
++
++install-target-libga60: installdirs
++	@: $(MAKE); $(unstage)
++	@r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
++
++@endif target-libga60
++
++# Other targets (info, dvi, pdf, etc.)
++
++.PHONY: maybe-info-target-libga60 info-target-libga60
++maybe-info-target-libga60:
++@if target-libga60
++maybe-info-target-libga60: info-target-libga60
++
++info-target-libga60: \
++    configure-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing info in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           info) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-dvi-target-libga60 dvi-target-libga60
++maybe-dvi-target-libga60:
++@if target-libga60
++maybe-dvi-target-libga60: dvi-target-libga60
++
++dvi-target-libga60: \
++    configure-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing dvi in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           dvi) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-pdf-target-libga60 pdf-target-libga60
++maybe-pdf-target-libga60:
++@if target-libga60
++maybe-pdf-target-libga60: pdf-target-libga60
++
++pdf-target-libga60: \
++    configure-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing pdf in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           pdf) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-html-target-libga60 html-target-libga60
++maybe-html-target-libga60:
++@if target-libga60
++maybe-html-target-libga60: html-target-libga60
++
++html-target-libga60: \
++    configure-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing html in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           html) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-TAGS-target-libga60 TAGS-target-libga60
++maybe-TAGS-target-libga60:
++@if target-libga60
++maybe-TAGS-target-libga60: TAGS-target-libga60
++
++TAGS-target-libga60: \
++    configure-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing TAGS in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           TAGS) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-install-info-target-libga60 install-info-target-libga60
++maybe-install-info-target-libga60:
++@if target-libga60
++maybe-install-info-target-libga60: install-info-target-libga60
++
++install-info-target-libga60: \
++    configure-target-libga60 \
++    info-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing install-info in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           install-info) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-install-html-target-libga60 install-html-target-libga60
++maybe-install-html-target-libga60:
++@if target-libga60
++maybe-install-html-target-libga60: install-html-target-libga60
++
++install-html-target-libga60: \
++    configure-target-libga60 \
++    html-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing install-html in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           install-html) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-installcheck-target-libga60 installcheck-target-libga60
++maybe-installcheck-target-libga60:
++@if target-libga60
++maybe-installcheck-target-libga60: installcheck-target-libga60
++
++installcheck-target-libga60: \
++    configure-target-libga60 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing installcheck in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           installcheck) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-mostlyclean-target-libga60 mostlyclean-target-libga60
++maybe-mostlyclean-target-libga60:
++@if target-libga60
++maybe-mostlyclean-target-libga60: mostlyclean-target-libga60
++
++mostlyclean-target-libga60: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           mostlyclean) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-clean-target-libga60 clean-target-libga60
++maybe-clean-target-libga60:
++@if target-libga60
++maybe-clean-target-libga60: clean-target-libga60
++
++clean-target-libga60: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing clean in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           clean) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-distclean-target-libga60 distclean-target-libga60
++maybe-distclean-target-libga60:
++@if target-libga60
++maybe-distclean-target-libga60: distclean-target-libga60
++
++distclean-target-libga60: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing distclean in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           distclean) \
++	  || exit 1
++
++@endif target-libga60
++
++.PHONY: maybe-maintainer-clean-target-libga60 maintainer-clean-target-libga60
++maybe-maintainer-clean-target-libga60:
++@if target-libga60
++maybe-maintainer-clean-target-libga60: maintainer-clean-target-libga60
++
++maintainer-clean-target-libga60: 
++	@: $(MAKE); $(unstage)
++	@[ -f $(TARGET_SUBDIR)/libga60/Makefile ] || exit 0 ; \
++	r=`${PWD_COMMAND}`; export r; \
++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
++	$(NORMAL_TARGET_EXPORTS) \
++	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libga60" ; \
++	for flag in $(EXTRA_TARGET_FLAGS); do \
++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
++	done; \
++	(cd $(TARGET_SUBDIR)/libga60 && \
++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
++	          "RANLIB=$${RANLIB}" \
++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
++	           maintainer-clean) \
++	  || exit 1
++
++@endif target-libga60
++
++
++
++
++
+ .PHONY: configure-target-libstdc++-v3 maybe-configure-target-libstdc++-v3
+ maybe-configure-target-libstdc++-v3:
+ @if gcc-bootstrap
+@@ -43170,6 +43599,7 @@
+ 
+ # Generic dependencies for target modules on host stuff, especially gcc
+ @if gcc-bootstrap
++configure-target-libga60: stage_last
+ configure-target-libstdc++-v3: stage_last
+ configure-target-libmudflap: stage_last
+ configure-target-libssp: stage_last
+@@ -43193,6 +43623,7 @@
+ @endif gcc-bootstrap
+ 
+ @if gcc-no-bootstrap
++configure-target-libga60: maybe-all-gcc
+ configure-target-libstdc++-v3: maybe-all-gcc
+ configure-target-libmudflap: maybe-all-gcc
+ configure-target-libssp: maybe-all-gcc
+--- gcc-4.2.0/Makefile.def	2006-12-29 18:47:06.000000000 +0100
++++ gcc-4.2.0-2/Makefile.def	2007-05-18 16:05:30.000000000 +0200
+@@ -139,6 +139,7 @@
+ target_modules = { module= rda; };
+ target_modules = { module= libada; };
+ target_modules = { module= libgomp; lib_path=.libs; };
++target_modules = { module= libga60; };
+ 
+ // These are (some of) the make targets to be done in each subdirectory.
+ // Not all; these are the ones which don't have special options.
