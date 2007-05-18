@@ -62,9 +62,8 @@
 \\
   This work is written to help with this last point.  An example front
   end is described, with everything from the source base setup,
-  through various GENERIC constructs, up to the issues of employing
-  in-line assembly, using GCC native preprocessor, or preparing the
-  front end for cross compilation.  }
+  through various GENERIC constructs, up to compilation of runtime
+  library, or using GCC native preprocessor. }
 
 \keywords[en]{GCC, GNU Compiler Collection, frontend, front end, Algol 60, compiler}
 
@@ -81,9 +80,8 @@
 \\
   Cílem této práce je pomoci s posledním zmínìným bodem.  Práce
   popisuje ukázkovou pøední èást: v¹e od vytvoøení zdrojových souborù,
-  pøes rùzné konstrukce jazyka GENERIC, a¾ k problémùm se zapojením
-  assembleru, pou¾ívání nativního preprocesoru, nebo pøípravì pøední
-  èásti pro kroskompilaci.  }
+  pøes rùzné konstrukce jazyka GENERIC, a¾ k problémùm s kompilací
+  bìhové podpory nebo pou¾ívání nativního preprocesoru.  }
 
 \keywords[cs]{GCC, GNU Compiler Collection, pøední èást, Algol 60, kompilátor}
 
@@ -160,9 +158,8 @@ during GCC build, and linked in automatically.  This last point is
 covered in this thesis, the others are not.
 \else
 There is more to language support than compilation of code into
-assembly.  This thesis also contains several chapters on
-preprocessing, emitting debuginfo, supporting inline assembly, or
-integrating runtime library.
+assembly.  This thesis also contains notes on preprocessing, emitting
+debuginfo, or integrating runtime library.
 \fi
 
 This work is only partially designed to be read sequentially.  It's
@@ -607,10 +604,9 @@ Each front end lives in a subdirectory of its own.  Decide on the name
 of your fronted and create a subdirectory in \file{gcc/gcc/}.  For
 sake of demonstration, I will use the hypothetical language Überlang.
 
-\begin{verbatim}
-# cd gcc/gcc/
-# mkdir uberlang
-\end{verbatim}
+\program{\ind\=\+
+\$ cd gcc/gcc/\\
+\$ mkdir uberlang}
 
 Then you will have to populate the front end directory with source
 files.  This is covered in sections that follow.
@@ -1066,12 +1062,12 @@ family, the minimal frontend won't be installable.  You will have to
 run it like this:
 
 \program{
-\# pwd\\
+\$ pwd\\
 /path/to/build/\\
-\# ./gcc/uberlang1 ./file.ubl \&$>$/dev/null \&\& cat ./file.s\\
-\ind\ind\=.file   1 "file.ubl"\\
-        \>.abicalls\\
-        \>.text\\
+\$ ./gcc/uberlang1 ./file.ubl \&$>$/dev/null \&\& cat ./file.s\\
+\ind\ind\={\em{}.file   1 "file.ubl"}\\
+        \>{\em{}.abicalls}\\
+        \>{\em{}.text}\\
 {\it etc ...}\\
 }
 
@@ -2382,7 +2378,7 @@ and number of front end specific directories, such as
 To run a testsuite for your front end, issue a line like this in
 \file{build/} directory:
 
-\program{\ind\# gmake -C gcc check-algol60}
+\program{\ind\$ gmake -C gcc check-algol60}
 
 (You would run \literal{internal-algol60-checks} target similarly, if
 it is present.  Alternatively, simple \literal{make check} will run
@@ -2467,7 +2463,6 @@ use gdb for your language.
 
 %=====================================================================%
 
-\iffinal
 \chapter{GCC-Specific Language Extensions}
 \label{LanguageExtenstions}
 
@@ -2496,7 +2491,6 @@ your language.
 
 If the time permits, elaborate on how to use Open MP in frontend.
 Look into \cite{GDS:2006:Novillo}.
-\fi
 
 %=====================================================================%
 
@@ -2555,7 +2549,7 @@ need to do to prepare his or her compiler for cross compilation?
 \fi
 
 In general, GCC is very attractive target for a lot of
-compiler-related problems.  It's open development cycle makes up for
+compiler-related research.  It's open development cycle makes up for
 great test bed: be it a new radical systems language, be it new
 optimization technique, new hardware platform in development, GCC
 should be in the loop.
@@ -2564,10 +2558,182 @@ should be in the loop.
 \bibliographystyle{plain}
 \bibliography{dp}
 
-\chapter*{Appendix: \Algol 60 Compiler}
+\chapter*{Appendix: The \Algol 60 Compiler}
 
-Installation, supported GCCs, usual stuff.
+\section*{Requirements}
 
+The \Algol 60 GCC front end has following build requirements:
+
+\begin{itemize}
+\item GCC 4.2.x with resolved dependencies.  GCC 4.1.x or earlier will
+  NOT work.  You will need either complete GCC package
+  (e.g. \file{gcc-4.2.0.tar.bz2}), or core package and testsuite
+  (e.g. \file{gcc-core-4.2.0.tar.bz2} and
+  \file{gcc-testsuite-4.2.0.tar.bz2}).
+\item Flex 2.5.31 or newer
+\item Bison 2.3 or newer
+\item \literal{libga60} wraps around target-native \literal{libc} and
+  \literal{libm}, which have to be available on target site.
+\end{itemize}
+
+\section*{Supported Arches}
+
+\file{gcc-algol} was successfully compiled and testsuite passed on
+systems with following triplets:
+
+\begin{itemize}
+\item i686-pc-linux-gnu
+\item ia64-unknwon-linux-gnu
+\item mips-sgi-irix6.5
+\end{itemize}
+
+\section*{Build Process}
+
+Only a straight build (i.e. no Canadian Crosses) is supported at the
+moment. (Or at least tested.  Chances are the compiler will work also
+for non-native setups.)  First, prepare a source tree:
+
+\program{\ind\=\+
+\$ ls\\
+{\em gcc-4.2.0.tar.bz2 gcc-algol60-0.2.tar.bz2}\\
+\$ tar xjf gcc-4.2.0.tar.bz2\\
+\$ pushd gcc-4.2.0\\
+\$ tar xjf ../gcc-algol60-0.3.tar.bz2\\
+\$ patch -p1 $<$ gcc-4.2.0-toplevel.patch\\
+{\em patching file configure}\\
+{\em patching file Makefile.in}\\
+{\em patching file Makefile.def}\\
+\$ popd}
+
+Then prepare for the build:
+
+\program{\ind\=\+
+\$ mkdir build-4.2.0\\
+\$ cd build-4.2.0\\
+\$ ../gcc-4.2.0/configure \=-{}-prefix=`pwd`/../inst-4.2.0/ $\backslash$\\
+                          \>-{}-enable-version-specific-runtime-libs $\backslash$\\
+			  \>-{}-enable-languages=c,algol60 $\backslash$\\
+			  \>-{}-disable-werror}
+
+The \option{-{}-disable-werror} part is unfortunate, but necessary:
+the parser and lexer \file{.c} files, generated from yacc and flex
+respectively, currently generate a lot of warnings.
+
+Finally, do a build itself:
+
+\program{\ind\=\+
+\$ gmake -j 4\\
+{\em ...lots of output...}\\
+{\em gmake[1]: Leaving directory `/tmp/build-4.2.0'}}
+
+(The \option{-j} constant determines how many parallel processes make
+should launch.  You will want to adjust this value depending on number
+of CPUs or cores of your computer.)
+
+You can test GCC as a whole with \literal{gmake check}, or just \Algol
+60 front end with \literal{gmake -C gcc check-algol60}.  If you so
+wish, you can install the front end with \literal{gmake install}, it
+will end up in configured \option{-{}-prefix} directory.
+
+\section*{Using \file{gcc-algol}}
+
+From now on, you can use it as an ordinary GCC
+command\footnote{Actually, in the case as illustrated, the compiler
+would likely end up in a directory outside \literal{PATH} and
+\literal{LD\_LIBRARY\_PATH}.  You may need to adjust these
+variables.}:
+
+\program{\ind\=\+
+\$ which ga60-4.2.0\\
+{\em /tmp/inst-4.2.0/bin/ga60-4.2.0}\\
+\$ ga60-4.2.0 --version $|$ head -n 1\\
+{\em ga60-4.2.0 (GCC) 4.2.0}\\
+\$ cat x.a60\\
+{\em 'begin' puts(`Yay, it works!'); 'end';}\\
+\$ ga60-4.2.0 x.a60 -o x\\
+\$ ./x\\
+{\em Yay, it works!}}
+
+Let's have a look at the compiled binary:
+
+\program{\ind\=\+
+\$ readelf -a x $|$ grep NEEDED\\
+{\em 0x0000000000000001} \={\em{}(NEEDED)} \={\em{}Shared library: [libga60.so.1]}\\
+{\em 0x0000000000000001} \>{\em{}(NEEDED)} \>{\em{}Shared library: [libm.so.6.1]}\\
+{\em 0x0000000000000001} \>{\em{}(NEEDED)} \>{\em{}Shared library: [libc.so.6.1]}}
+
+The binary itself depends on \file{libm} and \file{libc}.  These
+dependencies are injected into the binary by the linking hook
+\function{lang\_specific\_driver}.  If we link the binary with gcc
+driver, our hook will not be called, and only \file{libc} will be
+linked in:
+
+\program{\ind\=\+
+\$ gcc-4.2.0 x.a60 -o x -lga60\\
+\$ readelf -a x $|$ grep NEEDED\\
+{\em{}0x0000000000000001} \={\em{}(NEEDED)} \={\em{}Shared library: [libga60.so.1]}\\
+{\em{}0x0000000000000001} \>{\em{}(NEEDED)} \>{\em{}Shared library: [libc.so.6.1]}}
+
+Under current setup, where all \Algol 60 services are provided by {\em
+shared} \file{libga60}, explicit dependence on \file{libm} is
+unnecessary, and even wrong---\file{libga60} itself should have these
+dependencies (and has!).  However, \file{libga60} doesn't have to be
+shared, and in that case \file{libm} has to be brought in explicitly.
+
+\file{gcc-algol} uses a preprocessor, and understands traditional
+preprocessing directives.  The preprocessor is not run by default,
+only when the file extension is \file{.A60} or \file{.ALG} (i.e. upper
+case.  This notion is used also for assembly and fortran source
+files).  For example, let's have the two files as shown on figures
+\ref{Figure++PreprocessX} and \ref{Figure++PreprocessY}.
+
+\begin{figure}
+\begin{verbatim}
+#if !defined(_ALGOL60_) || !defined(USK)
+# error That does not compute.
+#else
+'begin'
+        /* funky C-like comment */
+#       include "y.ALG"
+'end';
+#endif
+\end{verbatim}
+\caption{Preprocessing: Example file x.ALG}
+\label{Figure++PreprocessX}
+\end{figure}
+
+\begin{figure}
+\begin{verbatim}
+
+
+'string' a;
+\end{verbatim}
+\caption{Preprocessing: Example file y.ALG}
+\label{Figure++PreprocessY}
+\end{figure}
+
+\program{\ind\=\+
+\$ ga60-4.2.0 ./x.ALG\\
+{\em{}./x.ALG:2: error: \#error That does not compute.}\\
+\$ ga60-4.2.0 -DUSK ./x.ALG\\
+{\em{}./y.ALG:1: error: type 'string' is invalid in this context.}\\
+\$ ga60-4.2.0 -DUSK -M ./x.ALG\\
+{\em{}x.o: x.ALG y.ALG}\\
+\$ ga60-4.2.0 -DUSK -E ./x.ALG\\
+{\em{}\# 1 "./x.ALG"}\\
+{\em{}\# 1 "$<$built-in$>$"}\\
+{\em ... more preprocessed output ... }}
+
+The errors at the first and second commands are intentional.
+The first is here to display that it's possible to pass in your own
+defines.  The second shows that \file{gcc-algol} correctly tracks
+files and line numbers: even though the erroneous line appears as
+twelfth line of preprocessed output, error message is located
+properly.
+
+Most of this work is done by GCC itself: GCC launches preprocessor,
+decides that the processing should be stopped after that when
+\option{-E} is passed in, and GCC generated the make dependency rule.
 
 \iffalse
 \chapter{Notes}
