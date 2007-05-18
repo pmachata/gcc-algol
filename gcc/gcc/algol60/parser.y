@@ -50,7 +50,7 @@ yylex (YYSTYPE * arg, YYLTYPE * loc, parser_rep_t * parser)
 static cursor_t *
 cr_csr (parser_rep_t * parser, YYLTYPE * loc)
 {
-  return new_cursor (lexer_filename (parser->lexer), loc->first_line);
+  return new_cursor (lexer_pp_filename (parser->lexer), loc->first_line);
 }
 
 // report error

@@ -17,4 +17,8 @@ fdump-ast
 Algol60
 Dump AST immediately after the parse
 
+fpreprocessed
+Algol60
+Treat the input file as preprocessed
+
 ; This comment is to ensure we retain the blank line above.

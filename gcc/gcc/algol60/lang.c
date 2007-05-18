@@ -89,6 +89,7 @@ typedef struct struct_a60_options_t
   int dump_ast;
   int parser_trace;
   int lexer_trace;
+  int preprocessed;
 }
 a60_options_t;
 
@@ -127,6 +128,7 @@ algol60_init_options (unsigned int argc ATTRIBUTE_UNUSED,
   a60_options->dump_ast = 0;
   a60_options->parser_trace = 0;
   a60_options->lexer_trace = 0;
+  a60_options->preprocessed = 0;
   return CL_Algol60;
 }
 
@@ -146,6 +148,9 @@ algol60_handle_option (size_t scode,
       return 1;
     case OPT_flexer_trace:
       a60_options->lexer_trace = value;
+      return 1;
+    case OPT_fpreprocessed:
+      a60_options->preprocessed = value;
       return 1;
     };
   fprintf (stderr, "scode %ul option %s value %d\n", scode, arg, value);
@@ -184,6 +189,7 @@ algol60_parse_file (int debug ATTRIBUTE_UNUSED)
 
   lexer_t * a_lexer = new_lexer (a60_options->ifile, a60_options->ifname, true);
   gcc_assert (a_lexer != NULL);
+  lexer_set_preprocessed (a_lexer, a60_options->preprocessed);
   if (a60_options->lexer_trace)
     lexer_set_logging (a_lexer, ll_debug, false);
   else

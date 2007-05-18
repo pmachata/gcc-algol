@@ -62,6 +62,11 @@ lexer_t * lexer (void * ptr)
 char const * lexer_filename (lexer_t const * lexer)
   ATTRIBUTE_NONNULL(1);
 
+/// Query the name of parsed stream, taking into account preprocessing
+/// directives.
+char const * lexer_pp_filename (lexer_t const * lexer)
+  ATTRIBUTE_NONNULL(1);
+
 
 /// Fetch new token with given lexer, assign a location of given token,
 /// and optionally store any token-related info into val.  Should a
@@ -91,6 +96,11 @@ void lexer_set_logging (lexer_t * lexer, debug_level_t messages, int tokens)
 
 /// Get underlying logging device.
 logger_t const* lexer_log (lexer_t * lexer)
+  ATTRIBUTE_NONNULL(1);
+
+/// Whether lexer should recognize preprocessing output (linemarks) in
+/// input file.
+void lexer_set_preprocessed (lexer_t * lexer, int preprocessed)
   ATTRIBUTE_NONNULL(1);
 
 #endif//_AL60L_LEXER_H_

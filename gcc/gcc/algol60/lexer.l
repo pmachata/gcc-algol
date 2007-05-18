@@ -17,6 +17,7 @@
 #include <setjmp.h>
 #include <math.h>
 #include <limits.h>
+#include <ctype.h>
 
 static char const* private_lexer_signature = "lexer";
 
@@ -32,6 +33,10 @@ typedef struct struct_lexer_rep_t
   int managed;
   token_kind_t current_tok;
   token_kind_t prev_tok;
+  int preprocessed;
+  char * pp_filename;
+  int pp_lineno;
+  int pp_baselineno;
 } lexer_rep_t;
 
 static void private_lexer_invalid_character (lexer_rep_t * rep, int lineno, char what);
@@ -47,6 +52,7 @@ static int string_level = 0;
 %x STRING
 %x COMMENT
 %x END_COMMENT
+%x PREPROCESSOR
 
 %option noyywrap
 %option bison-bridge
@@ -364,6 +370,60 @@ DIGIT		[0-9]
 }
 
 
+ /* Preprocessor linemarker. */
+^"#" {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  if (lexer->preprocessed)
+    BEGIN PREPROCESSOR;
+  else
+    private_lexer_invalid_character (lexer, yylineno, *yyget_text (yyscanner));
+}
+
+<PREPROCESSOR>[ \t]*{DIGIT}*[ \t]*"\""[^\"]*"\""[ \t]*.*$ {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  char * linemarker = yyget_text (yyscanner);
+
+  // It's strange to parse tokens inside lexical analyzer by hand, but
+  // it's the easies approach...  At least we know that the string
+  // matches the rule regexp, and don't have to be paranoid.
+
+  while (isspace (*linemarker))
+    ++linemarker;
+
+  // line number...
+  char * linenumber = linemarker;
+  while (*linemarker && isdigit (*linemarker))
+    ++linemarker;
+  *linemarker++ = 0;
+
+  while (*linemarker && isspace (*linemarker))
+    ++linemarker;
+
+  // file name... remember to skip "\""
+  ++linemarker;
+  char * filename = linemarker;
+  while (*linemarker != '\"')
+    ++linemarker;
+  *linemarker = 0;
+
+  free (lexer->pp_filename);
+  lexer->pp_filename = strdup (filename);
+  lexer->pp_lineno = atoi (linenumber);
+  lexer->pp_baselineno = yylineno + 1; // linemarker refers line ahead
+
+  BEGIN INITIAL;
+}
+
+<PREPROCESSOR>.*$ {
+  lexer_rep_t * lexer = yyget_extra (yyscanner);
+  cursor_t * csr = new_cursor (lexer->filename, yylineno);
+  log_printfc (lexer->log, ll_error, csr,
+	       "unrecognized preprocessing directive");
+  delete_cursor (csr);
+  BEGIN INITIAL;
+}
+
+
  /* identifier */
 {LETTER}({LETTER}|{DIGIT})* {
   yylval->slit = new_estring_from (yyget_text (yyscanner));
@@ -450,6 +510,7 @@ DIGIT		[0-9]
 }
 
 
+
  /* Skip whitespace. In separate rules to speed up processing of
     newlines for yylineno. */
 \n+ {}
@@ -497,6 +558,11 @@ new_lexer (FILE * stream, char const* filename, int manage)
       ret->current_tok = -1;
       ret->prev_tok = -1;
       ret->managed = manage;
+      ret->preprocessed = 0;
+
+      ret->pp_filename = NULL;
+      ret->pp_lineno = 0;
+      ret->pp_baselineno = 0;
       return (void*)ret;
     }
   else
@@ -552,6 +618,17 @@ lexer_filename (lexer_t const * _lexer)
 {
   assert (_lexer != NULL);
   return ((lexer_rep_t const *)_lexer)->filename;
+}
+
+char const *
+lexer_pp_filename (lexer_t const * _lexer)
+{
+  assert (_lexer != NULL);
+  lexer_rep_t * lexer = (void*)_lexer;
+  if (lexer->pp_filename)
+    return lexer->pp_filename;
+  else
+    return lexer->filename;
 }
 
 /// Procedure to write out that bad character has been hit.
@@ -629,7 +706,10 @@ lexer_tok (lexer_t * _lexer, YYSTYPE * val, YYLTYPE * loc)
   // This is a hack.  yylineno needs declared variable yyg, in a
   // reentrant scanner anyway.
   struct yyguts_t * yyg = (void*)lexer->flex_scanner;
-  loc->first_line = loc->last_line = yylineno;
+
+  int actual_lineno = yylineno;
+  int pp_lineno = actual_lineno - lexer->pp_baselineno + lexer->pp_lineno;
+  loc->first_line = loc->last_line = pp_lineno;
   loc->first_column = loc->last_column = 0;
 
   return lexer->current_tok;
@@ -677,4 +757,12 @@ lexer_log (lexer_t * _lexer)
   assert (_lexer != NULL);
   lexer_rep_t * lexer = (void*)_lexer;
   return (logger_t const*)lexer->log;
+}
+
+void
+lexer_set_preprocessed (lexer_t * _lexer, int preprocessed)
+{
+  assert (_lexer != NULL);
+  lexer_rep_t * lexer = (void*)_lexer;
+  lexer->preprocessed = preprocessed;
 }
