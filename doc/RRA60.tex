@@ -1348,12 +1348,12 @@ evaluation is entirely analogous to that of arithmetic expressions
 (section \ref{LblArithmeticExpressionsSemantics}).  In the general
 case the Boolean expression of the if clauses will select a simple
 designational expression.  If this is a label the desired result is
-already found.  A switch designator refers refers to the corresponding
+already found.  A switch designator refers to the corresponding
 switch declaration (cf. section \ref{LblSwitchDeclarations} Switch
 declarations) and by the actual numerical value of its subscript
 expression selects one of the designational expressions listed in the
 switch declaration by counting these from left to right.  Since the
-designational expression thus selected may again by a switch
+designational expression thus selected may again be a switch
 designator this evaluation is obviously a recursive process.
 
 \subsubsection{The subscript expression}
@@ -1368,7 +1368,7 @@ is the number of entries in the switch list.
 
 Unsigned integers used as labels have the property that leading zeroes
 do not affect their meaning, e.g. \texttt{00127} denotes the same
-label as \texttt{217}.
+label as \texttt{127}.
 
 
 
@@ -1987,9 +1987,9 @@ formal or local identifiers involved.
 \paragraph{Body replacement and execution}
 
 Finally the procedure body, modified as above, is inserted in place of
-the procedure statement and executed.  if the procedure is called from
+the procedure statement and executed.  If the procedure is called from
 a place outside the scope of any non-local quantity of the procedure
-bode the conflicts between the identifiers inserted through this
+body the conflicts between the identifiers inserted through this
 process of body replacement and the identifiers whose declarations are
 valid at the place of the procedure statement or function designator
 will be avoided through suitable systematic changes of the latter

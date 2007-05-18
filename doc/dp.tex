@@ -1310,27 +1310,38 @@ are stored in linked lists \footnote{I will fix this, I promise.}.
 
 From the bird's eye view, \Algol compiler is a straightforward
 compiler: it has Flex-based lexical analyser, Yacc-based parser, and
-several C modules with AST and semantic analysis.
+several C modules with AST and semantic analysis.  The compiler itself
+consists of two main parts: a front end, whose work is to transform
+stream of bytes into AST; and back end, whose work is to convert AST
+into GENERIC.  Note that under this scenario, the back end of the
+compiler is actually front end of GCC.  For the rest of this chapter,
+I will use the term {\em compiler} to denote the part of \file{ga60},
+that transforms the stream of bytes into GENERIC.
 
 Algol compiler uses encapsulation heavily.  There is no (official) way
 to get inside structures, everything is passed as a pointer to
-undefined structure.  Only in the module that handles that particular
-type is the structure actually defined, so that the implementation has
-full, unrestricted access to bits.
+undefined structure\footnote{Structure, not \literal{\keyw{void}}.  It
+  is necessary to use void pointer at several places, but number of
+  such instances is kept as low as possible.}.  Only in the module
+that handles that particular type is the structure actually defined,
+so that the implementation has full, unrestricted access to bits.
 
 The encapsulation zeal is exposed by use of visitors.  There are
-certain polymorphic structures in \Algol AST.  For example expressions
-may be numbers, variable references, unary and binary expressions,
-function calls, etc.  All expression kinds are passed around as the
-same opaque \variable{expression\_t} pointer.  To do any action
-depending on exact type of expression, one has to define a {\em
-  visitor} over the expression structure, and let the visitor dispatch
-on the desired expression object.
+certain polymorphic structures in \Algol AST (more about polymorphism
+and subtyping in \Algol 60 compiler will be written in section
+\ref{DynamicTyping}).  For example expressions may be numbers,
+variable references, unary and binary expressions, function calls,
+etc.  All expression kinds are passed around as the same opaque
+\variable{expression\_t} pointer.  To do any action depending on exact
+type of expression, one has to define a {\em visitor} over the
+expression structure, and let the visitor dispatch on the desired
+expression object.
 
-Other means of achieving safety include strong trend towards static.
-Whatever can be checked by compiler giving a warning is checked so.
-If the warning can be turned to full error with some extra coding, so
-much the better.  If compiler can't check that, runtime will.
+Other means of achieving safety include strong trend towards checking.
+Whatever can be checked statically, by compiler giving a warning, is
+checked so.  If the warning can be turned to full error, perhaps with
+some extra coding, so much the better.  If compiler can't check that,
+runtime will.
 
 
 \subsection{Visitors}
@@ -1341,15 +1352,18 @@ created by a dedicated function \function{new\_visitor\_expr}, which
 accepts one argument for each expression kind.  The arguments have to
 be \function{callback\_t} pointers: to convert function pointer to
 callback, you have to pass it through appropriate callback builder,
-\function{a60\_expr\_callback} in this case.  Callback builder makes
-sure that your callback function takes \literal{expression\_t*} as a
-first argument.  All is checked during compilation: that you didn't
-forget one of the callbacks, that all callbacks are typed right, etc.
+\function{a60\_expr\_callback} in this case.  Callback builder doesn't
+do any actual work, it just typecasts to pointer, but as an argument,
+it requires a function pointer that takes \literal{expression\_t*} as
+a first argument.  If your callback function doesn't honor this,
+compiler will give you a warning.  Visitor builder, in turn, requires
+exact number of callback arguments.
 
 In addition, the visitor builder knows it builds visitor for
-expression type, and when in debug mode, it {\em dynamically} checks
-that that visitor is dispatched over expression, and not
-e.g. statement.  In release mode, the check goes away.
+expression type, and when in debug mode, it records that information
+into visitor itself.  Visitor dispatcher then {\em dynamically} checks
+that that visitor is dispatched over an expression, and not e.g. a
+statement.  In release mode, the check goes away.
 
 \begin{figure}
 \begin{verbatim}
@@ -1403,6 +1417,7 @@ expr_build_generic (expression_t * expression, al60l_bind_state_t * state)
 
 
 \subsection{Dynamic Typing}
+\label{DynamicTyping}
 
 To implement rigorous runtime checking, each polymorphic objects
 carries around two identifiers: a {\em kind}, which identifies subtype
@@ -1430,7 +1445,7 @@ ends up being a macro that expands to direct C typecast.
 
 This same dynamic typing mechanism is used for visitors.  Visitor
 knows which object type it should dispatch on, and given a visitor and
-an object (passed in as \literal{void*}), it can decided whether the
+an object (passed in as \literal{void*}), it can decide whether the
 visitor matches the object type.
 
 Dynamic typing is used for implementation of {\em typed slists},
@@ -1481,7 +1496,183 @@ goes completely away, so there is neither a performance const, nor a
 memory overhead.
 
 
-\subsection{Implementation}
+\section{The Tour of \Algol 60}
+
+Perhaps whole \Algol 60 can be explained in terms of the following
+three fundamental abstractions: statements, expressions and
+declarations.  In this section, I will give a glimpse of \Algol 60.
+This serves a purpose of laying foundations for next section, where an
+implementation of various \Algol 60 constructs is explained.  Also in
+this section are described bits and pieces of the AST design: how is
+each \Algol element modeled.
+
+\subsection{Expressions}
+
+The \Algol 60 spec groups together two notion: numerical expressions
+(which includes literals, arithmetic and boolean expressions, variable
+references including array access, function calls), and designational
+expressions, which more naturally belong to flow control.  In the
+compiler, these two kinds are disjunct: computed, numerical
+expressions are described by a type \literal{expression\_t}, and
+designational expressions by \literal{desig\_expr\_t}.
+
+Expressions use natural polymorphic organization: literals and symbols
+form leaf expressions, and more complex expressions, such as binary,
+are recursively composed of other expressions.
+
+Despite their specification together with other expressions,
+designational expressions are completely disjunct polymorphic
+hierarchy, used in other context, viz. as taget of the
+\literal{\keyw{goto}} statement.  There are three subtypes: a label
+reference, a switch expression, and conditional designational
+expression.  The following example gives an overview of what's
+possible to express using the notion of designational
+expressions\footnote{It doesn't compute anything interesting, but uses
+  all computed \literal{\keyw{goto}} features \Algol 60 has}:
+
+\label{Example++Goto}
+\program{\ind\=\+
+\keyw{begin}\\
+\ind\=\keyw{switch} b := q, r, 5;\\
+    \>\keyw{switch} a := q, \keyw{if} k $>$ 005 \keyw{then} r \keyw{else} 5, b[k];\\
+    \>\keyw{integer} \keyw{array} ar; \keyw{integer} ix, k;\\
+    \>initialize(ar, ix, k);\\
+    \>\keyw{goto} a[ar[ix]];\\
+q:  \>puts(\litstr{`q!'});\\
+r:  \>puts(\litstr{`r!'});\\
+05:  \>puts(\litstr{`5!'});\\
+\keyw{end};}
+
+As you can see, certain designational expressions use ordinary
+expressions as leaves (that's the case of switch expression, which can
+be seen at the \literal{\keyw{goto}} statement and as part of
+declaration of \literal{\keyw{switch} a}).
+
+The example also shows that it's possible to use both numberical and
+symbolic labels.  Fortunately, expressions such as
+\literal{\keyw{goto} 1+1} are disallowed, but still the labels
+\literal{5}, \literal{05} and \literal{005} are considered equal.
+This is handled in parser, who translates the label into canonical
+representation right away.
+
+\subsection{Statements}
+
+The repertoire of \Algol 60 is on par with most C-like languages up to
+these days.  Supported leaf statements are assignment, goto,
+conditional, and for.  Most of them work as expected.  Assignment
+statement supports assignment of one value to several variables
+(without reevaluation).  Goto has unusually rich syntax for
+computation of target, see the description of designational
+expressions in previous section.  For has also rich syntax for
+iteration, see this example:
+
+\program{\ind\=\+
+\keyw{begin}\\
+\ind\=\keyw{integer} i;\\
+    \>\keyw{for} i := \=1, i + 1 \keyw{while} i $<$ 10, 100, 105 \keyw{step} 2 \keyw{until} 181 \keyw{do}\\
+    \>\ind\= perform\_interesting\_stuff(i);\\
+\keyw{end};}
+
+The compiler uses auxiliary polymorphic type \keyw{for\_elmt\_t} to
+keep the list of iteration branches.  It has exactly three subtypes:
+an expression, a \literal{while}-kind of branch, and an
+\literal{until}-kind of branch.
+
+Statements can be grouped to blocks or compound
+statements\footnote{The difference being that block can contain
+  declarations, while compound statement cannot.  When the grammar
+  allows for compound command, it also allows for block, so it would
+  seem that the distinction is nil.  But labels are defined at the
+  most enclosing {\em block}, so the compiler has to keep track of
+  which container is actually a block, and which is mere compound
+  statement.}.  Both abstractions are described by the same type: a
+container with associated symbol table,
+\literal{a60\_symtab\_t}\footnote{Non-clashing naming convention was
+  introduced quite late in development cycle.  Symbol table is as of
+  this writing the only type that uses the \literal{a60\_} prefix.}.
+
+\subsection{Declarations}
+
+The third fundamental element of \Algol 60 programs are declarations.
+\Algol distinguishes switch declarations (those were seen in an
+example in section \ref{Example++Goto}), variable declarations, and
+procedure declarations.
+
+The simplest case is switch declaration: it consists of series of
+designational expressions, which was described earlier.  When used in
+a goto statement, switch declaration is used this way:
+
+\program{\ind\keyw{goto} sw[expr];}
+
+Where \literal{sw} is a switch, and \literal{expr} is arbitrary
+integer expression.  The flow of control will end up in the branch
+with the same number, as is the result of \literal{expr}, counting
+from one.
+
+Slightly more complicated case is with variables, mostly because of
+types.  \Algol 60 supports basic types such as integers, real numbers
+and booleans, and one compound type: an array of basic types.  Number
+of dimensions of array is static property of the declaration, but the
+dimensions themselves are computed.  Each variable can be marked
+``own'', which is basically the same as \literal{static} in C.  The
+last supported type is string, which is only allowed as procedure
+argument, and cannot be otherwise manipulated or assigned by \Algol
+program.  Inevitably, each string in \Algol program ends up passed to
+native code procedure.  Few examples of variable declarations and
+types:
+
+\program{\ind\=\+
+\keyw{begin}\\
+\ind\=\keyw{integer} a;\\
+    \>\keyw{Boolean} b;\\
+    \>\keyw{own} \keyw{real} c\\
+    \>\keyw{integer} \keyw{array} d[1:5];\\
+    \>\keyw{own} \keyw{integer} \keyw{array} c[2:6,3:9,4:10];\\
+\keyw{end};}
+
+The declaration on its own right is a procedure.  Procedures are {\em
+  the} reason why the \Algol 60 is kinky.  In particular, formal
+argument of procedure can be declared as {\em pass by name}, which
+basically means that the actual argument of this formal parameter is
+reevaluated each time it's hit in control flow---like if the function
+was actually a macro, and replaced each occurence of the formal with
+passed-in actual.
+
+Also, by-name parameters don't have to be typed, an unusual feature in
+compiled language.  Coupled with the way \Algol 60 handles
+parameter-less functions, it's possible to pass in e.g. either an
+integer, or integer function without parameter.  Depending on call
+site in effect, and the way each identifier end up resolved, compiler
+has to emit either variable access, or function call.
+
+Yet another funny thing about the spec is that the resolution of
+non-local variable references is done on a call site---another
+macro-like feature of \Algol 60.  These three features combined are
+presented in a famous Man-or-Boy test of Donald Knuth's:
+
+\program{\ind\=\+
+\keyw{begin}\\
+\ind\=\keyw{real} \keyw{procedure} A (k, x1, x2, x3, x4, x5);\\
+    \>\keyw{value} k; \keyw{integer} k;\\
+    \>\keyw{begin}\\
+    \>\ind\=\keyw{real} \keyw{procedure} B;\\
+    \>    \>\keyw{begin} \=k := k - 1;\\
+    \>    \>             \>B := A := A (k, B, x1, x2, x3, x4);\\
+    \>    \>\keyw{end};\\
+    \>    \>\keyw{if} k $<=$ 0 \keyw{then} A := x4 + x5 \keyw{else} B;\\
+    \>\keyw{end};\\
+    \>outreal (A (10, 1, -1, -1, 1, 0));\\
+\keyw{end};}
+
+My humble \Algol 60 compiler doesn't pass this test: not by a great
+distance.  It's on the way there, but ended up being half-finished in
+this respect.  This is perhaps the worst possible scenario, because
+functions, as of this writing, simply don't work: not even semantic
+analysis is done, let alone code generation.
+
+\section{Implementation}
+
+\subsection{Polymorphism and Visitors}
 
 Visitors and dynamic typing go hand in hand, and are both implemented
 by the same module.  Each module, that wants to participate in this
@@ -1579,18 +1770,9 @@ preprocessor variable), they use GCC services: logger uses GCC
 to GCC {\em locus}.  More will be written about these topics in
 \ref{Loci} and \ref{Diagnostics}.
 
+\subsection{Semantic Checks}
 
-\section{Design of Abstract Syntax Tree}
-
-AST node layout mostly follows main grammar elements of \Algol 60.
-Following sections delve into what's noteworthy across AST design.
-
-\subsection{Expressions, Commands, etc.}
-
-
-
-\subsection{Typing System}
-
+@@@TODO -- dissolve ``Targeting GCC'' here in in Services chapter.
 
 %=====================================================================%
 
@@ -2319,38 +2501,29 @@ Look into \cite{GDS:2006:Novillo}.
 %=====================================================================%
 
 
-\iffinal
-\chapter{Advanced Topics}
-\label{AdvancedTopics}
-
-\section{Cross-compilation Issues}
-\label{CrossCompilationIssues}
-
-Elaborate on build-host-target trichotomy.  Assure ga60 is
-cross-compilation capable and describe what problems there were.
-
-\section{Bootstrapping Issues}
-\label{BootstrappingIssues}
-
-How to write a library and/or frontend in a language whose compiler is
-built as part of gcc, but not in the language itself.  How to write a
-library and/or frontend in a language itself.
-\fi
-
-%=====================================================================%
-
-
 \chapter{Conclusions}
 
 \begin{enumerate}
 
 \item A minimal frontend and its integration into GCC build system is
-described in this work.  All files that the frontend is comprised of
-are thoroughly examined, and pitfalls mentioned.  Several tips are
-provided on connecting such minimal frontend with preexisting language
-parser, and on versioning GCC component apart from GCC itself.
+  described in this work.  All files that the frontend is comprised of
+  are thoroughly examined, and pitfalls mentioned.  Several tips are
+  provided on connecting such minimal frontend with preexisting
+  language parser, and on versioning GCC component apart from GCC
+  itself.
 
-%more items to come in final thesis
+\item An implementation of \Algol 60 compiler is described, including
+  the way various \Algol constructs are translated to GCC's GENERIC
+  intermediate language.
+
+\item Interfaces and services of GCC itself, such as parsing command
+  line arguments, compilation of runtime library, etc., are also
+  described, with real world examples taken from the \Algol 60 front
+  end.
+
+\item The conclusion: GCC should be considered as a viable alternative
+  to other back end solutions, especially as an alternative to
+  emitting a C code.
 
 \end{enumerate}
 
@@ -2358,30 +2531,45 @@ parser, and on versioning GCC component apart from GCC itself.
 
 This thesis is synthetic in nature.  Information were taken from
 various sources, be it other work of documentation, spoken word, a
-question over an email, or source code.  This very synthesis is sole
-contribution of the author: no other work exists, that would provide
-the detailed and continuous explanation on the topic.
+question over an email, or investigation of source code.  This very
+synthesis is sole contribution of the author: no other work exists,
+that would provide the detailed and continuous explanation on the
+topic.
 
 \section{Future Research}
 
-\NWY
+This thesis describes odds and ends of the GCC front end to middle end
+interface.  If there is a future research associated with this area,
+it's most probably more thorough description.  GCC has native support
+for OpenMP, a paralelization language, an area that is about to become
+{\em very} interesting in years to come.  It can handle classes, and
+object oriented programming in general.  This thesis does not describe
+these topics.
+
+\iffalse
+Embedded system developers would certainly use a cross compilation and
+bootstrapping manual: is it possible to write parts of \Algol 60 front
+end, or its runtime library in \Algol 60 itself?  (The answer is yes,
+but the question is ``what does it take?'')  What does a developer
+need to do to prepare his or her compiler for cross compilation?
+\fi
+
+In general, GCC is very attractive target for a lot of
+compiler-related problems.  It's open development cycle makes up for
+great test bed: be it a new radical systems language, be it new
+optimization technique, new hardware platform in development, GCC
+should be in the loop.
 
 
 \bibliographystyle{plain}
 \bibliography{dp}
-
-\iffinal
-\chapter*{Appendix: Frontend-to-Middleend Interface}
-
-Describe all data structures that frontend touches.
-http://gcc.gnu.org/projects/documentation.html, project "Fully
-document the interface of front ends to GCC"
 
 \chapter*{Appendix: \Algol 60 Compiler}
 
 Installation, supported GCCs, usual stuff.
 
 
+\iffalse
 \chapter{Notes}
 
 Functions need a return statements.  Look how it's done for noreturn
@@ -2389,7 +2577,6 @@ functions.
 
 COND\_EXPR breaks when other value than 0 or 1 is used as condition.
 \fi
-
 
 \end{document}
 
