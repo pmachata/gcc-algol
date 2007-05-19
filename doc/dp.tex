@@ -113,6 +113,8 @@
 \def\ind{\hspace{0.5cm}}
 % access through pointex (x->y)
 \def\ptr{$-\!\!>$}
+% GENEREC tree type
+\def\xtree{\literal{\keyw{tree}\space}}
 
 \def\note#1{{{\it Note.\space}#1}}
 \def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
@@ -193,12 +195,6 @@ language itself: it describes various GCC extensions that are of use
 for language compiled in GNU toolchain.  This includes sections on
 attributes (\ref{Attributes}), preprocessing (\ref{Preprocessing}),
 inline assembly (\ref{InlineAssembly}), and OpenMP (\ref{OpenMP}).
-
-The last chapter (\ref{AdvancedTopics}) covers few advanced topics:
-how to prepare your front end for crosscompilation
-(\ref{CrossCompilationIssues}) and how to write front end and/or
-runtime library in the compiled language itself
-(\ref{BootstrappingIssues}).
 
 Enjoy.
 
@@ -557,8 +553,7 @@ succeeds and the binary answers 4.
 
 The prerequisity here is that you already know how to build GCC for
 your system.  There is no chance experimenting with front ends if you
-never built GCC yourself.  I don't expect you will cross-compile.  See
-\ref{CrossCompilationIssues}\NWY if you are interested in that.
+never built GCC yourself.
 
 Besides reading this chapter, you can find inspiring some other
 minimal front ends.  I created a ``Hello World'' front end as part of
@@ -616,10 +611,8 @@ files.  This is covered in sections that follow.
 
 While it is possible to use other languages than C to write GCC front
 end, most of GCC is written in C.  There are exceptions, e.g. Java
-front end is written in C++, and Ada front end is written in Ada.  I
-will give a glimpse of issues that arise from using non-C language, in
-section \ref{BootstrappingIssues}\NWY.  For now, I'll assume that you
-will start up with simple C source base.
+front end is written in C++, and Ada front end is written in Ada.  For
+now, I'll assume that you will start up with simple C source base.
 
 The file \file{uberlang1.c} will make up the compiler itself, or the
 front-end-specific part thereof.  It has to contain all the necessary
@@ -664,6 +657,7 @@ definitions of \variable{tree\_code\_type},
 These have to contain both the system node types, and your own types.
 This is done with the following trick:
 
+\label{Example++DEFTREECODE}
 \program{
 \ind\keyw{\#define} DEFTREECODE(SYM, NAME, TYPE, LENGTH) TYPE,\\
 \ind\keyw{const} \keyw{enum} tree\_code\_class tree\_code\_type[] = \{\\
@@ -1768,17 +1762,116 @@ to GCC {\em locus}.  More will be written about these topics in
 
 \subsection{Semantic Checks}
 
-@@@TODO -- dissolve ``Targeting GCC'' here in in Services chapter.
+The front end does the compilation in several passes.  First pass
+consists of lexical and syntax analysis, processed in parallel.  The
+output of this phase is raw AST which represents merely a syntactic
+structure of source text.  Certain semantic checks are already
+performed in this stage, e.g. identifiers are checked whether they are
+unique.
+
+Second pass is true semantic analysis.  The compiler recursively
+descends through whole syntax tree, performs context checks, computes
+result types, etc.  Each module handles its own semantic checks in a
+function named \function{something\_resolve\_symbols},
+e.g. \function{stmt\_resolve\_symbols}.  During semantic analysis,
+three special types (i.e. subtypes of \literal{type\_t}) come into
+play: \literal{implicit}, \literal{unknown} and \literal{any}.
+
+The latter one, \literal{any}, is used for querying.  It is possible
+to ask e.g. for ``a symbol that is an array of any type''.  This is
+used mainly to look up functions by their signatures.
+
+The type \literal{implicit} is used to track implicit arguments of
+functions.  When the compiler parses the body of function declaration
+(which is a wholesome thing to do, because it will discover certain
+errors even if the function is not called), and it fails to resolve
+variable reference in the body itself, it marks that variable as an
+implicit parameter of the function.  Such variable is then assigned a
+placeholder type of \literal{implicit}.
+
+The last mentioned was type \literal{unknown}.  This type is assigned
+to expression whose type is not known, most often because there was an
+error found in the expression.  When the resolver gets this type, it
+will explicitly not emit any error messages.  This is done at the leaf
+expression that caused the type to be \literal{unknown} in the first
+place.
+
+Third pass is compilation into GENERIC, so called Binder.  This step
+is performed only when no previous pass resulted in an error.  The
+compilation is, too, done by a recursive descend through AST.  Exactly
+how is the compilation done will be described in the chapter.
+
 
 %=====================================================================%
 
 \chapter{Targeting GCC}
 \label{TargetingGCC}
 
+Translation of \Algol 60 AST to GCC GENERIC is task of the \Algol
+Binder, the last pass in compilation process.
+
 This chapter describes how to generate GCC intermediate language
-called GENERIC.  It is organized as a catalogue of typical constructs
-found in programming language, and typical tasks performed by a
-compiler, with explanation how to handle these in context of GCC.
+called GENERIC, and uses a lot of examples from the \Algol Binder.  It
+is organized as a catalogue of typical constructs found in programming
+language, and typical tasks performed by a compiler, with explanation
+how to handle these in context of GCC.
+
+\section{GENERIC in General}
+
+GENERIC is a tree-like language, similar in nature to \Algol AST.
+It's representation in GCC is via polymorphic nodes of type \xtree:
+
+\program{\ind\xtree ret = \keyw{NULL\_TREE};}
+
+\xtree is itself a pointer type, so \literal{\xtree *} denotes a {\em
+pointer to \xtree}.  The value \literal{\keyw{NULL\_TREE}} is thus
+analogy to \literal{\keyw{NULL}} pointer of the \literal{\keyw{void}*}
+world.  Pointer to \xtree is ocassionally also used, e.g. as an output
+parameter of a function.
+
+Each node has an arity, a number of child nodes that it needs; and
+{\em signature}\footnote{Which is an informal term, not used by GCC
+people as far as I know.}, which describes what type each of children
+nodes has to have.
+
+GCC defines nodes in a catalogue, stored in file \file{gcc/tree.def}.
+This is basically ordinary header file, included in compiler proper
+\file{.c} file (e.g. \file{algol601.c}).  Refer back to example
+\ref{Example++DEFTREECODE} to see how it's used.  Properties of each
+node (symbolic and string name, class and arity) are described via
+series of calls to yet-undefined \function{DEFTREECODE}.  The macro is
+defined on include site (in the compiler proper), and depending on its
+definition, it's possible to extract desired information about nodes.
+Thorough explanation is provided for each node type in a C comment.
+
+The nodes are built via suite of \function{build} functions:
+\function{build0} to \function{build7}, depending on a number of node
+children, or arity of the node being built.  Each build function has
+the following signature:
+
+\program{\ind\xtree buildX (\keyw{enum} tree\_code code, \xtree type, ...);}
+
+Here the \literal{code} is a symbolic name of the node type, e.g. a
+\literal{MULT\_EXPR} for multiplication; \literal{type} is a tree
+representing a result type of the node; the ellipsis represents
+children to attach to the node.
+
+When building GENERIC tree, you have to be very careful with what you
+attach to which node.  GCC is unfortunately not typed statically, and
+all checks are performed at runtime.  Moreover few things are checked
+explicitly: when you screw up, GCC is likely to end up with ICE as
+some internal assertion fails.  (Which is actually a good thing,
+because should the assertion not be there, GCC would probably end up
+emitting wrong code, or failed with SIGSEGV.)  There is little I can
+advise, generally just read \file{tree.def}, read \cite{TR:GCCInt},
+and look to other front ends, in this order.  Often it is helpful to
+inspect the failing site.  Surprisingly often it's possible to deduce
+what went wrong by looking at the assertion or comments nearby.
+
+For debugging purposes, a function \function{debug\_tree} comes in
+handy.  It recursively dumps the tree passed in as argument, giving
+you a chance to inspect whether the node in hand makes any sense.
+
 
 \section{Variables, Types, Symbols}
 
@@ -1786,7 +1879,7 @@ A fundamental part of any programming language processing is dealing
 with {\em symbols}, ways of typing and typechecking them, and handling
 scoping rules.
 
-
+get\_identifier
 
 Symbol handling: probably has to be front end specific, although GCC
 can store declarations.  See how other frontends do their thing.  Name
@@ -1821,10 +1914,6 @@ optimizations \cite{GDS:2005:Keating}.
 \section{Modules}
 
 Variable/function visibility, module ctors and dtors.  Namespaces.
-
-\section{Object-oriented programming}
-
-Objects, dynamic typing (look at OBJ\_TYPE\_REF), virtual functions.
 
 \section{Numbers}
 
@@ -2165,10 +2254,9 @@ attention to these, too.
 GCC doesn't support integration of the runtime library with the same
 ease it supports new language frontends.  There are files to be
 patched, an operation inherently unsafe in a volatile environment of
-GCC trunk.  Apart from that, however, the automation works nicely,
-and with some rules in mind, you can build cross-compilation safe
-runtime library that is linked to your binaries by default.  Let's get
-dirty!
+GCC trunk.  Apart from that, however, the automation works nicely, and
+with some rules in mind, you can build runtime library that is linked
+to your binaries by default.  Let's get dirty!
 
 \subsection{Agenda}
 
@@ -2262,6 +2350,16 @@ Personally I'd rather stick with the patch approach, because a bit of
 dependence is good: it helps make sure that the expectations hold.
 E.g. the sed script doesn't do any error detection, duplicate
 detection or reporting, all of which patch does.
+
+\subsubsection{Release Mode}
+
+When doing a patch for release, i.e. not for development in GCC trunk,
+it's better to rebuild the file \file{Makefile.in} after patching, and
+generate new patch from this.  The user then does not have to install
+development tools, \file{autogen} in
+particular\footnote{\literal{autogen} has a surprising dependency of
+its own: \file{guile}.}.  Build system in release version of GCC will
+not change very much.
 
 \begin{figure}
 \begin{verbatim}
@@ -2566,26 +2664,36 @@ The \Algol 60 GCC front end has following build requirements:
 
 \begin{itemize}
 \item GCC 4.2.x with resolved dependencies.  GCC 4.1.x or earlier will
-  NOT work.  You will need either complete GCC package
+  NOT work\footnote{\file{gcc-algol} uses few functions that were only
+  introduced in GCC 4.2.x.  Their number is not high, and the
+  dependence is certainly for no fundamental reason.  My guess is
+  \file{gcc-algol} could be ported to GCC 4.1.x with a bit of
+  effort.}.  You will need either complete GCC package
   (e.g. \file{gcc-4.2.0.tar.bz2}), or core package and testsuite
   (e.g. \file{gcc-core-4.2.0.tar.bz2} and
   \file{gcc-testsuite-4.2.0.tar.bz2}).
-\item Flex 2.5.31 or newer
-\item Bison 2.3 or newer
-\item \literal{libga60} wraps around target-native \literal{libc} and
-  \literal{libm}, which have to be available on target site.
+\item Flex 2.5.31 or newer.  Warning: this is a newer version than
+  what GCC requires.
+\item Bison 2.3 or newer.
+\item \file{libga60} wraps around target-native \file{libc} and
+  \file{libm}, which have to be available on target site.
 \end{itemize}
 
-\section*{Supported Arches}
+\subsection*{Supported Arches}
 
-\file{gcc-algol} was successfully compiled and testsuite passed on
-systems with following triplets:
+As of this writing, \file{gcc-algol} was successfully compiled and
+testsuite passed on systems with following triplets:
 
 \begin{itemize}
 \item i686-pc-linux-gnu
 \item ia64-unknwon-linux-gnu
 \item mips-sgi-irix6.5
 \end{itemize}
+
+This is quite diverse set of arches: little and big endians, 32 and 64
+bits, two unrelated operating systems, though no really obscure
+system.  This illustrates that the front end is probably written in
+enough hardware and OS independent way to be readily portable.
 
 \section*{Build Process}
 
