@@ -254,14 +254,20 @@ error, and I had to look up what went wrong, and figure out why.  This
 is actually easier than it sounds, but the fact is, GCC would benefit
 from better documentation.
 
-GCC is work in progress.  For some twenty years as of now.  Things change.
-If you won't get your front end into GCC trunk, you will have to deal
-with those changes yourself.  And as far as I know, new languages are
-not exactly the priority of GCC team, supposedly for exactly the
-reason that they would have to maintain them.  It would have to be
-very high-impact language for that to happen.  If you won't carry your
-compiler forward, it will become irrelevant as time passes.  Just as
-are GCC-2.9x slowly drifting towards irrelevance today.
+GCC is work in progress.  For some twenty years as of now.  Things
+change.  If you won't get your front end into GCC trunk, you will have
+to deal with those changes yourself.  And as far as I know, new
+languages are not exactly the priority of GCC team, supposedly for
+exactly the reason that they would have to maintain them.  It would
+have to be very high-impact language for that to happen.  If you won't
+carry your compiler forward, it will become irrelevant as time passes.
+Just as are GCC-2.9x slowly drifting towards irrelevance
+today\footnote{I'll risk upsetting some people, and will claim that
+  for purposes of mainstream use, GCC 2.9x already is irrelevant.
+  I~know of several developers that stick with it, e.g. for reasons of
+  binary compatibility, hardware, OS or other dependencies, and
+  typical corporation won't change the core compiler in a moment's
+  thought.  But these are niche uses from mainstream perspective.}.
 
 Given GCC's strong C heritage, it's still best fit for compilation of
 C-like languages.  Currently the GCC family contains C, C++, their
@@ -1512,13 +1518,14 @@ are recursively composed of other expressions.
 
 Despite their specification together with other expressions,
 designational expressions are completely disjunct polymorphic
-hierarchy, used in other context, viz. as taget of the
+hierarchy, used in other context, namely as tagets of the
 \literal{\keyw{goto}} statement.  There are three subtypes: a label
 reference, a switch expression, and conditional designational
 expression.  The following example gives an overview of what's
 possible to express using the notion of designational
 expressions\footnote{It doesn't compute anything interesting, but uses
-  all computed \literal{\keyw{goto}} features \Algol 60 has}:
+  all computed \literal{\keyw{goto}} features \Algol 60 has, except
+  for non-local jump.}:
 
 \label{Example++Goto}
 \program{\ind\=\+
@@ -1816,6 +1823,13 @@ is organized as a catalogue of typical constructs found in programming
 language, and typical tasks performed by a compiler, with explanation
 how to handle these in context of GCC.
 
+In comparison with GCC internals (\cite{TR:GCCInt}), the description
+in this thesis is kept in more abstract level.  I consider GCC to be a
+target of compilation process, and as such am more interested in how
+the nodes are created and how to express various imperative
+constructs.  GCC internals documenatation is directed also towards the
+analysis of GENERIC.
+
 \section{GENERIC in General}
 
 GENERIC is a tree-like language, similar in nature to \Algol AST.
@@ -1884,6 +1898,7 @@ to an existence.  In expressions, the symbol is {\em referenced}.
 
 
 \subsection{Declarations}
+\label{Declarations}
 
 The declaration vs. definition distinction is mostly a matter of
 programming language, GCC doesn't care about that.  All that matters
@@ -1995,7 +2010,168 @@ like you would expect from well behaved tree language.
 
 \section{Expressions}
 
-Variable reference, constants, various expression kinds.
+There's not that much to say about expression nodes.  They use
+directly the node-creation mechanism that was described earlier: each
+expression has a type, and zero or more operands.
+
+\subsection{Literals}
+
+Starting from the leaves, that is nodes with arity zero, \Algol
+recognizes the following literals: integer numbers, real numbers,
+string literals, and variable references.  I will leave variable
+references for next section, and only cover literals here.
+
+Starting with integers, there are two basic function for creation of
+these, namely:
+
+\program{\ind\=\+
+{\em // in gcc/gcc/tree.h}\\
+\xtree build\_int\_cst (\xtree type, HOST\_WIDE\_INT);\\
+\xtree build\_int\_cstu (\xtree type, \keyw{unsigned} HOST\_WIDE\_INT);}
+
+The type of integer node doesn't have to be \literal{int}.  For
+example character constants are also represented with integer node.
+The type has to match the constructor function: if you use
+\function{\_cstu} variant, the type has to be unsigned.  The size of
+type \literal{HOST\_WIDE\_INT} depends on a {\em host} platform, but
+is guaranteed to be at least 32 bits.
+
+GCC allows you to create an identity of given type, with function
+\function{build\_one\_cst}.  The type of the ``one constant'' is the
+sole argument of this function.  The indentity nodes are shared,
+i.e. several calls to this function with the same type may yield the
+same \xtree pointer.
+
+Floating point numbers are a bit more complex to create, because each
+platform has its own idea of how many bits are used for exponent and
+mantissa.  IEEE 754 has three categories of floating point numbers:
+single-precission 32-bit, double-precission 64-bit and
+double-extended-precission 80-bit.  In addition some architectures
+support 128-bit floating point, e.g. ia64 \cite{TR:Itanium}.  GCC has
+ways to deal with this diversity.  It allows construction of floating
+point literals from string as well as from various represenatation,
+has dedicated funtions for comparison and formatting them, and can
+also convert internal floating point number back to some target
+representation.  Look up the \file{gcc/gcc/real.h} header if you are
+interested.
+
+The \Algol 60 front end uses the way of building the real number from
+string:
+
+\program{\ind\=\+
+\xtree expr\_real\_build\_generic (expression\_t * self, binder\_context\_t * ctx) \{\\
+\ind\=REAL\_VALUE\_TYPE real;\\
+    \>\xtree t = type\_build\_generic (expr\_type (self), data);\\
+    \>real\_from\_string3 (\&real, estr\_cstr (expr\_real\_value (self)), TYPE\_MODE (t));\\
+    \>\keyw{if} (REAL\_VALUE\_ISINF (real))\\
+    \>\ind\=pedwarn (\litstr{"floating constant exceeds range of \%qT"}, t);\\
+    \>\xtree ret = build\_real (t, real);\\
+    \>\keyw{return} ret;\\
+\}}
+
+GCC also supports complex numbers, via a node \literal{COMPLEX\_CST},
+created with \function{build\_complex}.  The arguments are simply a
+type, a real node, and an imaginary node.
+
+String literals are created by the function \function{build\_string}.
+The two arguments of this functions are the length of string literal,
+and pointer to the character array.  This is how \Algol front end does
+it:
+
+\program{\ind\=\+
+\xtree expr\_string\_build\_generic (expression\_t * self, binder\_context\_t * ctx) \{\\
+\ind\=estring\_t const * s = expr\_string\_value (self);\\
+    \>\keyw{int} len = estr\_length (s) + 1; \comment{// +1 for trailing zero}\\
+    \>\xtree ret = build\_string\_literal (len, estr\_cstr (s));\\
+    \>\keyw{return} ret;\\
+\}}
+
+(The ``+1'' business actually represents how deeply C-ish the \Algol
+front end is.  In particular: \function{estr\_cstr} has to return
+NUL-terminated character array, and all functions in language runtime
+library have to assume NUL-terminated, C-like strings.
+E.g. Borland\textregistered{}-compatible Pascal front end would
+probably want to encode strings so that the length is stored in first
+byte, and the string would NOT be NUL-terminated.  For GCC, string
+literal is just a bunch of bytes with given length.)
+
+\subsection{Other Expressions}
+
+Let's look at expressions themselves a bit.  First to cover are symbol
+references.  I already mentioned handling of symbols in a section
+\ref{Declarations}.  When used in expressions, the \xtree node that
+represents variable reference is a declaration itself---look at the
+function \function{expr\_idref\_build\_generic} from example in
+section \ref{Declarations}.
+
+Simple expressions (binary and unary) are build in a straightforward
+manner.  For example this is how \Algol 60 front end does it:
+
+\program{\ind\=\+
+\xtree private\_expr\_build\_binary\_generic (expression\_t * self, binder\_context\_t * ctx, int op) \{\\
+\ind\=type\_t * t = expr\_type (self);\\
+    \>\xtree ttt = type\_build\_generic (t, ctx);\\
+    \>\xtree op1 = expr\_build\_generic (expr\_binary\_left (self), ctx);\\
+    \>\xtree op2 = expr\_build\_generic (expr\_binary\_right (self), ctx);\\
+    \>\xtree ret = build2 (op, ttt, op1, op2);\\
+    \>\keyw{return} ret;\\
+\}}
+
+Unary expressions are built in similar fashion, and also conditional
+(ternary) expression.  The argument \literal{op} is set by the callee
+to the exact type of expression, e.g. \literal{MINUS\_EXPR} or
+\literal{EQ\_EXPR}.  The only thing to keep in mind is typing of
+arguments.  E.g. \literal{COND\_EXPR} breaks when other value than 0
+or 1 is used as condition, and both branches have to have the same
+type as whole expression.  This all is written in a comprehensive
+manner in \file{gcc/gcc/tree.def}, and also in \cite{TR:GCCInt}.
+
+Array access expression, or \literal{ARRAY\_REF} in GCC lingo, are
+similarly straightforward, with one glitch, which is multidimensional
+arrays.  This is nothing you wouldn't expect: multidimensional array
+is simply array of arrays, and so the result of array access is
+another array, with fewer dimensions.  Single multidimensional access
+is then tree of array accesses, each yielding result of the type one
+dimension ``shorter'' than the other.  The code is a little bit too
+verbose, and if you are interested, look up function
+\function{expr\_subscript\_build\_generic} in \file{al60l-bind.c}.
+
+\iffalse
+\program{\ind\=\+
+\xtree expr\_subscript\_build\_generic (expression\_t * self, binder\_context\_t * ctx) \{\\
+\ind\=symbol\_t * sym = expr\_symbol (self);\\
+    \>\xtree array = symbol\_extra (sym);\\
+    \>type\_t * t = symbol\_type (sym);\\
+    \>\keyw{for} expression\_t * idx\_expr \keyw{in} expr\_subscript\_indices (self) \{\\
+    \>\ind\=\xtree idx\_tree = expr\_build\_generic (idx\_expr, ctx);\\
+    \>    \>t = type\_host (t);\\
+    \>    \>\xtree type = type\_build\_generic (t, ctx);\\
+    \>    \>array = build4 (ARRAY\_REF, type, array, idx\_tree, NULL\_TREE, NULL\_TREE);\\
+    \>\}\\
+    \>\keyw{return} array;\\
+\}}
+\fi
+
+The last expression to cover is a function call.  Just like at the
+variable reference, you need to look up symbolic declaration first.
+Then you have to build expressions for all arguments, and connect them
+via \function{tree\_cons} operation to a list of expressions, in a
+backwards fashion, i.e. last argument first.  The GCC function
+\function{build\_function\_call\_expr} is then used to turn the decl
+and argument list into function call node.  The example follows,
+edited to pseudo code to take up less space, and assuming that
+\literal{expr\_call\_args} are stored in backwards manner:
+
+\program{\ind\=\+
+\xtree expr\_call\_build\_generic (expression\_t * self, binder\_context\_t * ctx) \{\\
+\ind\=symbol\_t * sym = expr\_symbol (self);\\
+    \>\xtree proc\_decl = symbol\_extra (sym);\\
+    \>\xtree arg\_list = NULL\_TREE;\\
+    \>\keyw{for} (expression\_t * expr \keyw{in} expr\_call\_args (self))\\
+    \>\ind{}arg\_list = tree\_cons (NULL\_TREE, expr\_build\_generic (expr, ctx), arg\_list);\\
+    \>\keyw{return} build\_function\_call\_expr (proc\_decl, arg\_list);\\
+\}}
+
 
 \section{Structured Programming}
 
@@ -2949,7 +3125,6 @@ decides that the processing should be stopped after that when
 Functions need a return statements.  Look how it's done for noreturn
 functions.
 
-COND\_EXPR breaks when other value than 0 or 1 is used as condition.
 \fi
 
 \end{document}
