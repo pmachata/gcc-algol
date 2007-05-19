@@ -1869,29 +1869,129 @@ inspect the failing site.  Surprisingly often it's possible to deduce
 what went wrong by looking at the assertion or comments nearby.
 
 For debugging purposes, a function \function{debug\_tree} comes in
-handy.  It recursively dumps the tree passed in as argument, giving
-you a chance to inspect whether the node in hand makes any sense.
+handy.  It recursively dumps the tree passed in as argument, to the
+depth of 6, giving you a chance to inspect whether the node in hand
+makes any sense.
+
+@@ TODO attributes
 
 
 \section{Variables, Types, Symbols}
 
-A fundamental part of any programming language processing is dealing
-with {\em symbols}, ways of typing and typechecking them, and handling
-scoping rules.
+Symbols in general appear in two contexts: in a {\em declaration},
+their existence is announced.  In a {\em definition}, the symbol comes
+to an existence.  In expressions, the symbol is {\em referenced}.
 
-get\_identifier
 
-Symbol handling: probably has to be front end specific, although GCC
-can store declarations.  See how other frontends do their thing.  Name
-mangling, C and C++-compatible interfacing (extern "C").
+\subsection{Declarations}
 
-How to do typechecking, representing various types (including arrays,
-functions, structures).  About variables: function-static, automatic,
-file-static and global.  Notes on initialization of misc variable
-kinds/types (e.g. how does initialization of file-static struct differ
-from initialization of automatic array).
+The declaration vs. definition distinction is mostly a matter of
+programming language, GCC doesn't care about that.  All that matters
+from GCC viewpoint is where is the symbol defined, i.e. which program
+block owns it, or whether it is global, and where should the memory be
+allocated---whether in ELF section (assuming ELF output) or on stack.
+This is described by what's called a declaration node.
 
-Arrays: variable sized arrays, multidimensional arrays.
+Declaration is created with function called \function{build\_decl}.
+The two arguments of the function are {\em identifier} node, which
+denotes what's the declaration {\em called}; and {\em type} node, with
+obvious meaning.  An example will show how is the declaration handled
+in \Algol front end:
+
+\program{\ind\=\+
+\xtree symbol\_var\_ordinary\_build\_generic (symbol\_t * sym, binder\_context\_t * ctx) \{\\
+\ind\=label\_t \keyw{const} * lbl = symbol\_label (sym);\\
+    \>\xtree id = get\_identifier (estr\_cstr (label\_id (lbl)));\\
+    \>\xtree tt = type\_build\_generic (symbol\_type (sym), ctx);\\
+    \>\keyw{return} build\_decl (VAR\_DECL, id, tt);\\
+\}}
+
+The function \function{get\_identifier} takes a name represented as
+ordinary \literal{char*} string, and creates an identifier node with
+the same name.  Identifier nodes have the property that they are
+unique: there is only one identifier node ever made for any particular
+name.
+
+The function \function{type\_build\_generic} is a function of the
+front end, and it does recursive dispatch.  In the end it returns a
+node that represents the type of given symbol.
+
+The two nodes thus obtained are then combined into the
+\literal{VAR\_DECL} node.
+
+There are more types of declaration nodes than just
+\literal{VAR\_DECL}.  Labels are represented with
+\literal{LABEL\_DECL} nodes, fields of structures with
+\literal{FIELD\_DECL}, types with \literal{TYPE\_DECL}, etc.
+
+So you have the declaration in hand.  Next you have to store it
+somewhere, so that a) it's possible to look up declaration when symbol
+references it in an expression; and b) GCC knows that it should
+allocate the memory for the declaration.
+
+The solution to a) will depend on architecture of your front end.  The
+approach used for \Algol 60 is that each symbol allows an ``extra''
+information to be stored.  When the GENERIC declaration is built, it's
+immediately stored to the symbol.  In expressions, variable references
+are stored in \literal{idref} AST node.  One attribute of this node,
+resolved during semantic analysis, is the symbol to which the
+identifier refers.  So when the expression is translated, the compiler
+knows which symbol the variable references, and from that symbol it
+extracts the declaration:
+
+\program{
+\xtree expr\_idref\_build\_generic (expression\_t * self, binder\_context\_t * ctx) \{\\
+\ind\=symbol\_t * sym = expr\_symbol (self);\\
+    \>\xtree decl = symbol\_extra (sym);\\
+    \>\keyw{return} decl;\\
+\}}
+
+For handling of b) part, GCC prescribes the mechanism: when creating a
+block, the chain of declarations at this block is one of the
+attributes.  Furthermore, each declaration has a
+\literal{DECL\_CONTEXT} attribute, which points to the containing
+block of the variable, or is \literal{NULL\_TREE} for file-global
+variables.
+
+Declarations with static storage (a.k.a static variables) are defined
+by having set the \literal{TREE\_STATIC} attribute.
+
+\subsection{Types}
+
+Most types that \Algol 60 supports are primitive types, such as
+integers, real numbers, void, etc.  GCC has these types predefined, so
+most of the type building procedures thus look like this:
+
+\program{\ind\=\+
+\xtree type\_real\_build\_generic (type\_t * self, binder\_context\_t * ctx) \{\\
+\ind\keyw{return} double\_type\_node;\\
+\}}
+
+You have to take care of type building for non-trivial types, such as
+are structures and arrays.  \Algol 60 doesn't support structures, but
+it does support arrays.  This is how the front end builds GENERIC for
+array type:
+
+\program{\ind\=\+
+\xtree type\_array\_build\_generic (type\_t * self, binder\_context\_t * ctx) \{\\
+\ind\=\xtree emtt = type\_build\_generic (type\_host (self), data);\\
+    \>boundspair\_t * bp = t\_array\_bounds (self);\\
+    \>\xtree highb = expr\_build\_generic (boundspair\_hi (bp), ctx);\\
+    \>\xtree lowb = expr\_build\_generic (boundspair\_lo (bp), ctx);\\
+    \>\xtree arrbdst = build\_range\_type (integer\_type\_node, lowb, highb);\\
+    \>\xtree ret = build\_array\_type (emtt, arrbdst);\\
+    \>\keyw{return} ret;\\
+\}}
+
+The \literal{boundspair\_t} type holds a pair of expressions with
+dimensions the user has provided.  The function
+\function{build\_range\_type} is GENRIC representation of the same.
+The \function{build\_array\_type} then builds whole array type.  Note
+that this function works recursively: if the element type
+(\literal{emtt}) happens to be an array, this function is invoked
+through the visitor dispatch in \function{type\_build\_generic}.
+Multidimensional arrays are thus composed as arrays of arrays, just
+like you would expect from well behaved tree language.
 
 \section{Expressions}
 
