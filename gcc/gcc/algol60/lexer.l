@@ -387,16 +387,16 @@ DIGIT		[0-9]
   // it's the easies approach...  At least we know that the string
   // matches the rule regexp, and don't have to be paranoid.
 
-  while (isspace (*linemarker))
+  while (isspace ((int)*linemarker))
     ++linemarker;
 
   // line number...
   char * linenumber = linemarker;
-  while (*linemarker && isdigit (*linemarker))
+  while (*linemarker && isdigit ((int)*linemarker))
     ++linemarker;
   *linemarker++ = 0;
 
-  while (*linemarker && isspace (*linemarker))
+  while (*linemarker && isspace ((int)*linemarker))
     ++linemarker;
 
   // file name... remember to skip "\""

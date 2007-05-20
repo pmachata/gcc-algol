@@ -211,37 +211,16 @@ static void * symbol_fun_decl_build_generic (symbol_t * sym, void * data)
 static void * symbol_formparm_decl_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_var_unknown_build_generic (symbol_t * sym, void * data)
+static void * symbol_var_invalid_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
-static void * symbol_var_any_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_own_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_void_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_int_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_real_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_string_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_bool_build_generic (symbol_t * sym, void * data)
+static void * symbol_var_ordinary_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
 static void * symbol_var_label_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
 static void * symbol_var_switch_build_generic (symbol_t * sym, void * data)
-  ATTRIBUTE_NONNULL (1);
-
-static void * symbol_var_array_build_generic (symbol_t * sym, void * data)
   ATTRIBUTE_NONNULL (1);
 
 static void * symbol_var_proc_build_generic (symbol_t * sym, void * data)
@@ -370,18 +349,18 @@ new_bind_state (void)
 	   ));
       guard_ptr (buf, 1,
           ret->symbol_decl_for_type = new_visitor_type (
-	      a60_symbol_callback (symbol_var_unknown_build_generic),
-	      a60_symbol_callback (symbol_var_unknown_build_generic),
-	      a60_symbol_callback (symbol_var_any_build_generic),
-	      a60_symbol_callback (symbol_var_own_build_generic),
-	      a60_symbol_callback (symbol_var_void_build_generic),
-	      a60_symbol_callback (symbol_var_int_build_generic),
-	      a60_symbol_callback (symbol_var_real_build_generic),
-	      a60_symbol_callback (symbol_var_string_build_generic),
-	      a60_symbol_callback (symbol_var_bool_build_generic),
+	      a60_symbol_callback (symbol_var_invalid_build_generic),
+	      a60_symbol_callback (symbol_var_invalid_build_generic),
+	      a60_symbol_callback (symbol_var_invalid_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
 	      a60_symbol_callback (symbol_var_label_build_generic),
 	      a60_symbol_callback (symbol_var_switch_build_generic),
-	      a60_symbol_callback (symbol_var_array_build_generic),
+	      a60_symbol_callback (symbol_var_ordinary_build_generic),
 	      a60_symbol_callback (symbol_var_proc_build_generic)
 	  ));
       guard_ptr (buf, 1,
@@ -1126,6 +1105,8 @@ expr_subscript_build_generic (expression_t * self, void * data)
       tree type = type_build_generic (t, data);
       array = build4 (ARRAY_REF, type, array, idx_tree, NULL_TREE, NULL_TREE);
     }
+  delete_slist_it (it);
+
   return array;
 }
 
@@ -1361,11 +1342,8 @@ symbol_var_init_error (symbol_t * sym ATTRIBUTE_UNUSED,
 }
 
 
-/// Build GENERIC for declaration of given symbol.  This function is
-/// called by many symbol_decl_for_<type> methods. Some of them may
-/// wish to handle the decl building themselves though.
-static tree
-private_decl_for_ordinary_symbol (symbol_t * sym, void * data)
+void *
+symbol_var_ordinary_build_generic (symbol_t * sym, void * data)
 {
   // Handle only regular symbols
   label_t const * lbl = symbol_label (sym);
@@ -1375,55 +1353,11 @@ private_decl_for_ordinary_symbol (symbol_t * sym, void * data)
 }
 
 void *
-symbol_var_unknown_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
+symbol_var_invalid_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
 			 void * data ATTRIBUTE_UNUSED)
 {
-  gcc_assert (!"You shouldn't ask for GENERIC of `unknown' or `implicit'.");
+  gcc_assert (!"You shouldn't ask for GENERIC of `unknown', `implicit' or `any'.");
   gcc_unreachable ();
-}
-
-void *
-symbol_var_any_build_generic (symbol_t * sym ATTRIBUTE_UNUSED,
-		     void * data ATTRIBUTE_UNUSED)
-{
-  gcc_assert (!"You shouldn't ask for GENERIC of `any'.");
-  gcc_unreachable ();
-}
-
-void *
-symbol_var_own_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
-}
-
-void *
-symbol_var_void_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
-}
-
-void *
-symbol_var_int_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
-}
-
-void *
-symbol_var_real_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
-}
-
-void *
-symbol_var_string_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
-}
-
-void *
-symbol_var_bool_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
@@ -1432,12 +1366,6 @@ symbol_var_label_build_generic (symbol_t * sym, void * data ATTRIBUTE_UNUSED)
   label_t const * lbl = symbol_label (sym);
   tree id = get_identifier (estr_cstr (label_id (lbl)));
   return build_decl (LABEL_DECL, id, void_type_node);
-}
-
-void *
-symbol_var_array_build_generic (symbol_t * sym, void * data)
-{
-  return private_decl_for_ordinary_symbol (sym, data);
 }
 
 void *
