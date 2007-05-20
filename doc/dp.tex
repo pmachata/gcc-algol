@@ -177,24 +177,22 @@ end.  Files are examined one at a time, and an explanation is provided
 on various constructs.  This chapter should be read before all the
 other chapters.
 
+The chapter \ref{Algol60GCCFE} gives a glimpse of \Algol 60 the
+language, and high-level organization of its compiler.
+
 The chapter \ref{TargetingGCC} describes GENERIC, a tree-based
 language that GCC uses to describe program structure.  You will want
 to read selected parts of this chapter, as you will implement various
-features of your language.
+features of your language.  In a last section (\ref{Debuginfo}),
+emitting debugger information is described.
 
 The chapter \ref{GCCServices} collects various fetarues of GCC, that
-don't directly relate to the translation of the source language.
-These include command line options processing
-(\ref{CommandlineOptions}), emitting diagnostic messages
+are not directly related to the translation of source language.  These
+include use of preprocessor (\ref{Preprocessing}), processing command
+line options (\ref{CommandlineOptions}), emitting diagnostic messages
 (\ref{Diagnostics}), integration of language runtime library
-(\ref{RuntimeLibraries}), integration of test suite (\ref{TestSuite}),
-and emitting debug information (\ref{Debuginfo}).
-
-The chapter \ref{LanguageExtenstions} is again relevant to the
-language itself: it describes various GCC extensions that are of use
-for language compiled in GNU toolchain.  This includes sections on
-attributes (\ref{Attributes}), preprocessing (\ref{Preprocessing}),
-inline assembly (\ref{InlineAssembly}), and OpenMP (\ref{OpenMP}).
+(\ref{RuntimeLibraries}), and integration of test suite
+(\ref{TestSuite}).
 
 Enjoy.
 
@@ -1263,7 +1261,8 @@ there.
 
 %=====================================================================%
 
-\chapter{The Algol 60 GCC Frontend}
+\chapter{The \Algol 60 GCC Frontend}
+\label{Algol60GCCFE}
 
 The \Algol 60 GCC front end has been written in an attempt to get a
 first hand experience on work with GCC.  \Algol 60 itself turned out
@@ -2173,70 +2172,165 @@ edited to pseudo code to take up less space, and assuming that
 \}}
 
 
-\section{Structured Programming}
+\section{Statements}
 
 Nested blocks; for, while, do; if, switch; goto and labels.
-
-\section{Functions}
-
-Declarations/definitions, function calls, global, local (nested),
-file-static, overloaded, builtin, anonymous. Pass by value, reference
-and name, varargs.
-Builtins.
-
-Interprocedural optimizations \cite{GDS:2004:Hubicka}, intermodule
-optimizations \cite{GDS:2005:Keating}.
 
 \section{Modules}
 
 Variable/function visibility, module ctors and dtors.  Namespaces.
 
-\section{Numbers}
+\section{Debuginfo}
+\label{Debuginfo}
 
-Elaborate on numeric support in GCC.  Including big integers, long
-floats, what's necessary big/little endian-wise, if there's anything
-to know about bits-per-byte, complex numbers (and what are possible
-types of complex number components).  Floating point, integer and
-string literals.
+\subsection{Loci}
+\label{Loci}
 
-Look into \cite{GDS:2005:Grimm}, \cite{GDS:2006:Sidwell}.
+{\em Locus} is a simple stack-allocated structure that denotes a
+location of certain program construct in source code.  It is used for
+diagnostic message reporting, and for tracking locations for purposes
+of writing debuginfo. The contents of locus are a {\em name of the
+  file} and a {\em number of the line} inside that file, where given
+construct appeared.  Thus its creation is straightforward, one just
+has to include the right headers.  E.g. conversion between \Algol 60
+front end's {\em cursor} type and locus is done this way:
 
-Read this:
-\url{http://gcc.gnu.org/ml/gcc-patches/2003-09/msg00862.html}
-and this:
-\url{http://gcc.gnu.org/bugzilla/show\_bug.cgi?id=29335}.
-Seems that inclusion of GMP in GCC means we can use the same functions
-both for constant folding and for runtime computations.
-Using gmp/mfpr in runtime vs. using systemwide libm.
+\program{
+\ind\=\keyw{\#ifdef} IN\_GCC\\
+    \>\keyw{\# include} \litstr{"system.h"}\\
+    \>\keyw{\# include} \litstr{"coretypes.h"}\\
+    \>\keyw{\# include} \litstr{"limits.h"}\\
+    \>\keyw{\# include} \litstr{"input.h"}\\
+\\
+    \>\keyw{void}\\
+    \>cursor\_to\_loc (cursor\_t \keyw{const} * cursor, location\_t * loc) \{\\
+    \>\ind\=memset (loc, 0, \keyw{sizeof} (location\_t));\\
+    \>    \>loc\ptr{}file = cursor\ptr{}filename;\\
+    \>    \>loc\ptr{}line = cursor\ptr{}line;\\
+    \>\}\\
+    \>\keyw{\#endif}}
 
-\begin{quote}
-I think using long double defeats the whole purpose of using mpfr.  We're
-supposed to avoid relying on the properties of the host's floating point for
-cross-compilers where the target format is different.  Otherwise I could simply
-call out to e.g. cosl() on the host and avoid the whole mpfr thing (okay okay,
-assuming cosl() and the rest of c99 math functions exist... which they don't
-always, but my point about target long double remains.)
-\end{quote}
 
-\begin{quote}
-I think there's a very important distinction that needs to be drawn
-between a tool that needs to be installed to *build* gcc and a tool that
-needs to be installed in order to *run* gcc.  GMP/MPFR is needed for the
-latter;
-\end{quote}
-(Aha, so gmp stuff is really meant to be used in constant folding.)
+How to add debuginfos to binaries that your frontend produces.  How to
+use gdb for your language.
 
-\section{Extending GENERIC}
-
-What are custom GENERIC codes, how to declare them, how to handle
-them, what's gimplification, how to gimplify them.
-
-Look into \cite{GDS:2005:Dvorak}.  Maybe find better source.
+@@@TODO
 
 %=====================================================================%
 
 \chapter{GCC Services}
 \label{GCCServices}
+
+\section{Preprocessing}
+\label{Preprocessing}
+
+GCC makes it possible to preprocess the source files with a
+traditional C preprocessor.  The magic takes place in a language spec,
+which is defined in \file{lang-specs.h} file of the front end.  I will
+describe the hack in a little unusual way: start by spoiling the
+result, and will explain how to get there and what it means.  Have a
+look at a figure \ref{Figure++LangSpecsAlgol}.
+
+\begin{figure}
+\begin{verbatim}
+/* This is the contribution to the `default_compilers' array in gcc.c
+   for the Algol 60 language.  */
+
+{".A60",   "@a60-cpp-input", 0, 0, 0},
+{".ALG",   "@a60-cpp-input", 0, 0, 0},
+{"@a60-cpp-input",
+  "cc1 -E -traditional-cpp -D_ALGOL60_ %(cpp_options) \
+      %{E|M|MM:%(cpp_debug_options)}\
+      %{!E:%{!MM:%{!M: -o %|.a60 |\n\
+    algol601 -fpreprocessed %|.a60 %(cc1_options)
+     %{!fsyntax-only:%(invoke_as)}}}}", 0, 0, 0},
+
+{".a60",   "@a60", 0, 0, 0},
+{".alg",   "@a60", 0, 0, 0},
+{"@a60",   "%{!E:%{!MM:%{!M:algol601 %i %(cc1_options) %{I*}\
+             %{!fsyntax-only:%(invoke_as)}}}}\n", 0, 0, 0},
+\end{verbatim}
+\caption{\file{lang-specs.h} of \Algol 60 front end}
+\label{Figure++LangSpecsAlgol}
+\end{figure}
+
+The spec prescribes that ordinary, pure \Algol files have extension
+\file{.a60} and \file{.alg} (i.e. lower case), while files to be
+preprocessed are \file{.A60} and \file{.ALG} (upper case).  This
+convention is used also in other cases, e.g. for assembly (\file{.s}
+vs. \file{.S}) and Fortran (\file{.f90} vs. \file{.F90}), and because
+nobody really uses \Algol 60, it was an arbitrary decision.
+
+Spec is line-oriented language: is has one statement per line.  The
+statements are just like normal shell command lines, with program at
+the beginning, followed by a list of options separated by whitespace,
+except that redirection of input or output is not supported.  The
+special thing about spec lines is that \literal{\%}-prefixed parts are
+subject to additional processing.
+
+Let's have a look at the non-preprcessing spec string.  There is only
+one interesting \literal{\%}-rule used: \literal{\%\{!S:X\}}, which
+``substitutes X, if the -S switch was NOT given to CC''.  Obviously,
+if user entered \option{-E}, he wants to stop compilation after the
+preprocessing, which for \file{.a60} file means do nothing.  Similarly
+for \option{-M} and \option{-MM}.  So the whole string reads something
+like ``if neither of the options \option{E}, \option{M} and
+\option{MM} is given, launch compiler.  After that, unless the option
+\option{-fsyntax-only} was given, invoke assembler.''
+
+Wait, how is it that the assembler is invoked on the same spec line as
+compiler?  Actually, \literal{\%(invoke\_as)} is a macro (defined in
+\file{gcc.c}) and expands to new line with invocation of assembler,
+unless there was a \option{-S} given.
+
+The trick very similar to the one with assembler is also used for
+preprocessor.  The file is first preprocessed---this takes place
+always (given a right file name), because preprocessing is the first
+step of compilation.  {\em If} neither of the options \option{E},
+\option{M} and \option{MM} is given, we redirect the output of
+preprocessor (\literal{-o \%$|$.a60}) and emit pipe and
+newline. (``The pipe symbol at the beginning of the predicate text is
+used to indicate that a command should be piped to the following
+command, but only if -pipe is specified.'')  This way we form either
+only one preprocessing command, or two commands: preprocessed output
+is then pushed into compiler.  (And actually, if \option{-S} is not
+given, {\em} that is then pushed to assembler.)
+
+The last important bit is how the stages communicate with each other,
+and how they know where to read the files from.  That's where the
+\literal{\%$|$.a60} bit comes in play: it's replaced either by ``-''
+(which is traditionally treated as a standard input or output), if
+\option{-pipe} is in effect, or by a random name, replaced
+consistently in whole spec string.
+
+So you see, spec is one strange language (its definition is in
+\file{gcc/gcc/gcc.c}), but the magic that gives you the precompiler
+launched is not that esoteric.
+
+That's obviously not all, because preprocessed file is littered with
+line markers, such as this:
+
+\begin{verbatim}
+# 1 "x.A60"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "x.A60"
+\end{verbatim}
+
+There are two options: either you disallow emitting of line markers by
+passing \option{-P} to \file{cpp}; or you will cope with them, which
+means will be able to parse them, and will keep line markers in mind
+when emitting error messages and debug info.  Parsing is best done in
+lexical analyser.  Given that the marker can appear between arbitrary
+two tokens it's the only place where it makes a sense.
+
+You may want to disallow line markers in programs that didn't come
+from preprocessor.  This is the case of \file{.a60} files of \Algol 60
+front end, where the issue is resolved by introduction of command line
+option \option{-fpreprocessed}.  Unless this option is given, the
+``\#'' character is considered invalid.  Only when this option is
+given, further parsing of line marker is done.  Note that
+\option{-fpreprocessed} is passed to the compiler by spec line.
 
 \section{Commandline Options}
 \label{CommandlineOptions}
@@ -2324,33 +2418,6 @@ processing:
   command-line processing has been done.  This lang hook also is a
   convenient place to determine the name of the input file to parse.
 \end{enumerate}
-
-\section{Loci}
-\label{Loci}
-
-{\em Locus} is a simple stack-allocated structure that denotes a
-location of certain program construct in source code.  It is used for
-diagnostic message reporting, and for tracking locations for purposes
-of writing debuginfo. The contents of locus are a {\em name of the
-  file} and a {\em number of the line} inside that file, where given
-construct appeared.  Thus its creation is straightforward, one just
-has to include the right headers.  E.g. conversion between \Algol 60
-front end's {\em cursor} type and locus is done this way:
-
-\program{
-\ind\=\keyw{\#ifdef} IN\_GCC\\
-    \>\keyw{\# include} \litstr{"system.h"}\\
-    \>\keyw{\# include} \litstr{"coretypes.h"}\\
-    \>\keyw{\# include} \litstr{"limits.h"}\\
-    \>\keyw{\# include} \litstr{"input.h"}\\
-\\
-    \>\keyw{void}\\
-    \>cursor\_to\_loc (cursor\_t \keyw{const} * cursor, location\_t * loc) \{\\
-    \>\ind\=memset (loc, 0, \keyw{sizeof} (location\_t));\\
-    \>    \>loc\ptr{}file = cursor\ptr{}filename;\\
-    \>    \>loc\ptr{}line = cursor\ptr{}line;\\
-    \>\}\\
-    \>\keyw{\#endif}}
 
 \section{Diagnostics}
 \label{Diagnostics}
@@ -2826,45 +2893,6 @@ verbose, or differently formatted messages, you have to rewrap them to
 suit expectations.  Have a look at
 \file{testsuite/lib/gfortran-dg.exp} if you are interested in that.
 
-
-\iffinal
-\section{Debuginfo}
-\label{Debuginfo}
-
-How to add debuginfos to binaries that your frontend produces.  How to
-use gdb for your language.
-\fi
-
-%=====================================================================%
-
-\chapter{GCC-Specific Language Extensions}
-\label{LanguageExtenstions}
-
-This chapter describes various extensions that you might want to
-include to your language.  Not really GCC-only, but GCC supports them.
-
-\section{Attributes}
-\label{Attributes}
-
-Employing attributes.  How does frontend handle attributes, how does
-it define its own.
-
-\section{Preprocessing}
-\label{Preprocessing}
-
-Employing libcpp.  How to use preprocessor for your language.
-
-\section{Inline Assembly}
-\label{InlineAssembly}
-
-Employing assembly.  How to add GCC-compatible inline assembly into
-your language.
-
-\section{Open MP}
-\label{OpenMP}
-
-If the time permits, elaborate on how to use Open MP in frontend.
-Look into \cite{GDS:2006:Novillo}.
 
 %=====================================================================%
 
