@@ -121,9 +121,6 @@
 
 \def\term#1{{\it #1}}
 
-\def\NWY{(\note{This is not written yet.  It's in plan for
-    final thesis.})}
-
 % ====================================================================
 
 \chapter{Introduction}
@@ -421,10 +418,6 @@ Under such a scenario, there are four layers actually: front end is
 further divided into two.  The top one is a generic language
 processing library; the bottom one is actual GCC front end, and it
 translates one tree form (your AST) into other (GCC's GENERIC).
-
-When you pick the other way, and will represent AST with GENERIC, you
-will probably want to read chapters about defining your own GENERIC
-codes. \\ \NWY
 
 \section{Source Base}
 \label{SourceBase}
@@ -1321,11 +1314,9 @@ accepts one argument for each expression kind.  The arguments have to
 be \function{callback\_t} pointers: to convert function pointer to
 callback, you have to pass it through appropriate callback builder,
 \function{a60\_expr\_callback} in this case.  Callback builder doesn't
-do any actual work, it just typecasts to pointer, but as an argument,
-it requires a function pointer that takes \literal{expression\_t*} as
-a first argument.  If your callback function doesn't honor this,
-compiler will give you a warning.  Visitor builder, in turn, requires
-exact number of callback arguments.
+do any actual work, it just typecasts to pointer, but if you try to
+pass wrongly typed function pointer, it will bail out.  Visitor
+builder, in turn, requires exact number of callback arguments.
 
 In addition, the visitor builder knows it builds visitor for
 expression type, and when in debug mode, it records that information
@@ -1476,7 +1467,7 @@ each \Algol element modeled.
 
 \subsection{Expressions}
 
-The \Algol 60 spec groups together two notion: numerical expressions
+The \Algol 60 spec groups together two notions: numerical expressions
 (which includes literals, arithmetic and Boolean expressions, variable
 references including array access, function calls), and designational
 expressions, which more naturally belong to flow control.  In the
@@ -1504,7 +1495,7 @@ expressions\footnote{It doesn't compute anything interesting, but uses
 \keyw{begin}\\
 \ind\=\keyw{switch} b := q, r, 5;\\
     \>\keyw{switch} a := q, \keyw{if} k $>$ 005 \keyw{then} r \keyw{else} 5, b[k];\\
-    \>\keyw{integer} \keyw{array} ar; \keyw{integer} ix, k;\\
+    \>\keyw{integer} \keyw{array} ar[1:100]; \keyw{integer} ix, k;\\
     \>initialize(ar, ix, k);\\
     \>\keyw{goto} a[ar[ix]];\\
 q:  \>puts(\litstr{`q!'});\\
@@ -1527,13 +1518,12 @@ representation right away.
 \subsection{Statements}
 
 The repertoire of \Algol 60 is on par with most C-like languages up to
-these days.  Supported leaf statements are assignment, goto,
-conditional, and for.  Most of them work as expected.  Assignment
-statement supports assignment of one value to several variables
-(without reevaluation).  Goto has unusually rich syntax for
-computation of target, see the description of designational
-expressions in previous section.  For has also rich syntax for
-iteration, see this example:
+these days.  Supported statements are assignment, goto, conditional,
+and for.  Most of them work as expected.  Assignment statement
+supports assignment of one value to several variables (without
+reevaluation).  Goto has unusually rich syntax for computation of
+target, see the description of designational expressions in previous
+section.  For has also rich syntax for iteration, see this example:
 
 \program{\ind\=\+
 \keyw{begin}\\
@@ -1542,7 +1532,7 @@ iteration, see this example:
     \>\ind\= perform\_interesting\_stuff(i);\\
 \keyw{end};}
 
-The compiler uses auxiliary polymorphic type \keyw{for\_elmt\_t} to
+The compiler uses auxiliary polymorphic type \literal{for\_elmt\_t} to
 keep the list of iteration branches.  It has exactly three subtypes:
 an expression, a \literal{while}-kind of branch, and an
 \literal{until}-kind of branch.
@@ -1600,18 +1590,18 @@ types:
 \keyw{end};}
 
 The declaration on its own right is a procedure.  Procedures are {\em
-  the} reason why the \Algol 60 is kinky.  In particular, formal
-argument of procedure can be declared as {\em pass by name}, which
-basically means that the actual argument of this formal parameter is
-reevaluated each time it's hit in control flow---like if the function
-was actually a macro, and replaced each occurrence of the formal with
-passed-in actual.
+  the} reason why \Algol 60 is kinky.  In particular, formal argument
+of procedure can be declared as {\em pass by name}, which basically
+means that the actual argument of this formal parameter is reevaluated
+each time it's hit in control flow---like if the function was actually
+a macro, and replaced each occurrence of the formal with passed-in
+actual.
 
 Also, by-name parameters don't have to be typed, an unusual feature in
 compiled language.  Coupled with the way \Algol 60 handles
 parameter-less functions, it's possible to pass in e.g. either an
-integer, or integer function without parameter.  Depending on call
-site in effect, and the way each identifier end up resolved, compiler
+integer, or integer function without a parameter.  Depending on call
+site in effect, and the way each identifier ends up resolved, compiler
 has to emit either variable access, or function call.
 
 Yet another funny thing about the spec is that the resolution of
@@ -1680,7 +1670,7 @@ have to do to find out the type of mysterious object is to dereference
 the pointer and interpret what it points to as a string.
 
 When creating a visitor, address of signature variable is used instead
-of signature itself.  Before a dispatch, the visitor performs a simple
+of signature itself.  Before dispatch, the visitor performs a simple
 check:
 
 \program{
@@ -1711,7 +1701,7 @@ found.  This includes warnings about constructs that are legal, but
 not moral or wholesome, or errors for constructs that are disallowed
 by the spec.
 
-Messages in the compiler are formatted in usual unixish format:
+Messages in the compiler are formatted in usual GNU format:
 
 \begin{verbatim}
 ./fail-fun2.a60:5: warning: function `foo1' has an implicit parameter `a'
@@ -1762,23 +1752,23 @@ used mainly to look up functions by their signatures.
 
 The type \literal{implicit} is used to track implicit arguments of
 functions.  When the compiler parses the body of function declaration
-(which is a wholesome thing to do, because it will discover certain
-errors even if the function is not called), and it fails to resolve
-variable reference in the body itself, it marks that variable as an
-implicit parameter of the function.  Such variable is then assigned a
+(which is a good thing to do, because it will discover certain errors
+even if the function is not called), and it fails to resolve variable
+reference in the body itself, it marks that variable as an implicit
+parameter of the function.  Such variable is then assigned a
 placeholder type of \literal{implicit}.
 
-The last mentioned was type \literal{unknown}.  This type is assigned
-to expression whose type is not known, most often because there was an
-error found in the expression.  When the resolver gets this type, it
-will explicitly not emit any error messages.  This is done at the leaf
-expression that caused the type to be \literal{unknown} in the first
-place.
+Third mentioned type was \literal{unknown}.  This type is assigned to
+expression whose type is not known, most often because there was an
+error found in the expression.  When the resolver hits this type, it
+will not do further type checking, and will not produce any error
+messages.  This is done at the leaf expression that caused the type to
+be \literal{unknown} in the first place.
 
 Third pass is compilation into GENERIC, so called Binder.  This step
 is performed only when no previous pass resulted in an error.  The
 compilation is, too, done by a recursive descend through AST.  Exactly
-how is the compilation done will be described in the chapter.
+how is the compilation done will be described in next chapter.
 
 
 %=====================================================================%
@@ -1786,39 +1776,33 @@ how is the compilation done will be described in the chapter.
 \chapter{Targeting GCC}
 \label{TargetingGCC}
 
-Translation of \Algol 60 AST to GCC GENERIC is task of the \Algol
-Binder, the last pass in compilation process.
-
 This chapter describes how to generate GCC intermediate language
-called GENERIC, and uses a lot of examples from the \Algol Binder.  It
-is organized as a catalogue of typical constructs found in programming
-language, and typical tasks performed by a compiler, with explanation
-how to handle these in context of GCC.
+called GENERIC, and uses a lot of examples from the \Algol Binder.
 
-In comparison with GCC internals (\cite{TR:GCCInt}), the description
-in this thesis is kept in more abstract level.  I consider GCC to be a
-target of compilation process, and as such am more interested in how
+In comparison with GCC internals \cite{TR:GCCInt}, the description in
+this thesis is kept in more abstract level.  I consider GCC to be a
+target of compilation process, and as such I'm more interested in how
 the nodes are created and how to express various imperative
 constructs.  GCC internals documentation is directed also towards the
-analysis of GENERIC.
+analysis of GENERIC and internal structure of nodes.
 
 \section{GENERIC in General}
 
 GENERIC is a tree-like language, similar in nature to \Algol AST.
 It's representation in GCC is via polymorphic nodes of type \xtree:
 
-\program{\ind\xtree ret = \keyw{NULL\_TREE};}
+\program{\ind\xtree ret = NULL\_TREE;}
 
 \xtree is itself a pointer type, so \literal{\xtree *} denotes a {\em
-pointer to \xtree}.  The value \literal{\keyw{NULL\_TREE}} is thus
-analogy to \literal{\keyw{NULL}} pointer of the \literal{\keyw{void}*}
+pointer to \xtree}.  The value \literal{NULL\_TREE} is thus
+analogy to \literal{NULL} pointer of the \literal{\keyw{void}*}
 world.  Pointer to \xtree is occasionally also used, e.g. as an output
 parameter of a function.
 
-Each node has an arity, a number of child nodes that it needs; and
-{\em signature}\footnote{Which is an informal term, not used by GCC
-people as far as I know.}, which describes what type each of children
-nodes has to have.
+Each node has an arity, i.e. a number of child nodes that it needs;
+and {\em signature}\footnote{Which is an informal term, not used by
+  GCC people as far as I know.}, which describes what type each of
+children nodes has to have.
 
 GCC defines nodes in a catalogue, stored in file \file{gcc/tree.def}.
 This is basically ordinary header file, included in compiler proper
@@ -1848,11 +1832,12 @@ all checks are performed at runtime.  Moreover few things are checked
 explicitly: when you screw up, GCC is likely to end up with ICE as
 some internal assertion fails.  (Which is actually a good thing,
 because should the assertion not be there, GCC would probably end up
-emitting wrong code, or failed with SIGSEGV.)  There is little I can
-advise, generally just read \file{tree.def}, read \cite{TR:GCCInt},
-and look to other front ends, in this order.  Often it is helpful to
-inspect the failing site.  Surprisingly often it's possible to deduce
-what went wrong by looking at the assertion or comments nearby.
+emitting wrong code, or would fail with SIGSEGV.)  There is little I
+can advise, generally just read \file{tree.def}, read
+\cite{TR:GCCInt}, and look to other front ends, in this order.  Often
+it is helpful to inspect the failing site.  Surprisingly often it's
+possible to deduce what went wrong by looking at the assertion or
+comments nearby.
 
 For debugging purposes, a function \function{debug\_tree} comes in
 handy.  It recursively dumps the tree passed in as argument, to the
@@ -1893,9 +1878,8 @@ in \Algol front end:
 
 The function \function{get\_identifier} takes a name represented as
 ordinary \literal{char*} string, and creates an identifier node with
-the same name.  Identifier nodes have the property that they are
-unique: there is only one identifier node ever made for any particular
-name.
+the same name.  Identifier nodes with the same name are shared: there
+is only one identifier node ever made for any particular name.
 
 The function \function{type\_build\_generic} is a function of the
 front end, and it does recursive dispatch.  In the end it returns a
@@ -1945,7 +1929,7 @@ by having set the \literal{TREE\_STATIC} attribute.
 
 Most types that \Algol 60 supports are primitive types, such as
 integers, real numbers, void, etc.  GCC has these types predefined, so
-most of the type building procedures thus look like this:
+most of the type building procedures look like this:
 
 \program{\ind\=\+
 \xtree type\_real\_build\_generic (type\_t * self, binder\_context\_t * ctx) \{\\
@@ -2017,13 +2001,15 @@ platform has its own idea of how many bits are used for exponent and
 mantissa.  IEEE 754 has three categories of floating point numbers:
 single-precission 32-bit, double-precission 64-bit and
 double-extended-precission 80-bit.  In addition some architectures
-support 128-bit floating point, e.g. ia64 \cite{TR:Itanium}.  GCC has
-ways to deal with this diversity.  It allows construction of floating
-point literals from string as well as from various represenatation,
-has dedicated funtions for comparison and formatting them, and can
-also convert internal floating point number back to some target
-representation.  Look up the \file{gcc/gcc/real.h} header if you are
-interested.
+support 128-bit floating point, e.g. ia64 \cite{TR:Itanium}, and some
+platform don't have to support IEEE floating points at
+all\footnote{Although I don't know if GCC is ported to any such
+  platform.}.  GCC has ways to deal with this diversity.  It allows
+construction of floating point literals from string as well as from
+various representations, has dedicated functions for comparison and
+formatting them, and can also convert internal floating point number
+back to some target representation.  Look up the \file{gcc/gcc/real.h}
+header if you are interested.
 
 The \Algol 60 front end uses the way of building the real number from
 string:
@@ -2040,8 +2026,8 @@ string:
 \}}
 
 GCC also supports complex numbers, via a node \literal{COMPLEX\_CST},
-created with \function{build\_complex}.  The arguments are simply a
-type, a real node, and an imaginary node.
+created with function \function{build\_complex}.  The arguments are
+simply a type, a real node, and an imaginary node.
 
 String literals are created by the function \function{build\_string}.
 The two arguments of this functions are the length of string literal,
@@ -2198,10 +2184,10 @@ group single statements into compound statements, in a recursive
 manner (statement inside block can itself be a block).  GCC naturally
 supports the notion of blocks.
 
-In context of GENERIC, block is expressed with an expression node
-\literal{BIND\_EXPR}.  Block expression has three operands: a chain of
-variables local to the block, a list of statements to process, and
-associated block.
+In context of GENERIC, compound statement is expressed with an
+expression node \literal{BIND\_EXPR}.  Block expression has three
+operands: a chain of variables local to the block, a list of
+statements to process, and associated block.
 
 First, the two sequences: the {\em chain} of variables, and {\em list}
 of statements.  Each of them is created differently.  Chaining is
@@ -2233,7 +2219,7 @@ Each block has its associated superblock, set with a macro
 \function{BLOCK\_SUPERCONTEXT}, and a list of subblocks, assigned in
 creation time.  You have to keep everything in sync: bind expressions,
 supercontexts and subblocks.  If a bind expression $A$ with block
-$A_B$ appears as a statement inside a statement $B_S$ of bind
+$A_B$ appears as a statement inside a statement list $B_S$ of bind
 expression $B$, then \literal{BLOCK\_SUPERCONTEXT} of $A_B$ has to be
 $B_B$, and list of subblocks of $B_B$ has to contain $A_B$.
 
@@ -2296,8 +2282,9 @@ tree bind_state_build_block (binder_context_t * ctx) {
 
 All loops in GENERIC are expressed with the same \literal{LOOP\_EXPR}
 node.  Sole argument of this node is the body, which the
-\literal{LOOP\_EXPR} endlessly processed.  Computations of loop
-control variables have to be done explicitly.
+\literal{LOOP\_EXPR} endlessly processes.  Computations of loop
+control variables have to be done explicitly, as well as loop
+termination.
 
 To end the loop, GENERIC uses a \literal{EXIT\_EXPR} node.  It has one
 argument, which is a condition that has to be true for the break to be
@@ -2873,10 +2860,8 @@ detection or reporting, all of which patch does.
 When doing a patch for release, i.e. not for development in GCC trunk,
 it's better to rebuild the file \file{Makefile.in} after patching, and
 generate new patch from this.  The user then does not have to install
-development tools, \file{autogen} in
-particular\footnote{\literal{autogen} has a surprising dependency of
-its own: \file{guile}.}.  Build system in release version of GCC will
-not change very much.
+development tools, \file{autogen} in particular.  Build system in
+release version of GCC will not change very much.
 
 \begin{figure}
 \begin{verbatim}
@@ -3079,8 +3064,7 @@ to suit expectations.  Have a look at
   described in this work.  All files that the front end is comprised
   of are thoroughly examined, and pitfalls mentioned.  Several tips
   are provided on connecting such minimal front end with preexisting
-  language parser, and on versioning GCC component apart from GCC
-  itself.
+  language parser.
 
 \item An implementation of \Algol 60 compiler is described, including
   the way various \Algol constructs are translated to GCC's GENERIC
@@ -3093,7 +3077,11 @@ to suit expectations.  Have a look at
 
 \item The conclusion: GCC should be considered as a viable alternative
   to other back end solutions, especially as an alternative to
-  emitting a C code.
+  emitting a C code.  In general, GCC is very attractive target for a
+  lot of compiler-related research.  It's open development cycle makes
+  up for great test bed: be it a new radical systems language, be it
+  new optimization technique, new hardware platform in development,
+  GCC should be in the loop.
 
 \end{enumerate}
 
@@ -3103,32 +3091,19 @@ This thesis is synthetic in nature.  Information were taken from
 various sources, be it other work of documentation, spoken word, a
 question over an email, or investigation of source code.  This very
 synthesis is sole contribution of the author: no other work exists,
-that would provide the detailed and continuous explanation on the
-topic.
+that provides continuous explanation of this detail on the topic.
 
 \section{Future Research}
 
-This thesis describes odds and ends of the GCC front end to middle end
-interface.  If there is a future research associated with this area,
-it's most probably more thorough description.  GCC has native support
-for OpenMP, a parallel language, an area that is about to become {\em
-  very} interesting in years to come.  It can handle classes, and
-object oriented programming in general.  This thesis does not describe
-these topics.
-
-\iffalse
-Embedded system developers would certainly use a cross compilation and
-bootstrapping manual: is it possible to write parts of \Algol 60 front
-end, or its runtime library in \Algol 60 itself?  (The answer is yes,
-but the question is ``what does it take?'')  What does a developer
-need to do to prepare his or her compiler for cross compilation?
-\fi
-
-In general, GCC is very attractive target for a lot of
-compiler-related research.  It's open development cycle makes up for
-great test bed: be it a new radical systems language, be it new
-optimization technique, new hardware platform in development, GCC
-should be in the loop.
+This thesis describes odds and ends of the integration of the parser
+into GCC.  There was a lot of ground to cover, GCC is big software
+project with a lot of facets.  Some topics were left insufficiently
+explained, and certainly not everything was at least touched.  For
+example, GCC has native support for OpenMP, a parallel language, that
+is about to become {\em very} interesting in years to come; it can
+handle classes, and object oriented programming in general, an area
+that already {\em is} very interesting; it allows for direct inclusion
+of inline assembly.  This thesis describes none of these topics.
 
 
 \bibliographystyle{plain}
