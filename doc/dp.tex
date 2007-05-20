@@ -96,7 +96,7 @@
 \def\function#1{{\sffamily{}#1}}
 % file names
 \def\file#1{{\sffamily{}#1}}
-% commandline options
+% command line options
 \def\option#1{{\sffamily{}#1}}
 % variables, types, and similar
 \def\variable#1{{\sffamily{}#1}}
@@ -111,9 +111,9 @@
 \def\litstr#1{{\sffamily\it {#1}}}
 % indentation
 \def\ind{\hspace{0.5cm}}
-% access through pointex (x->y)
+% access through pointer (x->y)
 \def\ptr{$-\!\!>$}
-% GENEREC tree type
+% GENERIC tree type
 \def\xtree{\literal{\keyw{tree}\space}}
 
 \def\note#1{{{\it Note.\space}#1}}
@@ -142,30 +142,13 @@ simple as it became, is still an adventure, in both senses of the
 word.
 
 In this work, albeit inevitably incomplete given what was just
-written, I strive to give the implementor a sort of kick start on
+written, I strive to give the implementer a sort of kick start on
 writing new language support for GCC.  It is by no means a reference
 work, but it's useful ``how to'', that gives at least a glimpse of all
 what there is to writing GCC front end.
 
-\iffalse
-Of course, language support neither starts, nor ends with GCC being
-capable of compilation from that language.  We live in a world of IDEs
-and smart editors, and a language without decent support e.g. in
-Eclipse, or at least with Emacs or Vim modes available, effectively
-halves its usefulness.  Programs written in new language need to be
-debugged, and unless the language is very C-like, a debugger has to be
-expanded.  And last, but probably most importantly: language needs
-runtime library, and it is convenient if that runtime library is built
-during GCC build, and linked in automatically.  This last point is
-covered in this thesis, the others are not.
-\else
-There is more to language support than compilation of code into
-assembly.  This thesis also contains notes on preprocessing, emitting
-debuginfo, or integrating runtime library.
-\fi
-
 This work is only partially designed to be read sequentially.  It's
-more of a catalogized collection of how-to themes.
+more of a collection of how-to themes.
 
 The first two chapters (not including this) are basically sequential:
 some arguments for GCC are presented in chapter \ref{WhyGCCWhyNow},
@@ -186,11 +169,12 @@ to read selected parts of this chapter, as you will implement various
 features of your language.  In a last section (\ref{Debuginfo}),
 emitting debugger information is described.
 
-The chapter \ref{GCCServices} collects various fetarues of GCC, that
-are not directly related to the translation of source language.  These
-include use of preprocessor (\ref{Preprocessing}), processing command
-line options (\ref{CommandlineOptions}), emitting diagnostic messages
-(\ref{Diagnostics}), integration of language runtime library
+The chapter \ref{GCCServices} collects descriptions of various
+features of GCC, that are not directly related to the translation of
+source language.  These include use of preprocessor
+(\ref{Preprocessing}), processing command line options
+(\ref{CommandlineOptions}), emitting diagnostic messages
+(\ref{Diagnostics}), integration of language run time library
 (\ref{RuntimeLibraries}), and integration of test suite
 (\ref{TestSuite}).
 
@@ -410,11 +394,11 @@ process of lowering is thus inevitably called \term{gimplification}.
 GIMPLE is a subset of GENERIC.  Nesting structures are still
 represented as containers in GIMPLE, but all expressions are broken
 down to three address code, using temporaries to store intermediate
-results\cite{GDS:2003:Merill}.  There are actually two GIMPLE forms: high GIMPLE and low
-GIMPLE.  In low GIMPLE containers are further transformed into
-\literal{goto}s and labels\cite{LDS:2006:Novillo}.
+results\cite{GDS:2003:Merill}.  There are actually two GIMPLE forms:
+high GIMPLE and low GIMPLE.  In low GIMPLE containers are further
+transformed into \literal{goto}s and labels\cite{LDS:2006:Novillo}.
 
-Apart from pre-defined nodes, GCC provides a mechanism to define your
+Apart from predefined nodes, GCC provides a mechanism to define your
 own GENERIC node types.  Of course it wouldn't know how to gimplify
 them, and a langhook is necessary for this purpose.  C and C++
 front ends actually don't use GENERIC for their AST representation, but
@@ -464,11 +448,11 @@ toy language showing off how to write front ends.  You will have to
 create one such directory, chapter \ref{HalloWorld} deals with this.
 
 Another interesting directory is \file{gcc/gcc/testsuite/}, which
-contains automated DejaGNU testsuite.  You will most probably want to
-have your own files there.  Section \ref{TestSuite}\NWY is dedicated
-to subject of writing testsuite.
+contains automated DejaGNU test suite.  You will most probably want to
+have your own files there.  Section \ref{TestSuite} is dedicated to
+subject of writing test suite.
 
-In toplevel directory, a GCC runtime services are stored.  This
+In top level directory, a GCC runtime services are stored.  This
 includes runtime libraries for various front ends,
 e.g. \file{gcc/libstdc++-v3/} with C++ runtime library.  Most probably
 you will want to write your own runtime library.  Section
@@ -484,7 +468,7 @@ Internally, GCC uses garbage collector
 \footnote{\url{http://gcc.gnu.org/wiki/Memory\_management}}
 \cite[chapter Memory Management and Type Information]{TR:GCCInt}
 for its memory management.  The objects with indeterminable lifetime,
-which includes trees, are not managed explicitely, but instead
+which includes trees, are not managed explicitly, but instead
 garbage-collected.  The collector used is of mark \& sweep kind.
 Pointers (variables, fields, ...) that should be collected are
 explicitly tagged, the tags are gathered during the build, and
@@ -555,7 +539,7 @@ in its place, but found out that GCC uses 4 as a return value when it
 fails, and thus it's less clear when the GCC fails, and when it
 succeeds and the binary answers 4.
 
-The prerequisity here is that you already know how to build GCC for
+The prerequisite here is that you already know how to build GCC for
 your system.  There is no chance experimenting with front ends if you
 never built GCC yourself.
 
@@ -588,14 +572,7 @@ The following will be covered in this chapter:
 
 \subsection{GCC Reference Version}
 
-This work is being written with development (as of Dec 2006) version
-of GCC in mind.  Given GCC Steering Commitee development
-plan\footnote{\url{http://gcc.gnu.org/develop.html}}, this target is
-expected to become official GCC-4.3 sometime arount the time
-\ifnfinal
-final version of
-\fi
-this work is commited.
+This work is being written with GCC version 4.2 in mind.
 
 \subsection{Create Front End Directory}
 
@@ -700,7 +677,7 @@ Many hooks are predefined in GCC.  The file \file{gcc/gcc/langhooks.c}
 contains these definitions.  Any langhooks not defined there have to
 be provided by the front end---even if that will be blind definition
 from the beginning.  Review of the langhooks that have to be in
-minimal frontend, together with the action that has to be taken, is in
+minimal front end, together with the action that has to be taken, is in
 table \ref{Table++Langhooks}.  Review of the various actions follow.
 
 \begin{figure}
@@ -738,7 +715,7 @@ LANG\_HOOKS\_SIGNED\_TYPE&
 LANG\_HOOKS\_SIGNED\_OR\_UNSIGNED\_TYPE&
 \function{gcc\_unreachable}\\
 
-LANG\_HOOKS\_MARK\_ADDRESSABE&
+LANG\_HOOKS\_MARK\_ADDRESSABLE&
 \function{gcc\_unreachable}\\
 
 \keyw{tree} convert (\keyw{tree} type, \keyw{tree} expr)&
@@ -909,7 +886,7 @@ just cover the basic points, and leave the full elaboration for the
 later chapters.
 
 The argument \variable{debug} of the langhook is nonzero, if debugging
-messages shoud be dumped to the standard error.  See description of
+messages should be dumped to the standard error.  See description of
 \option{-dy} in \cite[chapter GCC Command Options]{TR:GCCUser}.
 
 The macros \function{TREE\_PUBLIC}, \function{DECL\_CONTEXT} and
@@ -970,7 +947,7 @@ compiler command line options is written in section
 \paragraph{The \file{spec.c} file}
 contains language-specific GCC driver components.  In particular, two
 functions and one variable.  Function
-\function{lang\_specific\_driver} is given a vector of commandline
+\function{lang\_specific\_driver} is given a vector of command line
 arguments and is free to do any processing, including reordering and
 changing the vector, before the main GCC routines take over.  This is
 used for linking in language runtime libraries, see
@@ -996,7 +973,7 @@ C++ or \file{gubl} for Überlang.
 \label{BuildSystemIntegration}
 
 \paragraph{The \file{config-lang.in} file}
-is a sort of high-level descriptor of your frontend.  It contains
+is a sort of high-level descriptor of your front end.  It contains
 variables for toplevel \file{configure} (i.e. it's written in a shell
 syntax).  The file is very simple overall and only defines few
 variables:
@@ -1010,7 +987,7 @@ gtfiles={\it{}"\$(srcdir)/uberlang/uberlang1.c"}\\
 The variable \variable{language} defines the name of the front end as
 recognized by the build system.  This is really a name of the
 language, it doesn't have to match name of the front end subdirectory.
-However the name will be used in makefile targets, and users will call
+However the name will be used in make targets, and users will call
 this your language on \file{configure} command line when they'll wish
 to include it in GCC build. For this reason the name should be 7-bit
 ASCII clean.
@@ -1048,15 +1025,15 @@ project to become part of GNU.}.  The compiler proper is called
 GCC.  The variables that this \file{Makefile} fragment uses, are
 inherited from parental \file{make} invocation.
 
-Note that the fragment actually doesn't present hooks, but Makefile
-rules.  Only the first rule in the list is actually a hook.  The first
-two rules, then, have not only the dependence list, but also a body.
-This doesn't hold for the other two rules, which only contain
-dependence list, and use mechanism of implicit rules to sort out the
-exact order of compilation.
+Note that the fragment actually doesn't present hooks, but make rules.
+Only the first rule in the list is actually a hook.  The first two
+rules, then, have not only the dependence list, but also a body.  This
+doesn't hold for the other two rules, which only contain dependence
+list, and use mechanism of implicit rules to sort out the exact order
+of compilation.
 
 Because other hooks are empty, including \variable{uberlang.install-*}
-family, the minimal frontend won't be installable.  You will have to
+family, the minimal front end won't be installable.  You will have to
 run it like this:
 
 \program{
@@ -1123,14 +1100,12 @@ respecting them there.  This in fact holds for all various variables
 that are passed from one recursive make instance to the other.
 
 You may want to take advantage of certain GCC's services.  E.g. error
-reporting, integrated testsuite, building runtime library as part of
+reporting, integrated test suite, building runtime library as part of
 overall build; or you may wish to extend your language with various
 GCC-isms
 \footnote{Yes, I know this term is pejorative.  But this doesn't
-decrease usefullness of certain GCC-specific constructs.}, such as
-C-like preprocessing or inline assembly.  These themes are covered in
-dedicated chapters \ref{GCCServices} and \ref{LanguageExtenstions},
-respectively.
+decrease usefulness of certain GCC-specific constructs.}, such as
+C-like preprocessing or inline assembly.
 
 For special-casing the code that's built as part of GCC, you can use
 \variable{IN\_GCC} preprocessor variable.  It's \literal{\#defined}
@@ -1145,14 +1120,14 @@ classified by cpp:
 \program{cpp error: attempt to use poisoned malloc}
 
 Hand-managed code is OK with GCC, so it's best to keep the collector
-off already written codebase.  On the other hand, if you know you are
+off already written code base.  On the other hand, if you know you are
 writing what will become part of GCC, it is perhaps better to use
 garbage collector from the beginning.  It saves some nerves.
 
 \subsection{Versioning Issues}
 \label{VersioningIssues}
 
-Most probably, you will want to keep your frontend versioned
+Most probably, you will want to keep your front end versioned
 separately from the GCC itself.  I will describe the approach that I'm
 taking.  Toplevel \file{trunk/} directory (I'm using subversion, but
 of course, you are free to keep your stuff versioned to your likings)
@@ -1183,17 +1158,15 @@ separately.
 The subtree rooted at \file{trunk/gcc/} mimics GCC's distribution
 subtree (e.g. \file{gcc-4.2.0/}).  This is advantageous for two
 reasons.  First, you can just tar and zip the contents of directory
-\file{trunk/gcc/}, and
-distribution package is ready.  User will just enter the GCC's
-distribution directory, upack your front end here, do necessary
-patching, and GCC tree is ready to build your front end.  Second, it
-keeps the things tidy.
+\file{trunk/gcc/}, and distribution package is ready.  User will just
+enter the GCC's distribution directory, unpack your front end here, do
+necessary patching, and GCC tree is ready to build your front end.
+Second, it keeps the things tidy.
 
-Then I just symlink the files from GCC
-tree into my front end tree.  This is only possible on systems that
-support symlinks, but with GCC being unixy compiler, it is reasonable
-requirement.  In several cases, symlinking works as intended even on
-directory level:
+Then I just symlink the files from GCC tree into my front end tree.
+This is only possible on systems that support symlinks, but with GCC
+being unixish compiler, it is reasonable requirement.  In several
+cases, symlinking works as intended even on directory level:
 
 \begin{verbatim}
 gcc/gcc/algol60
@@ -1205,7 +1178,7 @@ gcc/gcc/testsuite/algol60.dg
 But for test suite, you will have to add two files into subdirectory
 \file{gcc/gcc/testsuite/lib/}, and you have to symlink those two files
 explicitly (we need to ``merge'' the two directory subtrees, which is
-not simply done in most OS's):
+not simply done in most OSes):
 
 \begin{verbatim}
 gcc/gcc/testsuite/lib/algol60-dg.exp
@@ -1232,17 +1205,17 @@ there.
 
 \begin{itemize}
 
-\item Each frontend lives in a directory of its own.  Even for minimal
-  frontend, several files are necessary to honor requirements of GCC
-  build system.  They are \file{lang-specs.h} with the description of
-  actions that should be taken depending on the source file suffix and
-  command line switches; \file{lang.opt} with the description of
-  command line switches specific to your frontend (this file may be
-  empty); \file{config-lang.in} with meta-data about your frontend;
-  \file{Make-lang.in} with the description of build itself;
-  \file{spec.c} with language-specific components of GCC compilation
-  process; and \file{{\it your-language-name}1.c} with the code
-  itself.
+\item Each front end lives in a directory of its own.  Even for
+  minimal front end, several files are necessary to honor requirements
+  of GCC build system.  They are \file{lang-specs.h} with the
+  description of actions that should be taken depending on the source
+  file suffix and command line switches; \file{lang.opt} with the
+  description of command line switches specific to your front end
+  (this file may be empty); \file{config-lang.in} with meta-data about
+  your front end; \file{Make-lang.in} with the description of build
+  itself; \file{spec.c} with language-specific components of GCC
+  compilation process; and \file{{\it your-language-name}1.c} with the
+  code itself.
 
 \item The file \file{{\it your-language-name}1.c}, in the past chapter
   conveniently called \file{uberlang1.c}, contains the GCC that is
@@ -1261,7 +1234,7 @@ there.
 
 %=====================================================================%
 
-\chapter{The \Algol 60 GCC Frontend}
+\chapter{The \Algol 60 GCC Front End}
 \label{Algol60GCCFE}
 
 The \Algol 60 GCC front end has been written in an attempt to get a
@@ -1274,7 +1247,7 @@ constructs.
 
 \section[gcc-algol the Project]{{\tt gcc-algol} the Project}
 
-The programming language \Algol 60 was picked purposefuly, because
+The programming language \Algol 60 was picked purposefully, because
 language such as this is best fit for GCC.  It is structured, with
 static typing, has arrays and functions, and will profit from support
 of runtime library.  Lastly it has a rigorous standard, which is not
@@ -1294,7 +1267,7 @@ other GCC language that can compile transitively from C.  Front end
 written in such a way is simpler to distribute and build at user
 sites.
 
-I strived to avoid any extra dependencies of the front end, to the end
+I strove to avoid any extra dependencies of the front end, to the end
 of writing linked list and generic string modules from scratch just
 for the purpose of \Algol parser.  These two modules are the only
 library functionality beyond pure \literal{libc}---even symbol tables
@@ -1431,8 +1404,8 @@ safety, for example in a code like this:
 On first line, mysterious object is extracted from singly-linked list.
 Instead of typecasting it like in commented-out code, dedicated
 function is called, that {\em actually checks} exact type, and if it
-doesn't match, aborts.  You can't conditionalize on the result of
-typecheck, the mechanism is here to {\em prevent errors}, not to
+doesn't match, aborts.  You can't place a condition on the result of
+type checking, the mechanism is here to {\em prevent errors}, not to
 emulate dynamic typing systems.
 
 In release mode, the checks go away, and \function{a60\_as\_statement}
@@ -1504,10 +1477,10 @@ each \Algol element modeled.
 \subsection{Expressions}
 
 The \Algol 60 spec groups together two notion: numerical expressions
-(which includes literals, arithmetic and boolean expressions, variable
+(which includes literals, arithmetic and Boolean expressions, variable
 references including array access, function calls), and designational
 expressions, which more naturally belong to flow control.  In the
-compiler, these two kinds are disjunct: computed, numerical
+compiler, these two kinds are disjoint: computed, numerical
 expressions are described by a type \literal{expression\_t}, and
 designational expressions by \literal{desig\_expr\_t}.
 
@@ -1516,8 +1489,8 @@ form leaf expressions, and more complex expressions, such as binary,
 are recursively composed of other expressions.
 
 Despite their specification together with other expressions,
-designational expressions are completely disjunct polymorphic
-hierarchy, used in other context, namely as tagets of the
+designational expressions are completely disjoint polymorphic
+hierarchy, used in other context, namely as targets of the
 \literal{\keyw{goto}} statement.  There are three subtypes: a label
 reference, a switch expression, and conditional designational
 expression.  The following example gives an overview of what's
@@ -1544,7 +1517,7 @@ expressions as leaves (that's the case of switch expression, which can
 be seen at the \literal{\keyw{goto}} statement and as part of
 declaration of \literal{\keyw{switch} a}).
 
-The example also shows that it's possible to use both numberical and
+The example also shows that it's possible to use both numerical and
 symbolic labels.  Fortunately, expressions such as
 \literal{\keyw{goto} 1+1} are disallowed, but still the labels
 \literal{5}, \literal{05} and \literal{005} are considered equal.
@@ -1607,11 +1580,11 @@ from one.
 
 Slightly more complicated case is with variables, mostly because of
 types.  \Algol 60 supports basic types such as integers, real numbers
-and booleans, and one compound type: an array of basic types.  Number
-of dimensions of array is static property of the declaration, but the
-dimensions themselves are computed.  Each variable can be marked
-``own'', which is basically the same as \literal{static} in C.  The
-last supported type is string, which is only allowed as procedure
+and Boolean values, and one compound type: an array of basic types.
+Number of dimensions of array is static property of the declaration,
+but the dimensions themselves are computed.  Each variable can be
+marked ``own'', which is basically the same as \literal{static} in C.
+The last supported type is string, which is only allowed as procedure
 argument, and cannot be otherwise manipulated or assigned by \Algol
 program.  Inevitably, each string in \Algol program ends up passed to
 native code procedure.  Few examples of variable declarations and
@@ -1631,7 +1604,7 @@ The declaration on its own right is a procedure.  Procedures are {\em
 argument of procedure can be declared as {\em pass by name}, which
 basically means that the actual argument of this formal parameter is
 reevaluated each time it's hit in control flow---like if the function
-was actually a macro, and replaced each occurence of the formal with
+was actually a macro, and replaced each occurrence of the formal with
 passed-in actual.
 
 Also, by-name parameters don't have to be typed, an unusual feature in
@@ -1682,7 +1655,7 @@ scheme, has to list the field \literal{visitable\_t} (from
     \>\};}
 
 The \literal{base} structure contains a signature (only in debug
-mode), and a kind determinator.
+mode), and a kind distinguisher.
 
 Kind is simple \literal{int}, and its values would typically be
 determined by some internal \literal{enum}.  Signature is
@@ -1751,12 +1724,12 @@ Proper error reporting, as well as proper debuginfo generation,
 requires an information about location of various program constructs.
 This support is introduced via \literal{cursor\_t} structure.  It is
 defined the way all other structures are, namely it uses signature for
-dynamic typechecking, is heap-allocated, and opaque.
+dynamic type checking, is heap-allocated, and opaque.
 
 Each message is output to log with given {\em severity}, which can be
 one of {\em debug}, {\em info}, {\em warning}, {\em error} or {\em
-  fatal error}.  Each log has associated a filter treshold: messages
-with severity below the treshold are thrown away, the rest is written.
+  fatal error}.  Each log has associated a filter threshold: messages
+with severity below the threshold are thrown away, the rest is written.
 
 Log and cursor are two structures at the edge between GCC and \Algol
 specific code.  By default, they use their own structures and methods,
@@ -1826,7 +1799,7 @@ In comparison with GCC internals (\cite{TR:GCCInt}), the description
 in this thesis is kept in more abstract level.  I consider GCC to be a
 target of compilation process, and as such am more interested in how
 the nodes are created and how to express various imperative
-constructs.  GCC internals documenatation is directed also towards the
+constructs.  GCC internals documentation is directed also towards the
 analysis of GENERIC.
 
 \section{GENERIC in General}
@@ -1839,7 +1812,7 @@ It's representation in GCC is via polymorphic nodes of type \xtree:
 \xtree is itself a pointer type, so \literal{\xtree *} denotes a {\em
 pointer to \xtree}.  The value \literal{\keyw{NULL\_TREE}} is thus
 analogy to \literal{\keyw{NULL}} pointer of the \literal{\keyw{void}*}
-world.  Pointer to \xtree is ocassionally also used, e.g. as an output
+world.  Pointer to \xtree is occasionally also used, e.g. as an output
 parameter of a function.
 
 Each node has an arity, a number of child nodes that it needs; and
@@ -1885,8 +1858,6 @@ For debugging purposes, a function \function{debug\_tree} comes in
 handy.  It recursively dumps the tree passed in as argument, to the
 depth of 6, giving you a chance to inspect whether the node in hand
 makes any sense.
-
-@@ TODO attributes
 
 
 \section{Variables, Types, Symbols}
@@ -2171,16 +2142,204 @@ edited to pseudo code to take up less space, and assuming that
     \>\keyw{return} build\_function\_call\_expr (proc\_decl, arg\_list);\\
 \}}
 
+\subsection{Expressions Evaluated Once}
+
+In certain contexts, it is necessary to evaluate an expression, and
+use its value on several places.  In a C-like language, you would use
+a temporary variable for that.  GENERIC supports the notion of reused
+expression directly with \literal{SAVE\_EXPR}.
+
+\literal{SAVE\_EXPR} node has a single operand, which is the actual
+expression to be computed.  The resulting \literal{SAVE\_EXPR} can be
+used on several places.  The expression it wraps around is ever
+computed only once, in further invocations it's replaced by a
+reference to temporary variable.
+
+The \Algol 60 front end uses \literal{SAVE\_EXPR} for assignment of
+one right hand side to several left hand sides, such as in this
+example:
+
+\program{\ind{}V1 := V2 := EXPR;}
+
+\subsection{Addresses and Dereferences}
+
+One more thing that \Algol front end does is that it handles code such
+as this:
+
+\program{\ind{}A[V] := V := EXPR;}
+
+The \Algol standard specifies that in such a case, the array accesses
+are resolved before any assignment takes place.  In other words, the
+newly-obtained value of \literal{V} has no effect on how the
+\literal{A[V]} is computed.
+
+The front end does this by first taking address of each left hand
+side, and then assigning the left hand side expression to dereference
+of each of taken addresses.  Two expression nodes are in effect here:
+\literal{ADDR\_EXPR} for taking an address, and \literal{INDIRED\_REF}
+for dereference.  Each of these has single operand, and they map,
+respectively, to \literal{\&} and \literal{*} operators of C language.
+
+The type of \literal{ADDR\_EXPR} node has to be a pointer.  Given a
+type \literal{t}, pointer to \literal{t} is built with GCC function
+\literal{build\_pointer\_type(t)}.
+
 
 \section{Statements}
 
-Nested blocks; for, while, do; if, switch; goto and labels.
+From the viewpoint of GENERIC, statements are expressions, too.  Their
+type is \literal{void\_type}, but otherwise they obey the same rules
+as nodes of ``ordinary'' expressions.
 
-\section{Modules}
+\subsection{Blocks}
 
-Variable/function visibility, module ctors and dtors.  Namespaces.
+One of major features of structured programming is the ability to
+group single statements into compound statements, in a recursive
+manner (statement inside block can itself be a block).  GCC naturally
+supports the notion of blocks.
 
-\section{Debuginfo}
+In context of GENERIC, block is expressed with an expression node
+\literal{BIND\_EXPR}.  Block expression has three operands: a chain of
+variables local to the block, a list of statements to process, and
+associated block.
+
+First, the two sequences: the {\em chain} of variables, and {\em list}
+of statements.  Each of them is created differently.  Chaining is
+natural operation of GENERIC nodes, built in for exactly the reason to
+be able to form linked lists easily.  To link two nodes together, use
+macro \function{TREE\_CHAIN}:
+
+\program{\ind\=\+
+\keyw{void} bind\_add\_decl (binder\_context\_t * ctx, \xtree decl) \{\\
+\ind\=TREE\_CHAIN (decl) = ctx\ptr{}cur\_block\_vars;\\
+    \>ctx\ptr{}cur\_block\_vars = decl;\\
+\}}
+
+Statement lists are different beasts.  New statement lists is created
+with function \function{alloc\_stmt\_list}, and new statements are
+added via \function{append\_to\_statement\_list}:
+
+\program{\ind\=\+
+\keyw{void} bind\_add\_stmt (binder\_context\_t * ctx, \xtree stmt) \{\\
+\ind{}append\_to\_statement\_list (stmt, \&ctx\ptr{}cur\_block\_stmts);\\
+\}}
+
+Now for the ``block'' part.  \literal{BIND\_EXPR} is node that binds
+block together with variables and statements.  Block is what expresses
+nesting structure of compound statements, and also has a reference to
+its variables.
+
+Each block has its associated superblock, set with a macro
+\function{BLOCK\_SUPERCONTEXT}, and a list of subblocks, assigned in
+creation time.  You have to keep everything in sync: bind expressions,
+supercontexts and subblocks.  If a bind expression $A$ with block
+$A_B$ appears as a statement inside a statement $B_S$ of bind
+expression $B$, then \literal{BLOCK\_SUPERCONTEXT} of $A_B$ has to be
+$B_B$, and list of subblocks of $B_B$ has to contain $A_B$.
+
+\Algol 60 front end has two functions for block handling:
+\function{bind\_state\_push\_block} and
+\function{bind\_state\_build\_block}.  The former one opens new block
+context, and actually does very little work: only sets up initial
+(i.e. empty) values for list of statements, chain of variables, and
+list of subblocks.  The latter one does all the interesting things:
+builds \literal{BIND\_EXPR} from collected variables, statements, and
+subblocks; sets supercontext of each of collected subblocks; and
+adds itself to the list of subblocks of next open block.  Both
+functions are available with minor edits in figure
+\ref{Figure++BlockHandling}.
+
+\begin{figure}
+\begin{verbatim}
+void bind_state_push_block (binder_context_t * ctx) {
+  slist_pushfront (ctx->subblocks, NULL_TREE);
+  slist_pushfront (ctx->vars, NULL_TREE);
+  slist_pushfront (ctx->stmts, alloc_stmt_list ());
+}
+
+tree bind_state_build_block (binder_context_t * ctx) {
+  // Collect the subblocks that might have been added during
+  // translation of container statements.
+  tree subblocks = slist_popfront (ctx->subblocks);
+  if (subblocks)
+    subblocks = nreverse (subblocks);
+  tree vars = slist_popfront (ctx->vars);
+  tree stmts = slist_popfront (ctx->stmts);
+
+  // Create new block and make it a superblock of all subblocks.
+  tree block = build_block (vars, subblocks, NULL_TREE, NULL_TREE);
+  if (subblocks) {
+      tree subblock_node;
+      for (subblock_node = subblocks; subblock_node != NULL_TREE;
+           subblock_node = TREE_CHAIN (subblock_node)) {
+          tree subblock = TREE_VALUE (subblock_node);
+          BLOCK_SUPERCONTEXT (subblock) = block;
+      }
+  }
+
+  // Then add the block to super's subblocks.
+  slist_it_t * it = slist_begin (ctx->subblocks);
+  tree super_subs = slist_it_get (it);
+  super_subs = tree_cons (NULL_TREE, block, super_subs);
+  slist_it_put (it, super_subs);
+
+  // Finally return the binding expression that represents our block.
+  return build3 (BIND_EXPR, void_type_node,
+                 BLOCK_VARS (block), stmts, block);
+}
+\end{verbatim}
+\caption{Block handling in \Algol 60 front end.}
+\label{Figure++BlockHandling}
+\end{figure}
+
+\subsection{Loops}
+
+All loops in GENERIC are expressed with the same \literal{LOOP\_EXPR}
+node.  Sole argument of this node is the body, which the
+\literal{LOOP\_EXPR} endlessly processed.  Computations of loop
+control variables have to be done explicitly.
+
+To end the loop, GENERIC uses a \literal{EXIT\_EXPR} node.  It has one
+argument, which is a condition that has to be true for the break to be
+taken. For example, following \Algol 60 abstract loop:
+
+\program{\ind\keyw{for} i := E while F do BODY;}
+
+Would be translated to the following GENERIC:
+
+\program{\ind\=\+
+LOOP\_EXPR (\keyw{void}, BIND\_EXPR(\{\\
+\ind\={\em 1:} \=i := E;\\
+    \>{\em 2:} \>EXIT\_EXPR (\keyw{void}, !F);\\
+    \>{\em 3:} \>BODY;\\
+\}))}
+
+The translation itself is lengthy, and not suitable for inclusion as
+an example.
+
+\subsection{Flow Control}
+
+Other flow control primitives include conditional statement, and
+jumps, labels and switches.
+
+Conditional statement is done exactly like conditional expressions,
+except that the node type is void.
+
+While \Algol 60 front end handles labels as symbols with attached
+statement (where the label is defined), in GENERIC they have dual
+nature: a symbol part is described by \literal{LABEL\_DECL}; the
+location by \literal{LABEL\_EXPR}, which is unary node whose parameter
+is \literal{LABEL\_DECL}.  Similarly \literal{\keyw{goto}} is unary
+node, whose parameter is either a \literal{LABEL\_DECL}, or arbitrary
+\literal{ADDR\_EXPR} that denotes the target site.  This latter is
+used for implementation of computed goto, and switch designators in
+\Algol 60 front end.
+
+Besides this, GENERIC has support for ``true'' C-like switches.  The
+two interesting nodes in this respect are \literal{SWITCH\_EXPR} and
+\literal{CASE\_LABEL\_EXPR}.
+
+\section{Debugging Information}
 \label{Debuginfo}
 
 \subsection{Loci}
@@ -2189,11 +2348,11 @@ Variable/function visibility, module ctors and dtors.  Namespaces.
 {\em Locus} is a simple stack-allocated structure that denotes a
 location of certain program construct in source code.  It is used for
 diagnostic message reporting, and for tracking locations for purposes
-of writing debuginfo. The contents of locus are a {\em name of the
-  file} and a {\em number of the line} inside that file, where given
-construct appeared.  Thus its creation is straightforward, one just
-has to include the right headers.  E.g. conversion between \Algol 60
-front end's {\em cursor} type and locus is done this way:
+of writing debugging information. The contents of locus are a {\em
+  name of the file} and a {\em number of the line} inside that file,
+where given construct appeared.  Thus its creation is straightforward,
+one just has to include the right headers.  E.g. conversion between
+\Algol 60 front end's {\em cursor} type and locus is done this way:
 
 \program{
 \ind\=\keyw{\#ifdef} IN\_GCC\\
@@ -2210,12 +2369,9 @@ front end's {\em cursor} type and locus is done this way:
     \>\keyw{\#endif}}
 
 
-How to add debuginfos to binaries that your frontend produces.  How to
-use gdb for your language.
+\subsection{Emitting Debugging Information}
 
-\subsection{Emitting Debuginfo}
-
-Debuginfo is additional information stored in compiled binary (be it
+``Debuginfo'' is additional information stored in compiled binary (be it
 object or resulting executable), which allows debuggers map binary
 code to original source.  GCC has a support for this kind of
 additional information: it is possible to annotate expressions and
@@ -2282,12 +2438,12 @@ nobody really uses \Algol 60, it was an arbitrary decision.
 
 Spec is line-oriented language: is has one statement per line.  The
 statements are just like normal shell command lines, with program at
-the beginning, followed by a list of options separated by whitespace,
+the beginning, followed by a list of options separated by white space,
 except that redirection of input or output is not supported.  The
 special thing about spec lines is that \literal{\%}-prefixed parts are
 subject to additional processing.
 
-Let's have a look at the non-preprcessing spec string.  There is only
+Let's have a look at the non-preprocessing spec string.  There is only
 one interesting \literal{\%}-rule used: \literal{\%\{!S:X\}}, which
 ``substitutes X, if the -S switch was NOT given to CC''.  Obviously,
 if user entered \option{-E}, he wants to stop compilation after the
@@ -2323,7 +2479,7 @@ and how they know where to read the files from.  That's where the
 consistently in whole spec string.
 
 So you see, spec is one strange language (its definition is in
-\file{gcc/gcc/gcc.c}), but the magic that gives you the precompiler
+\file{gcc/gcc/gcc.c}), but the magic that gives you the preprocessor
 launched is not that esoteric.
 
 That's obviously not all, because preprocessed file is littered with
@@ -2351,21 +2507,20 @@ option \option{-fpreprocessed}.  Unless this option is given, the
 given, further parsing of line marker is done.  Note that
 \option{-fpreprocessed} is passed to the compiler by spec line.
 
-\section{Commandline Options}
+\section{Command Line Options}
 \label{CommandlineOptions}
 
-Each GCC compiler has the capability of processing commandline
-options.  Moreover it inherits all the options
-from the main part of GCC, so
-e.g. \option{-O3}, \option{-o file} and others are available for all
-frontends with no work.  The only work is necessary for definition of
-options peculiar to given frontend, and even there is the tedium of
-commandline parsing left off your shoulders.
+Each GCC compiler has the capability of processing command line
+options.  Moreover it inherits all the options from the main part of
+GCC, so e.g. \option{-O3}, \option{-o file} and others are available
+for all front ends with no work.  The only work is necessary for
+definition of options peculiar to given front end, and even there is
+the tedium of command line parsing left off your shoulders.
 
 \subsection{Processing Options}
 
 GCC understands both positive and negative variants of \option{-f} and
-\option{-W} options.  E.g. when your frontend supports
+\option{-W} options.  E.g. when your front end supports
 \option{-fdump-ast}, GCC will understand also \option{-fno-dump-ast}.
 Furthermore, each option can be parametrized.  Thus you can have
 e.g. \option{-{}-output-pch=} option for output of precompiled headers,
@@ -2441,13 +2596,13 @@ processing:
 \section{Diagnostics}
 \label{Diagnostics}
 
-GCC uses its own functinos for reporting problems.  You may or may not
+GCC uses its own functions for reporting problems.  You may or may not
 use these in your compiler.  My advise is do.  First, if errors are
 not reported via GCC's mechanisms, GCC thinks compilation was
 successful, and proceeds with compilation.  Second, a lot of
 development tools rely on the way GCC reports errors.  Prime example
-is GCC's own testsuite, you will have to provide means of converting
-from your format to what's expected by the testsuite scripts.  Third,
+is GCC's own test suite, you will have to provide means of converting
+from your format to what's expected by the test suite scripts.  Third,
 GCC itself will use its own reporting tools nonetheless, e.g. for
 purposes of reporting internal errors.
 
@@ -2460,7 +2615,7 @@ That said, using GCC reporting is simple.  For example figure
 In GCC front ends, warnings make up significant part of reported
 messages, and can be richly configured.  Perhaps because C is very
 loose language, with almost everything allowed, even though lots of it
-are just historical crud that you use only inadverently.  Anyway, GCC
+are just historical crud that you use only inadvertently.  Anyway, GCC
 allows a very fine-grained tuning of what to report, by way of various
 \option{-W} and \option{-Wno-} options.
 
@@ -2493,7 +2648,7 @@ should be reported only if the associated option is in effect.
 \begin{verbatim}
 #ifdef IN_GCC
 // Use GCC-native error reporting when possible.  This is at the end
-// of definitions, to keep us away from GCC memory mangement poisoning.
+// of definitions, to keep us away from GCC memory management poisoning.
 # include "config.h"
 # include "system.h"
 # include "coretypes.h"
@@ -2614,7 +2769,7 @@ Runtime support also includes system's \literal{libc} and
 attention to these, too.
 
 GCC doesn't support integration of the runtime library with the same
-ease it supports new language frontends.  There are files to be
+ease it supports new language front ends.  There are files to be
 patched, an operation inherently unsafe in a volatile environment of
 GCC trunk.  Apart from that, however, the automation works nicely, and
 with some rules in mind, you can build runtime library that is linked
@@ -2629,8 +2784,8 @@ You need the following.
   build system.
 \item To include the library into the build chain.  This includes
   patching toplevel \file{configure} and \file{Makefile.def}.
-\item To inject the library into compilation commandline, so that it's
-  linked in produced binaries.
+\item To inject the library into compilation command line, so that
+  it's linked in produced binaries.
 \end{enumerate}
 
 \subsection{The Library Subdirectory}
@@ -2672,14 +2827,14 @@ integration into GCC build system.  In particular:
   autotools-generated files when you update library version.
 \end{itemize}
 
-Besides the concrete cases just mentioned, other frontends usually
+Besides the concrete cases just mentioned, other front ends usually
 contain workarounds that were necessary to resolve problems in past.
 It's certainly not wise to copy blindly every hack, as many of them
-may be outdated and superfluous.  But other implementors likely fallen
+may be outdated and superfluous.  But other implementers likely fallen
 into the same traps you did, and reinventing the wheel rarely pays
 off.
 
-\subsection{Patching Toplevel Buildsystem}
+\subsection{Patching Toplevel Build System}
 
 One last step is necessary before your library gets built as part of
 build process.  GCC has to {\em know} about it.  As it is, you have
@@ -2750,22 +2905,22 @@ Index: Makefile.def
 
 The method that GCC uses to decide which runtime libraries to link in
 is pretty much a hack: you will inject necessary libraries into the
-commandline, before it's processed.
+command line, before it's processed.
 
 The work is done in \function{lang\_specific\_driver}.  Very general
-commandline tweaking can take place here.  The function is given
+command line tweaking can take place here.  The function is given
 pointer to \variable{argc} and \variable{argv} variables, and is free
 to reorder, add or remove any of the arguments as seems fit.  To
 support proper linking, you will want to detect the situation when
 your runtime library, \literal{libc}, \literal{libm}, or any other
-required library isn't at the commandline yet (or is and shouldn't
+required library isn't at the command line yet (or is and shouldn't
 be), in which situation you will add or remove it from the vector and
 adjust \variable{argc} accordingly.  It's necessary to support native
 GCC switches, such as \option{-nostdlib} and \option{-nodefaultlibs},
 as well as your own switches that imply that no linking is to be done
 (e.g. \option{-fsyntax-only} or similar).
 
-Unfortunately that implies processing commandline arguments one at a
+Unfortunately that implies processing command line arguments one at a
 time, skipping their arguments as necessary (think \option{-o},
 \option{-Xlinker}).  It's really not nice solution, but that's the way
 it works.
@@ -2783,22 +2938,22 @@ folding, which means that the library will be available at compiler
 runtime.  Very often that means the library will also be available at
 binary run site.  That doesn't hold universally, but at least
 \literal{libgmp} was ported to all platforms where GCC has supported
-backends.  What this means for you is that you can dispatch to this
+back ends.  What this means for you is that you can dispatch to this
 library many compile-time numerical algorithms that would otherwise
-have to be handrolled or cut'n'pasted.  As far as I know, this is the
+have to be hand-rolled or cut'n'pasted.  As far as I know, this is the
 approach Fortran fronted is about to take.
 
 \section{Regression Test Suite}
 \label{TestSuite}
 
 During the development of a tool as complex as compiler is, thorough
-testsuite is an absolute necessity.  The GCC project does contain such
-testsuite.  It's built on popular \literal{dejagnu} test harness, and
+test suite is an absolute necessity.  The GCC project does contain such
+test suite.  It's built on popular \literal{dejagnu} test harness, and
 as such suits best traditional regression testing approach.
 
 Unit testing technically could be done through \literal{dejagnu}, but
 natural fit here is processing of output from given compiled binary.
-This works fine for compilers: the testsuite contains source files to
+This works fine for compilers: the test suite contains source files to
 be processed by your compiler, annotated with commands that describe
 expected output of the compiler.  Unit testing will be best done
 directly as part of build of each module.
@@ -2816,8 +2971,8 @@ lang\_checks += check-algol60}
 \literal{check-algol60} is handled automatically by a pattern rule in
 \file{build/gcc/Makefile}, you don't have to provide that yourself.
 
-If you want to include other means of testing, e.g. the testsuite that
-is already written as part of your front end, do so by explicitly
+If you want to include other means of testing, e.g. the test suite
+that is already written as part of your front end, do so by explicitly
 stating dependency of \literal{check}.  E.g look at this example:
 
 \program{
@@ -2845,8 +3000,8 @@ it is present.  Alternatively, simple \literal{make check} will run
 all GCC tests, including yours.)
 
 Going through each of the files that make up test suite really makes
-no sense.  Setup of testsuite scripts for your language is a
-convoluted process, and I recommend simply copying over testsuite
+no sense.  Setup of test suite scripts for your language is a
+convoluted process, and I recommend simply copying over test suite
 scripts from other front end (e.g. \Algol 60, where I took a time to
 clean up files a bit to get rid of what is not used or looks like
 historical crud).  I'll just explain what's the intent of each file.
@@ -2879,7 +3034,7 @@ case passes, but what's inside the test cases themselves?
 
 Each test case is just a source file written in a language of tested
 front end, which is \Algol 60 in my case.  The file contains dejagnu
-directives, a metainformation that describes what to do with the test
+directives, a meta-information that describes what to do with the test
 (i.e. compile, run, \dots), and what output to expect (particular
 error messages, output of test run, \dots).  The exact nature of the
 directives will be best seen on an example:
@@ -2890,7 +3045,7 @@ directives will be best seen on an example:
 \ind\=\keyw{integer} a;\\
     \>\keyw{real} b;\\
     \>a := 4.5; \keyw{comment} \comment {\{ dg-error "type mismatch" \}} ;\\
-    \>b := \litstr{`ahoj'}; \keyw{comment} \comment{\{ dg-error "type mismatch" \}} ;\\
+    \>b := \litstr{`ahoy'}; \keyw{comment} \comment{\{ dg-error "type mismatch" \}} ;\\
 \keyw{end};}
 
 The first directive specifies that the test should be compiled.  The
@@ -2908,8 +3063,8 @@ is available in \cite{TR:GCCInt}
 The directive processing tool expects the diagnostic messages to be in
 certain format, namely the traditional \literal{file:line[:column]:
   severity: description}.  If your front end provides e.g. more
-verbose, or differently formatted messages, you have to rewrap them to
-suit expectations.  Have a look at
+verbose, or differently formatted messages, you have to re-wrap them
+to suit expectations.  Have a look at
 \file{testsuite/lib/gfortran-dg.exp} if you are interested in that.
 
 
@@ -2920,10 +3075,10 @@ suit expectations.  Have a look at
 
 \begin{enumerate}
 
-\item A minimal frontend and its integration into GCC build system is
-  described in this work.  All files that the frontend is comprised of
-  are thoroughly examined, and pitfalls mentioned.  Several tips are
-  provided on connecting such minimal frontend with preexisting
+\item A minimal front end and its integration into GCC build system is
+  described in this work.  All files that the front end is comprised
+  of are thoroughly examined, and pitfalls mentioned.  Several tips
+  are provided on connecting such minimal front end with preexisting
   language parser, and on versioning GCC component apart from GCC
   itself.
 
@@ -2956,8 +3111,8 @@ topic.
 This thesis describes odds and ends of the GCC front end to middle end
 interface.  If there is a future research associated with this area,
 it's most probably more thorough description.  GCC has native support
-for OpenMP, a paralelization language, an area that is about to become
-{\em very} interesting in years to come.  It can handle classes, and
+for OpenMP, a parallel language, an area that is about to become {\em
+  very} interesting in years to come.  It can handle classes, and
 object oriented programming in general.  This thesis does not describe
 these topics.
 
@@ -2992,7 +3147,7 @@ The \Algol 60 GCC front end has following build requirements:
   dependence is certainly for no fundamental reason.  My guess is
   \file{gcc-algol} could be ported to GCC 4.1.x with a bit of
   effort.}.  You will need either complete GCC package
-  (e.g. \file{gcc-4.2.0.tar.bz2}), or core package and testsuite
+  (e.g. \file{gcc-4.2.0.tar.bz2}), or core package and test suite
   (e.g. \file{gcc-core-4.2.0.tar.bz2} and
   \file{gcc-testsuite-4.2.0.tar.bz2}).
 \item Flex 2.5.31 or newer.  Warning: this is a newer version than
@@ -3005,7 +3160,7 @@ The \Algol 60 GCC front end has following build requirements:
 \subsection*{Supported Arches}
 
 As of this writing, \file{gcc-algol} was successfully compiled and
-testsuite passed on systems with following triplets:
+test suite passed on systems with following triplets:
 
 \begin{itemize}
 \item i686-pc-linux-gnu
@@ -3161,16 +3316,12 @@ files and line numbers: even though the erroneous line appears as
 twelfth line of preprocessed output, error message is located
 properly.
 
-Most of this work is done by GCC itself: GCC launches preprocessor,
-decides that the processing should be stopped after that when
-\option{-E} is passed in, and GCC generated the make dependency rule.
-
 Finally, let's look that the binary supports debugging:
 
 \program{\ind\=\+
 \$ cat foo.a60\\
 {\em 'begin'}\\
-\ind{\em  puts (`ahoj!');}\\
+\ind{\em  puts (`ahoy');}\\
 \ind{\em exit (9);}\\
 {\em 'end'}\\
 \$ ga60-4.2.0 foo.a60 -o x -ggdb3 \\
@@ -3180,22 +3331,16 @@ Finally, let's look that the binary supports debugging:
 (gdb) run\\
 {\em Starting program: /tmp/x}\\
 {\em Breakpoint 1, main () at foo.a60:2}\\
-{\em2}\ind{\em{}puts (`ahoj!');}\\
+{\em2}\ind{\em{}puts (`ahoy');}\\
 (gdb) cont\\
 {\em Continuing.}\\
-{\em ahoj!}\\
+{\em ahoy}\\
 {\em Program exited with code 010.}}
-
-\iffalse
-\chapter{Notes}
-
-Functions need a return statements.  Look how it's done for noreturn
-functions.
-
-\fi
 
 \end{document}
 
 % Local Variables:
 % compile-command: "make show-dp"
 % End:
+
+% LocalWords:  EXPR
