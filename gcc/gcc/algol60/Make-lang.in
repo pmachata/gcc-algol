@@ -90,6 +90,7 @@ algol60/al60l-bind.o: algol60/al60l-bind.c algol60/al60l-bind.h \
 		algol60/slist.h algol60/estring.h algol60/boundspair.h\
 		algol60/label.h algol60/symbol.h algol60/type.h algol60/statement.h\
 		algol60/expression.h algol60/for-elmt.h algol60/for-elmt.i\
+		algol60/cursor.h algol60/cursor.i\
 		algol60/statement.i algol60/expression.i algol60/desig-expr.i\
 		algol60/type.i algol60/symbol.i\
 		algol60/visitor.h\

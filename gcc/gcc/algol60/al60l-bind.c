@@ -40,6 +40,7 @@
 #include "for-elmt.h"
 #include "visitor.h"
 #include "a60_symtab.h"
+#include "cursor.h"
 
 struct struct_al60l_bind_state_t
 {
@@ -543,10 +544,23 @@ bind_state_pop_function (al60l_bind_state_t * state)
 //   STATEMENT
 // ------------------------------------
 
+static void
+private_set_location (tree node, cursor_t * cursor)
+{
+  if (cursor == NULL)
+    return;
+
+  location_t loc;
+  cursor_to_loc (cursor, &loc);
+  SET_EXPR_LOCATION (node, loc);
+}
+
 tree
 stmt_build_generic (statement_t * statement, al60l_bind_state_t * state)
 {
-  return (tree)a60_visitor_dispatch (state->statement_build_generic, statement, statement, state);
+  tree ret = a60_visitor_dispatch (state->statement_build_generic, statement, statement, state);
+  private_set_location (ret, stmt_cursor (statement));
+  return ret;
 }
 
 void *
@@ -876,6 +890,7 @@ expr_string_build_generic (expression_t * self, void * data ATTRIBUTE_UNUSED)
   estring_t const * s = expr_string_value (self);
   int len = estr_length (s) + 1; // +1 for trailing zero
   tree ret = build_string_literal (len, estr_cstr (s));
+  private_set_location (ret, expr_cursor (self));
   return ret;
 }
 
@@ -908,6 +923,7 @@ expr_if_build_generic (expression_t * self, void * data)
   tree expt = expr_build_generic (expr_if_trueb (self), data);
   tree expf = expr_build_generic (expr_if_falseb (self), data);
   tree ret  = build3 (COND_EXPR, ttt, cond, expt, expf);
+  private_set_location (ret, expr_cursor (self));
   return ret;
 }
 
@@ -919,6 +935,7 @@ private_expr_build_binary_generic (expression_t * self, void * data, int op)
   tree op1 = expr_build_generic (expr_binary_left (self), data);
   tree op2 = expr_build_generic (expr_binary_right (self), data);
   tree ret = build2 (op, ttt, op1, op2);
+  private_set_location (ret, expr_cursor (self));
   return ret;
 }
 
@@ -929,28 +946,30 @@ private_expr_build_unary_generic (expression_t * self, void * data, int op)
   tree ttt = type_build_generic (t, data);
   tree op1 = expr_build_generic (expr_unary_operand (self), data);
   tree ret = build1 (op, ttt, op1);
+  private_set_location (ret, expr_cursor (self));
   return ret;
 }
 
 static void *
 private_expr_build_ardiv (expression_t * self, void * data)
 {
-  tree exp =  private_expr_build_binary_generic (self, data, RDIV_EXPR);
+  tree ret =  private_expr_build_binary_generic (self, data, RDIV_EXPR);
   // int / int also yields real.  We must cast the operands explicitly
   // to allow for this.
   if (types_same (expr_type (expr_binary_left (self)), type_int ()))
     {
-      tree tmp = TREE_OPERAND (exp, 0);
-      TREE_OPERAND (exp, 0) = build1 (FLOAT_EXPR, TREE_TYPE (exp), tmp);
+      tree tmp = TREE_OPERAND (ret, 0);
+      TREE_OPERAND (ret, 0) = build1 (FLOAT_EXPR, TREE_TYPE (ret), tmp);
     }
 
   if (types_same (expr_type (expr_binary_right (self)), type_int ()))
     {
-      tree tmp = TREE_OPERAND (exp, 1);
-      TREE_OPERAND (exp, 1) = build1 (FLOAT_EXPR, TREE_TYPE (exp), tmp);
+      tree tmp = TREE_OPERAND (ret, 1);
+      TREE_OPERAND (ret, 1) = build1 (FLOAT_EXPR, TREE_TYPE (ret), tmp);
     }
 
-  return exp;
+  private_set_location (ret, expr_cursor (self));
+  return ret;
 }
 
 static void *
@@ -999,7 +1018,9 @@ private_expr_build_apow (expression_t * self, void * data)
   symbol_set_extra (sym, builtin_decl_get_generic (sym, data));
   expression_t * e = new_expr_call_sym (c, l, args, sym);
 
-  return expr_build_generic (e, data);
+  tree ret = expr_build_generic (e, data);
+  private_set_location (ret, expr_cursor (self));
+  return ret;
 }
 
 static void *
@@ -1010,7 +1031,9 @@ private_expr_build_limp (expression_t * self, void * data)
   cursor_t * c = expr_cursor (self);
   expression_t * e1 = new_expr_unary (c, euk_not, expr_binary_left (self));
   expression_t * e2 = new_expr_binary (c, ebk_lor, e1, expr_binary_right (self));
-  return expr_build_generic (e2, data);
+  tree ret = expr_build_generic (e2, data);
+  private_set_location (ret, expr_cursor (self));
+  return ret;
 }
 
 void *
@@ -1053,9 +1076,9 @@ expr_unary_build_generic (expression_t * self, void * data)
   switch (op)
     {
     case euk_uminus:
-  return private_expr_build_unary_generic (self, data, NEGATE_EXPR);
+      return private_expr_build_unary_generic (self, data, NEGATE_EXPR);
     case euk_not:
-  return private_expr_build_unary_generic (self, data, TRUTH_NOT_EXPR);
+      return private_expr_build_unary_generic (self, data, TRUTH_NOT_EXPR);
     };
   gcc_unreachable ();
 }
@@ -1080,20 +1103,21 @@ expr_call_build_generic (expression_t * self, void * state)
   delete_slist_it (it);
   arg_list = nreverse (arg_list);
 
-  tree call_expr = build_function_call_expr (proc_decl, arg_list);
-  TREE_SIDE_EFFECTS (call_expr) = 1;
-  TREE_USED (call_expr) = 1;
+  tree ret = build_function_call_expr (proc_decl, arg_list);
+  TREE_SIDE_EFFECTS (ret) = 1;
+  TREE_USED (ret) = 1;
 
-  return call_expr;
+  private_set_location (ret, expr_cursor (self));
+  return ret;
 }
 
 void *
 expr_subscript_build_generic (expression_t * self, void * data)
 {
   symbol_t * sym = expr_symbol (self);
-  tree array = symbol_extra (sym);
+  tree ret = symbol_extra (sym);
   type_t * t = symbol_type (sym);
-  gcc_assert (array != NULL);
+  gcc_assert (ret != NULL);
   gcc_assert (t != NULL);
 
   slist_it_t * it = slist_iter (expr_subscript_indices (self));
@@ -1103,11 +1127,12 @@ expr_subscript_build_generic (expression_t * self, void * data)
       tree idx_tree = expr_build_generic (idx_expr, data);
       t = type_host (t);
       tree type = type_build_generic (t, data);
-      array = build4 (ARRAY_REF, type, array, idx_tree, NULL_TREE, NULL_TREE);
+      ret = build4 (ARRAY_REF, type, ret, idx_tree, NULL_TREE, NULL_TREE);
     }
   delete_slist_it (it);
 
-  return array;
+  private_set_location (ret, expr_cursor (self));
+  return ret;
 }
 
 static void
