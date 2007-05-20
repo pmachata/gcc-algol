@@ -613,12 +613,10 @@ stmt_assign_build_generic (statement_t * self, void * data)
       slist_it_t * it = slist_iter (lhss);
       for (; slist_it_has (it); slist_it_next (it))
 	{
-	  tree expr, base_type, pointer_type;
-
 	  // compute type of pointer to LHS
-	  expr = expr_build_generic (slist_it_get (it), data);
-	  base_type = TREE_TYPE (expr);
-	  pointer_type = build_pointer_type (base_type);
+	  tree expr = expr_build_generic (slist_it_get (it), data);
+	  tree base_type = TREE_TYPE (expr);
+	  tree pointer_type = build_pointer_type (base_type);
 	  expr = build1 (ADDR_EXPR, pointer_type, expr);
 
 	  // assign the pointer to the temporary
