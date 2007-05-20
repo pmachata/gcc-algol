@@ -2202,8 +2202,7 @@ front end's {\em cursor} type and locus is done this way:
     \>\keyw{\# include} \litstr{"limits.h"}\\
     \>\keyw{\# include} \litstr{"input.h"}\\
 \\
-    \>\keyw{void}\\
-    \>cursor\_to\_loc (cursor\_t \keyw{const} * cursor, location\_t * loc) \{\\
+    \>\keyw{void} cursor\_to\_loc (cursor\_t \keyw{const} * cursor, location\_t * loc) \{\\
     \>\ind\=memset (loc, 0, \keyw{sizeof} (location\_t));\\
     \>    \>loc\ptr{}file = cursor\ptr{}filename;\\
     \>    \>loc\ptr{}line = cursor\ptr{}line;\\
@@ -2214,7 +2213,27 @@ front end's {\em cursor} type and locus is done this way:
 How to add debuginfos to binaries that your frontend produces.  How to
 use gdb for your language.
 
-@@@TODO
+\subsection{Emitting Debuginfo}
+
+Debuginfo is additional information stored in compiled binary (be it
+object or resulting executable), which allows debuggers map binary
+code to original source.  GCC has a support for this kind of
+additional information: it is possible to annotate expressions and
+statements with locus.  The interesting macro (for both cases) is
+\function{SET\_EXPR\_LOCATION}.  This is how \Algol 60 front end does
+it:
+
+\program{\ind\=\+
+\keyw{void} private\_set\_location (\xtree node, cursor\_t * cursor) \{ \\
+\ind\=location\_t loc;\\
+    \>cursor\_to\_loc (cursor, \&loc);\\
+    \>SET\_EXPR\_LOCATION (node, loc);\\
+\}}
+
+Be warned: it doesn't make a sense for all node types to bear line
+information.  In particular, constants are usually shared between
+expressions, and assigned locus mangles them.
+
 
 %=====================================================================%
 
@@ -3060,9 +3079,9 @@ variables.}:
 {\em /tmp/inst-4.2.0/bin/ga60-4.2.0}\\
 \$ ga60-4.2.0 --version $|$ head -n 1\\
 {\em ga60-4.2.0 (GCC) 4.2.0}\\
-\$ cat x.a60\\
+\$ cat foo.a60\\
 {\em 'begin' puts(`Yay, it works!'); 'end';}\\
-\$ ga60-4.2.0 x.a60 -o x\\
+\$ ga60-4.2.0 foo.a60 -o x\\
 \$ ./x\\
 {\em Yay, it works!}}
 
@@ -3095,8 +3114,7 @@ shared, and in that case \file{libm} has to be brought in explicitly.
 \file{gcc-algol} uses a preprocessor, and understands traditional
 preprocessing directives.  The preprocessor is not run by default,
 only when the file extension is \file{.A60} or \file{.ALG} (i.e. upper
-case.  This notion is used also for assembly and fortran source
-files).  For example, let's have the two files as shown on figures
+case).  For example, let's have the two files as shown on figures
 \ref{Figure++PreprocessX} and \ref{Figure++PreprocessY}.
 
 \begin{figure}
@@ -3146,6 +3164,27 @@ properly.
 Most of this work is done by GCC itself: GCC launches preprocessor,
 decides that the processing should be stopped after that when
 \option{-E} is passed in, and GCC generated the make dependency rule.
+
+Finally, let's look that the binary supports debugging:
+
+\program{\ind\=\+
+\$ cat foo.a60\\
+{\em 'begin'}\\
+\ind{\em  puts (`ahoj!');}\\
+\ind{\em exit (9);}\\
+{\em 'end'}\\
+\$ ga60-4.2.0 foo.a60 -o x -ggdb3 \\
+\$ gdb -q ./x \\
+(gdb) break main\\
+{\em Breakpoint 1 at 0x804846a: file foo.a60, line 2.}\\
+(gdb) run\\
+{\em Starting program: /tmp/x}\\
+{\em Breakpoint 1, main () at foo.a60:2}\\
+{\em2}\ind{\em{}puts (`ahoj!');}\\
+(gdb) cont\\
+{\em Continuing.}\\
+{\em ahoj!}\\
+{\em Program exited with code 010.}}
 
 \iffalse
 \chapter{Notes}
