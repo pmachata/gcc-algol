@@ -2,7 +2,7 @@
 #define _AL60L_SYMTAB_H_
 
 ///
-/// \file symtab.h
+/// \file a60_symtab.h
 ///
 /// Symtab represents a collection of symbols.  Symtabs are used by
 /// containers and function symbols to store symbols declared in their

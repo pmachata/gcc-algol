@@ -37,8 +37,8 @@ Building the Compiler and Runtime Library
 
    4. Patch toplevel "configure" and "Makefile.def".  While in
       <srcdir>, type the following:
-      	patch < gcc-4.3.0-toplevel.patch
-      The patch-file "gcc-4.3.0-toplevel.patch" is delivered by the
+      	patch -p1 < gcc-4.2.0-toplevel.patch
+      The patch-file "gcc-4.2.0-toplevel.patch" is delivered by the
       gcc-algol60 archive.
 
    5. Build GCC using the normal install instructions.  The only

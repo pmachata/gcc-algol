@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003 Petr Machata, Jiøí Moskovèák, Kry¹tof Oczadlý
- * Copyright (c) 2006 Petr Machata
+ * Copyright (c) 2006, 2007 Petr Machata
  * All rights reserved.
  */
 
@@ -22,7 +22,7 @@ struct struct_estring_t
   char const* signature;
 
   /// actual length of string - number of used chars, not including
-  /// terminating \0
+  /// terminating NUL
   size_t length;
 
   /// how much the string can grow before it needs a
