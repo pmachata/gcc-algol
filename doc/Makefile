@@ -1,4 +1,4 @@
-FILES = RRA60.pdf PIOCA60.pdf dp.pdf demo-1.pdf eeict.pdf
+FILES = RRA60.pdf PIOCA60.pdf dp.pdf demo-1.pdf eeict.pdf showcase.pdf
 FITTHESIS = cls/fitthesis.cls cls/fit-zp2.eps cls/fit-zp2.pdf cls/vut-zp2.eps cls/vut-zp2.pdf
 
 
@@ -12,6 +12,8 @@ all: $(FILES)
 dp.pdf: dp.tex dp.bib vut_fit.pdf $(FITTHESIS)
 
 demo-1.pdf: demo-1.tex demo-gccarch.pdf
+
+showcase.pdf: showcase.tex
 
 RRA60.pdf: RRA60.tex
 

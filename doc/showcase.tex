@@ -1,0 +1,264 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage{a4wide}
+\usepackage[latin2]{inputenc}
+\usepackage[
+  bookmarks=true,
+  bookmarksopen=true,
+  colorlinks=false,
+  urlbordercolor={0 0 0},
+  pdfhighlight=/I,
+  pdftitle=The\ GCC-Algol\ Demo,
+  pdfauthor=Petr\ Machata,
+  pdfstartview=FitH,
+  bookmarksopenlevel=2
+  ]{hyperref}
+\pagestyle{empty}
+\topmargin 0in
+\begin{document}
+
+\def\Algol{{\sc Algol}\space}
+
+% for various computer-related terms
+\def\literal#1{{\sffamily{}#1}}
+% functions names
+\def\function#1{{\sffamily{}#1}}
+% file names
+\def\file#1{{\sffamily{}#1}}
+% command line options
+\def\option#1{{\sffamily{}#1}}
+% variables, types, and similar
+\def\variable#1{{\sffamily{}#1}}
+
+% program listings
+\def\program#1{{\sffamily\begin{tabbing}#1\end{tabbing}}}
+% keywords in program listings
+\def\keyw#1{{\sffamily\bfseries {#1}}}
+% comments
+\def\comment#1{{\sffamily\it {#1}}}
+% strings
+\def\litstr#1{{\sffamily\it {#1}}}
+% indentation
+\def\ind{\hspace{0.5cm}}
+% access through pointer (x->y)
+\def\ptr{$-\!\!>$}
+% GENERIC tree type
+\def\xtree{\literal{\keyw{tree}\space}}
+
+\def\note#1{{{\it Note.\space}#1}}
+\def\output#1{{\ttfamily\begin{tabbing}#1\end{tabbing}}}
+
+\def\term#1{{\it #1}}
+
+
+\title{The GCC-Algol Demo}
+\author{Petr Machata}
+\date{2007-05-21}
+
+\maketitle
+
+\section{Requirements}
+
+The \Algol 60 GCC front end has following build requirements:
+
+\begin{itemize}
+\item GCC 4.2.x with resolved dependencies.  GCC 4.1.x or earlier will
+  NOT work\footnote{\file{gcc-algol} uses few functions that were only
+  introduced in GCC 4.2.x.  Their number is not high, and the
+  dependence is certainly for no fundamental reason.  My guess is
+  \file{gcc-algol} could be ported to GCC 4.1.x with a bit of
+  effort.}.  You will need either complete GCC package
+  (e.g. \file{gcc-4.2.0.tar.bz2}), or core package and test suite
+  (e.g. \file{gcc-core-4.2.0.tar.bz2} and
+  \file{gcc-testsuite-4.2.0.tar.bz2}).
+\item Flex 2.5.31 or newer.  Warning: this is a newer version than
+  what GCC requires.
+\item Bison 2.3 or newer.
+\item \file{libga60} wraps around target-native \file{libc} and
+  \file{libm}, which have to be available on target site.
+\end{itemize}
+
+\subsection{Supported Arches}
+
+As of this writing, \file{gcc-algol} was successfully compiled and
+test suite passed on systems with following triplets:
+
+\begin{itemize}
+\item i686-pc-linux-gnu
+\item ia64-unknwon-linux-gnu
+\item mips-sgi-irix6.5
+\end{itemize}
+
+This is quite diverse set of arches: little and big endians, 32 and 64
+bits, two unrelated operating systems, though no really obscure
+system.  This illustrates that the front end is probably written in
+enough hardware and OS independent way to be readily portable.
+
+\section{Build Process}
+
+Only a straight build (i.e. no Canadian Crosses) is supported at the
+moment. (Or at least tested.  Chances are the compiler will work also
+for non-native setups.)  First, prepare a source tree:
+
+\program{\ind\=\+
+\$ ls\\
+{\em gcc-4.2.0.tar.bz2 gcc-algol60-0.3.tar.bz2}\\
+\$ tar xjf gcc-4.2.0.tar.bz2\\
+\$ pushd gcc-4.2.0\\
+\$ tar xjf ../gcc-algol60-0.3.tar.bz2\\
+\$ patch -p1 $<$ gcc-4.2.0-toplevel.patch\\
+{\em patching file configure}\\
+{\em patching file Makefile.in}\\
+{\em patching file Makefile.def}\\
+\$ popd}
+
+Then prepare for the build:
+
+\program{\ind\=\+
+\$ mkdir build-4.2.0\\
+\$ cd build-4.2.0\\
+\$ ../gcc-4.2.0/configure \=-{}-prefix=`pwd`/../inst-4.2.0/ $\backslash$\\
+                          \>-{}-enable-version-specific-runtime-libs $\backslash$\\
+			  \>-{}-enable-languages=c,algol60 $\backslash$\\
+			  \>-{}-disable-werror}
+
+The \option{-{}-disable-werror} part is unfortunate, but necessary:
+the parser and lexer \file{.c} files, generated from yacc and flex
+respectively, currently generate a lot of warnings.
+
+Finally, do a build itself:
+
+\program{\ind\=\+
+\$ gmake -j 4\\
+{\em ...lots of output...}\\
+{\em gmake[1]: Leaving directory `/tmp/build-4.2.0'}}
+
+(The \option{-j} constant determines how many parallel processes make
+should launch.  You will want to adjust this value depending on number
+of CPUs or cores of your computer.)
+
+You can test GCC as a whole with \literal{gmake check}, or just \Algol
+60 front end with \literal{gmake -C gcc check-algol60}.  If you so
+wish, you can install the front end with \literal{gmake install}, it
+will end up in configured \option{-{}-prefix} directory.
+
+\section{Using \file{gcc-algol}}
+
+From now on, you can use it as an ordinary GCC
+command\footnote{Actually, in the case as illustrated, the compiler
+would likely end up in a directory outside \literal{PATH} and
+\literal{LD\_LIBRARY\_PATH}.  You may need to adjust these
+variables.}:
+
+\program{\ind\=\+
+\$ which ga60-4.2.0\\
+{\em /tmp/inst-4.2.0/bin/ga60-4.2.0}\\
+\$ ga60-4.2.0 --version $|$ head -n 1\\
+{\em ga60-4.2.0 (GCC) 4.2.0}\\
+\$ cat foo.a60\\
+{\em 'begin' puts(`Yay, it works!'); 'end';}\\
+\$ ga60-4.2.0 foo.a60 -o x\\
+\$ ./x\\
+{\em Yay, it works!}}
+
+Let's have a look at the compiled binary:
+
+\program{\ind\=\+
+\$ readelf -a x $|$ grep NEEDED\\
+{\em 0x0000000000000001} \={\em{}(NEEDED)} \={\em{}Shared library: [libga60.so.1]}\\
+{\em 0x0000000000000001} \>{\em{}(NEEDED)} \>{\em{}Shared library: [libm.so.6.1]}\\
+{\em 0x0000000000000001} \>{\em{}(NEEDED)} \>{\em{}Shared library: [libc.so.6.1]}}
+
+The binary itself depends on \file{libm} and \file{libc}.  These
+dependencies are injected into the binary by the linking hook
+\function{lang\_specific\_driver}.  If we link the binary with gcc
+driver, our hook will not be called, and only \file{libc} will be
+linked in:
+
+\program{\ind\=\+
+\$ gcc-4.2.0 x.a60 -o x -lga60\\
+\$ readelf -a x $|$ grep NEEDED\\
+{\em{}0x0000000000000001} \={\em{}(NEEDED)} \={\em{}Shared library: [libga60.so.1]}\\
+{\em{}0x0000000000000001} \>{\em{}(NEEDED)} \>{\em{}Shared library: [libc.so.6.1]}}
+
+Under current setup, where all \Algol 60 services are provided by {\em
+shared} \file{libga60}, explicit dependence on \file{libm} is
+unnecessary, and even wrong---\file{libga60} itself should have these
+dependencies (and has!).  However, \file{libga60} doesn't have to be
+shared, and in that case \file{libm} has to be brought in explicitly.
+
+\file{gcc-algol} uses a preprocessor, and understands traditional
+preprocessing directives.  The preprocessor is not run by default,
+only when the file extension is \file{.A60} or \file{.ALG} (i.e. upper
+case).  For example, let's have the two files as shown on figures
+\ref{Figure++PreprocessX} and \ref{Figure++PreprocessY}.
+
+\begin{figure}
+\begin{verbatim}
+#if !defined(_ALGOL60_) || !defined(USK)
+# error That does not compute.
+#else
+'begin'
+        /* funky C-like comment */
+#       include "y.ALG"
+'end';
+#endif
+\end{verbatim}
+\caption{Preprocessing: Example file x.ALG}
+\label{Figure++PreprocessX}
+\end{figure}
+
+\begin{figure}
+\begin{verbatim}
+
+
+'string' a;
+\end{verbatim}
+\caption{Preprocessing: Example file y.ALG}
+\label{Figure++PreprocessY}
+\end{figure}
+
+\program{\ind\=\+
+\$ ga60-4.2.0 ./x.ALG\\
+{\em{}./x.ALG:2: error: \#error That does not compute.}\\
+\$ ga60-4.2.0 -DUSK ./x.ALG\\
+{\em{}./y.ALG:1: error: type 'string' is invalid in this context.}\\
+\$ ga60-4.2.0 -DUSK -M ./x.ALG\\
+{\em{}x.o: x.ALG y.ALG}\\
+\$ ga60-4.2.0 -DUSK -E ./x.ALG\\
+{\em{}\# 1 "./x.ALG"}\\
+{\em{}\# 1 "$<$built-in$>$"}\\
+{\em ... more preprocessed output ... }}
+
+The errors at the first and second commands are intentional.
+The first is here to display that it's possible to pass in your own
+defines.  The second shows that \file{gcc-algol} correctly tracks
+files and line numbers: even though the erroneous line appears as
+twelfth line of preprocessed output, error message is located
+properly.
+
+Finally, let's look that the binary supports debugging:
+
+\program{\ind\=\+
+\$ cat foo.a60\\
+{\em 'begin'}\\
+\ind{\em  puts (`ahoy');}\\
+\ind{\em exit (9);}\\
+{\em 'end'}\\
+\$ ga60-4.2.0 foo.a60 -o x -ggdb3 \\
+\$ gdb -q ./x \\
+(gdb) break main\\
+{\em Breakpoint 1 at 0x804846a: file foo.a60, line 2.}\\
+(gdb) run\\
+{\em Starting program: /tmp/x}\\
+{\em Breakpoint 1, main () at foo.a60:2}\\
+{\em2}\ind{\em{}puts (`ahoy');}\\
+(gdb) cont\\
+{\em Continuing.}\\
+{\em ahoy}\\
+{\em Program exited with code 010.}}
+
+\end{document}
+
+% Local Variables:
+% compile-command: "make show-dp"
+% End:
