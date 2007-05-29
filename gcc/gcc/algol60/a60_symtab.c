@@ -367,6 +367,10 @@ a60_symtab_toplev_define_internals (a60_symtab_t * self)
     // Extensions
     {"exit", type_proc_void_int ()},
     {"puts", type_proc_int_string ()},
+    {"out", type_proc_void_int ()},
+    {"out", type_proc_void_real ()},
+    {"out", type_proc_void_bool ()},
+    {"out", type_proc_void_string ()},
     //
     {NULL,   NULL}
   };

@@ -30,6 +30,9 @@ type_t * type_switch_any (void); ///< Memoized type for matching any switch.
 type_t * type_array_any (void); ///< Memoized type.
 type_t * type_array_real (void); ///< Memoized type.
 type_t * type_proc_void_int (void); ///< Memoized type.
+type_t * type_proc_void_real (void); ///< Memoized type.
+type_t * type_proc_void_bool (void); ///< Memoized type.
+type_t * type_proc_void_string (void); ///< Memoized type.
 type_t * type_proc_void_any (void); ///< Memoized type.
 type_t * type_proc_int_int (void); ///< Memoized type.
 type_t * type_proc_real_int (void); ///< Memoized type.
