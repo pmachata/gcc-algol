@@ -41,7 +41,7 @@ void __a60__out_PvbQ (int boolean);
 void
 __a60__out_PvbQ (int boolean)
 {
-  printf ("%s", boolean ? "true" : "false");
+  printf ("%s", (boolean & 0x1) ? "true" : "false");
 }
 #endif
 
