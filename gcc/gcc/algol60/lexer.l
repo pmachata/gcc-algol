@@ -402,8 +402,15 @@ DIGIT		[0-9]
   // file name... remember to skip "\""
   ++linemarker;
   char * filename = linemarker;
-  while (*linemarker != '\"')
-    ++linemarker;
+  while (1)
+    {
+      int c = *linemarker;
+      if (c == '\\')
+	linemarker++;
+      else if (c == '"')
+	break;
+      ++linemarker;
+    }
   *linemarker = 0;
 
   free (lexer->pp_filename);
